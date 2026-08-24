@@ -11,6 +11,7 @@ use App\Services\AvailabilityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ClientPortalController extends Controller
@@ -53,7 +54,7 @@ class ClientPortalController extends Controller
             'start_datetime' => 'required|date|after_or_equal:now',
             'end_datetime' => 'required|date|after:start_datetime',
             'pickup_location' => 'required|string|max:255',
-            'payment_method' => 'required|in:cod,online',
+            'payment_method' => 'required|in:cash,online',
             'promo_code' => 'nullable|string|exists:promos,promo_code',
         ]);
 
@@ -61,10 +62,17 @@ class ClientPortalController extends Controller
         $start = $request->start_datetime;
         $end = $request->end_datetime;
 
-        // Check availability
-        if (!AvailabilityService::isAvailable($vehicleId, $start, $end)) {
+        $availabilityService = app(\App\Services\VehicleAvailabilityService::class);
+        $vehicle = Vehicle::findOrFail($vehicleId);
+
+        // Transaction & Double Booking Guard
+        $isAvailable = DB::transaction(function () use ($availabilityService, $vehicle, $start, $end) {
+            return $availabilityService->isAvailable($vehicle, $start, $end);
+        });
+
+        if (! $isAvailable) {
             return back()->withErrors([
-                'start_datetime' => 'The selected vehicle is not available for this date range.',
+                'start_datetime' => 'This vehicle is not available for the selected dates.',
             ]);
         }
 
@@ -213,5 +221,27 @@ class ClientPortalController extends Controller
         );
 
         return redirect()->route('client.dashboard')->with('success', 'Thank you for your rating review!');
+    }
+
+    /**
+     * Update customer identity credentials (driver's license & government ID numbers).
+     */
+    public function updateIdentityDetails(Request $request)
+    {
+        $request->validate([
+            'drivers_license_number' => 'nullable|string|max:50',
+            'id_number' => 'nullable|string|max:50',
+            'id_type' => 'nullable|string|max:50',
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $user->update([
+            'drivers_license_number' => $request->drivers_license_number,
+            'id_number' => $request->id_number,
+            'id_type' => $request->id_type,
+        ]);
+
+        return redirect()->route('client.dashboard')->with('success', 'Identity information updated successfully.');
     }
 }

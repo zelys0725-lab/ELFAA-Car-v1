@@ -35,22 +35,28 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'phone' => 'required|string|max:20',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'drivers_license_number' => 'nullable|string|max:50',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()->min(8)],
+            'terms' => 'required|accepted',
+        ], [
+            'terms.accepted' => 'You must agree to the Terms and Conditions to create an account.',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
+            'drivers_license_number' => $request->drivers_license_number,
             'password' => Hash::make($request->password),
             'role' => 'client', // Default to client (renter)
             'status' => 'active',
+            'terms_accepted_at' => now(),
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('client.dashboard'));
+        return redirect('/');
     }
 }

@@ -30,11 +30,7 @@ class RoleMiddleware
         }
 
         if (! in_array($request->user()->role, $roles)) {
-            // Redirect to their respective dashboards if they have mismatched roles
-            if ($request->user()->isAdmin() || $request->user()->isStaff()) {
-                return redirect()->route('admin.dashboard');
-            }
-            return redirect()->route('client.dashboard');
+            abort(403, 'Access Restricted: Your account role does not have permission to access this route.');
         }
 
         return $next($request);

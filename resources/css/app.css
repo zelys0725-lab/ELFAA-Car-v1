@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+    /* Hide non-printable navigation chrome & controls */
+    aside, 
+    nav, 
+    button, 
+    select, 
+    .no-print,
+    .print\:hidden {
+        display: none !important;
+    }
+
+    /* Force light background and clean page flow */
+    html, body, #app, main, div {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        box-shadow: none !important;
+        border-color: #e5e7eb !important;
+    }
+
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Avoid breaking cards in half across pages */
+    .print-card,
+    .print-break-avoid {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Remove scrollbars in print */
+    ::-webkit-scrollbar {
+        display: none !important;
+    }
+}

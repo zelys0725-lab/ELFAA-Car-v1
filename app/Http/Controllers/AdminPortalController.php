@@ -10,6 +10,7 @@ use App\Models\Promo;
 use App\Models\ExtraGood;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class AdminPortalController extends Controller
@@ -89,9 +90,15 @@ class AdminPortalController extends Controller
         });
         $topVehicles = array_slice($vehicleStats, 0, 5);
 
-        // Retrieve items with relationships
+        // Retrieve active items with relationships
         $bookings = Booking::with(['user', 'vehicle', 'rating'])
+            ->whereNull('archived_at')
             ->orderBy('created_at', 'desc')
+            ->get();
+
+        $archivedBookings = Booking::with(['user', 'vehicle', 'rating'])
+            ->whereNotNull('archived_at')
+            ->orderBy('archived_at', 'desc')
             ->get();
 
         $vehicles = Vehicle::orderBy('created_at', 'desc')->get();
@@ -113,6 +120,7 @@ class AdminPortalController extends Controller
             'categoryEarnings' => $categoryEarnings,
             'topVehicles' => $topVehicles,
             'bookings' => $bookings,
+            'archivedBookings' => $archivedBookings,
             'vehicles' => $vehicles,
             'promos' => $promos,
             'extraGoods' => $extraGoods,
@@ -249,7 +257,7 @@ class AdminPortalController extends Controller
             'meetup_location' => 'required|string|max:255',
             'description' => 'nullable|string',
             'features' => 'nullable|array',
-            'status' => 'required|in:available,maintenance,unavailable',
+            'status' => 'required|in:available,reserved,rented,maintenance,unavailable',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
@@ -452,5 +460,53 @@ class AdminPortalController extends Controller
         }
 
         return redirect()->route('admin.dashboard')->with('success', 'Site settings updated successfully!');
+    }
+
+    /**
+     * Archive a booking record.
+     */
+    public function archiveBooking(Booking $booking)
+    {
+        $booking->update([
+            'archived_at' => now(),
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', 'Booking record archived.');
+    }
+
+    /**
+     * Restore an archived booking record.
+     */
+    public function restoreBooking(Booking $booking)
+    {
+        $booking->update([
+            'archived_at' => null,
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', 'Booking record restored to active list.');
+    }
+
+    /**
+     * Update administrator account password.
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'The provided current password does not match our records.']);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', 'Administrator password updated successfully!');
     }
 }

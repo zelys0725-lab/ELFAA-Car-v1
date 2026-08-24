@@ -20,9 +20,13 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'drivers_license_number',
+        'id_number',
+        'id_type',
         'password',
         'role',
         'status',
+        'terms_accepted_at',
     ];
 
     /**
@@ -44,6 +48,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

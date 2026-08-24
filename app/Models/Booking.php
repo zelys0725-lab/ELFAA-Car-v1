@@ -20,6 +20,7 @@ class Booking extends Model
         'total_price',
         'payment_method',
         'status',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -27,6 +28,7 @@ class Booking extends Model
         return [
             'start_datetime' => 'datetime',
             'end_datetime' => 'datetime',
+            'archived_at' => 'datetime',
             'total_price' => 'decimal:2',
         ];
     }

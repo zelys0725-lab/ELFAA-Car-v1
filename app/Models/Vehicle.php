@@ -21,6 +21,7 @@ class Vehicle extends Model
         'description',
         'features',
         'status',
+        'damage_notes',
         'meetup_location',
         'images',
     ];

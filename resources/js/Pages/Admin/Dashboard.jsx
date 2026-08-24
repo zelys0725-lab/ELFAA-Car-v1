@@ -2,12 +2,20 @@ import React, { useState } from 'react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
+import VehicleCalendar from '@/Components/VehicleCalendar';
+import SmartReportsDashboard from '@/Components/SmartReportsDashboard';
 
-export default function Dashboard({ auth, stats, bookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [] }) {
+export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [] }) {
     const isAdmin = auth.user.role === 'admin';
     const { settings } = usePage().props;
     const [activeTab, setActiveTab] = useState('analytics');
     const [subFilter, setSubFilter] = useState('all');
+
+    // Booking Logs Sub-view & Search & Pagination
+    const [bookingLogTab, setBookingLogTab] = useState('active'); // 'active' | 'archived'
+    const [bookingSearch, setBookingSearch] = useState('');
+    const [bookingPage, setBookingPage] = useState(1);
+    const bookingsPerPage = 8;
 
     // Dialog Modal States
     const [modalType, setModalType] = useState(null); // 'add_vehicle' | 'edit_vehicle' | 'add_promo' | 'edit_promo' | 'reject_doc' | 'confirm_action'
@@ -48,6 +56,21 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
         e.preventDefault();
         settingsForm.post(route('admin.settings.update'), {
             preserveScroll: true,
+        });
+    };
+
+    // Admin Password Change Form
+    const passwordForm = useForm({
+        current_password: '',
+        new_password: '',
+        new_password_confirmation: '',
+    });
+
+    const submitPasswordChange = (e) => {
+        e.preventDefault();
+        passwordForm.post(route('admin.password.change'), {
+            preserveScroll: true,
+            onSuccess: () => passwordForm.reset(),
         });
     };
 
@@ -106,6 +129,26 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
             actionLabel: isConfirm ? 'Confirm Booking' : isReject ? 'Reject' : 'Complete Ride',
             actionClass: isConfirm ? 'bg-green-600 hover:bg-green-700 text-white' : isReject ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-[#FF3B30] hover:bg-red-700 text-white',
             onConfirm: () => router.post(route('admin.bookings.verify', bookingId), { action }),
+        });
+    };
+
+    const handleArchiveBooking = (bookingId) => {
+        showConfirm({
+            title: 'Archive Booking Record',
+            message: 'Move this booking to the archived records archive? You can restore it anytime.',
+            actionLabel: 'Archive Record',
+            actionClass: 'bg-[#FF3B30] hover:bg-red-700 text-white',
+            onConfirm: () => router.post(route('admin.bookings.archive', bookingId)),
+        });
+    };
+
+    const handleRestoreBooking = (bookingId) => {
+        showConfirm({
+            title: 'Restore Booking Record',
+            message: 'Restore this booking record back to the active bookings list?',
+            actionLabel: 'Restore Record',
+            actionClass: 'bg-green-600 hover:bg-green-700 text-white',
+            onConfirm: () => router.post(route('admin.bookings.restore', bookingId)),
         });
     };
 
@@ -242,18 +285,36 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
     // Sidebar Config
     const tabsConfig = [
         { id: 'analytics', label: 'Dashboard' },
+        { id: 'calendar', label: 'Availability Calendar' },
         { id: 'bookings', label: 'Bookings Log' },
         { id: 'verifications', label: 'Identity Verifications' },
         { id: 'vehicles', label: 'Fleet Inventory' },
         { id: 'promos', label: 'Promo Campaigns' },
-        { id: 'users', label: 'User Accounts' }
+        { id: 'reports', label: 'Smart Reports & AI Insights' }
     ];
     if (isAdmin) {
+        tabsConfig.push({ id: 'users', label: 'User Accounts' });
         tabsConfig.push({ id: 'settings', label: 'Site Settings' });
     }
 
-    // Sub-filters mapping
-    const filteredBookings = bookings.filter(b => subFilter === 'all' || b.status === subFilter);
+    // Bookings filtering, searching, and pagination
+    const baseBookingsList = bookingLogTab === 'active' ? bookings : archivedBookings;
+    const filteredBookings = baseBookingsList.filter(b => {
+        const matchesStatus = subFilter === 'all' || b.status === subFilter;
+        const q = bookingSearch.toLowerCase().trim();
+        const matchesSearch = !q || (
+            (b.user?.name && b.user.name.toLowerCase().includes(q)) ||
+            (b.user?.email && b.user.email.toLowerCase().includes(q)) ||
+            (b.vehicle?.name && b.vehicle.name.toLowerCase().includes(q)) ||
+            (b.pickup_location && b.pickup_location.toLowerCase().includes(q))
+        );
+        return matchesStatus && matchesSearch;
+    });
+
+    const totalBookingPages = Math.max(1, Math.ceil(filteredBookings.length / bookingsPerPage));
+    const currentBookingPage = Math.min(bookingPage, totalBookingPages);
+    const paginatedBookings = filteredBookings.slice((currentBookingPage - 1) * bookingsPerPage, currentBookingPage * bookingsPerPage);
+
     const filteredVehicles = vehicles.filter(v => subFilter === 'all' || v.status === subFilter);
 
     return (
@@ -399,24 +460,47 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                 )}
 
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
-                {!['analytics', 'settings'].includes(activeTab) && (
+                {!['analytics', 'settings', 'calendar', 'reports'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
                     {/* Header Action Section */}
                     <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
                         {/* Sub filters pill tags */}
                         {activeTab === 'bookings' && (
-                            <div className="flex flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-950 p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800/60 max-w-fit transition-colors">
-                                {[
-                                    { k: 'all', l: 'All Bookings' },
-                                    { k: 'pending', l: 'Pending' },
-                                    { k: 'confirmed', l: 'Confirmed' },
-                                    { k: 'completed', l: 'Completed' },
-                                    { k: 'rejected', l: 'Rejected' }
-                                ].map(filter => (
-                                    <button key={filter.k} onClick={() => setSubFilter(filter.k)} className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-855 text-zinc-900 dark:text-white' : 'text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}>
-                                        {filter.l}
+                            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                                {/* Active vs Archived tab toggle */}
+                                <div className="flex bg-zinc-200/80 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-300 dark:border-zinc-800">
+                                    <button 
+                                        onClick={() => { setBookingLogTab('active'); setBookingPage(1); }}
+                                        className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${
+                                            bookingLogTab === 'active' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        Active Log ({bookings.length})
                                     </button>
-                                ))}
+                                    <button 
+                                        onClick={() => { setBookingLogTab('archived'); setBookingPage(1); }}
+                                        className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${
+                                            bookingLogTab === 'archived' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        Archived Records ({archivedBookings.length})
+                                    </button>
+                                </div>
+
+                                {/* Status filter */}
+                                <div className="flex flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800/60 transition-colors">
+                                    {[
+                                        { k: 'all', l: 'All Status' },
+                                        { k: 'pending', l: 'Pending' },
+                                        { k: 'confirmed', l: 'Confirmed' },
+                                        { k: 'completed', l: 'Completed' },
+                                        { k: 'rejected', l: 'Rejected' }
+                                    ].map(filter => (
+                                        <button key={filter.k} onClick={() => { setSubFilter(filter.k); setBookingPage(1); }} className={`px-2.5 py-1 rounded-lg text-[9px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}>
+                                            {filter.l}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
                         {activeTab === 'vehicles' && (
@@ -424,6 +508,8 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                                 {[
                                     { k: 'all', l: 'All Units' },
                                     { k: 'available', l: 'Available' },
+                                    { k: 'reserved', l: 'Reserved' },
+                                    { k: 'rented', l: 'Rented' },
                                     { k: 'maintenance', l: 'Maintenance' },
                                     { k: 'unavailable', l: 'Unavailable' }
                                 ].map(filter => (
@@ -439,11 +525,17 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                             </div>
                         )}
 
-                        {/* Topbar Tab actions */}
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                            <button className="px-3.5 h-9 bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-800 rounded-lg text-xs font-black uppercase text-zinc-650 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer">
-                                Customize Columns
-                            </button>
+                        {/* Search & Actions */}
+                        <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto">
+                            {activeTab === 'bookings' && (
+                                <Input 
+                                    type="text" 
+                                    placeholder="Search customer, vehicle..." 
+                                    value={bookingSearch} 
+                                    onChange={(e) => { setBookingSearch(e.target.value); setBookingPage(1); }}
+                                    className="h-8 text-xs w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                />
+                            )}
                             {activeTab === 'vehicles' && (
                                 <button onClick={openAddVehicle} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
                                     + Add Vehicle
@@ -531,17 +623,24 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                             </thead>
                             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors">
                                 {/* A. BOOKINGS DATA BODY */}
-                                {activeTab === 'bookings' && filteredBookings.map((booking) => (
+                                {activeTab === 'bookings' && paginatedBookings.length === 0 && (
+                                    <tr>
+                                        <td colSpan="8" className="py-8 text-center text-zinc-400 text-xs font-medium">
+                                            No {bookingLogTab} bookings found matching your search or filters.
+                                        </td>
+                                    </tr>
+                                )}
+                                {activeTab === 'bookings' && paginatedBookings.map((booking) => (
                                     <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                         <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
                                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
                                         </td>
                                         <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
                                         <td className="py-3.5 px-4">
-                                            <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user.name}</span>
-                                            <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user.email}</span>
+                                            <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
+                                            <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email}</span>
                                         </td>
-                                        <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">{booking.vehicle.name}</td>
+                                        <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">{booking.vehicle?.name || 'Vehicle'}</td>
                                         <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(booking.total_price).toLocaleString()}</td>
                                         <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{booking.start_date} to {booking.end_date}</td>
                                         <td className="py-3.5 px-4">
@@ -559,14 +658,21 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                                             </span>
                                         </td>
                                         <td className="py-3.5 px-4 text-right space-x-1">
-                                            {booking.status === 'pending' && (
+                                            {bookingLogTab === 'active' ? (
                                                 <>
-                                                    <button onClick={() => handleVerifyBooking(booking.id, 'confirm')} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Confirm</button>
-                                                    <button onClick={() => handleVerifyBooking(booking.id, 'reject')} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Reject</button>
+                                                    {booking.status === 'pending' && (
+                                                        <>
+                                                            <button onClick={() => handleVerifyBooking(booking.id, 'confirm')} className="px-2 py-0.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Confirm</button>
+                                                            <button onClick={() => handleVerifyBooking(booking.id, 'reject')} className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Reject</button>
+                                                        </>
+                                                    )}
+                                                    {booking.status === 'confirmed' && (
+                                                        <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2 py-0.5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
+                                                    )}
+                                                    <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
                                                 </>
-                                            )}
-                                            {booking.status === 'confirmed' && (
-                                                <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2.5 py-1 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
+                                            ) : (
+                                                <button onClick={() => handleRestoreBooking(booking.id)} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Restore Record</button>
                                             )}
                                         </td>
                                     </tr>
@@ -625,11 +731,15 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                                         <td className="py-3.5 px-4">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
                                                 vehicle.status === 'available' ? 'text-green-600 dark:text-green-500' :
+                                                vehicle.status === 'reserved' ? 'text-blue-600 dark:text-blue-400' :
+                                                vehicle.status === 'rented' ? 'text-purple-600 dark:text-purple-400' :
                                                 vehicle.status === 'maintenance' ? 'text-amber-600 dark:text-amber-500' : 'text-rose-600 dark:text-rose-500'
                                             }`}>
                                                 <span className={`h-1.5 w-1.5 rounded-full ${
                                                     vehicle.status === 'available' ? 'bg-green-600 dark:bg-green-500' :
-                                                    vehicle.status === 'maintenance' ? 'bg-amber-605 dark:bg-amber-500' : 'bg-rose-606 dark:bg-rose-500'
+                                                    vehicle.status === 'reserved' ? 'bg-blue-600 dark:bg-blue-400' :
+                                                    vehicle.status === 'rented' ? 'bg-purple-600 dark:bg-purple-400' :
+                                                    vehicle.status === 'maintenance' ? 'bg-amber-600 dark:bg-amber-500' : 'bg-rose-600 dark:bg-rose-500'
                                                 }`}></span>
                                                 {vehicle.status}
                                             </span>
@@ -715,11 +825,47 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Footer for Bookings */}
+                    {activeTab === 'bookings' && totalBookingPages > 1 && (
+                        <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
+                            <span className="text-xs text-zinc-500 font-medium">
+                                Page {currentBookingPage} of {totalBookingPages} ({filteredBookings.length} total records)
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setBookingPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentBookingPage === 1}
+                                    className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => setBookingPage(prev => Math.min(totalBookingPages, prev + 1))}
+                                    disabled={currentBookingPage === totalBookingPages}
+                                    className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
+            {activeTab === 'reports' && (
+                <SmartReportsDashboard 
+                    stats={stats} 
+                    vehicles={vehicles} 
+                    bookings={bookings} 
+                    documents={documents} 
+                    isAdmin={isAdmin} 
+                />
+            )}
+
                 {isAdmin && activeTab === 'settings' && (
-                    <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left max-w-2xl mx-auto">
+                    <div className="space-y-6 max-w-2xl mx-auto">
+                        <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left">
                         <CardHeader className="px-6 pt-5 pb-3">
                             <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Site & Branding Settings</CardTitle>
                             <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
@@ -833,7 +979,66 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                             </CardFooter>
                         </form>
                     </Card>
-                )}
+
+                    {/* Administrator Password Change Section */}
+                    <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left max-w-2xl mx-auto mt-6">
+                        <CardHeader className="px-6 pt-5 pb-3">
+                            <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Administrator Security</CardTitle>
+                            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                Update your administrative login credentials to maintain secure system access.
+                            </CardDescription>
+                        </CardHeader>
+                        <form onSubmit={submitPasswordChange}>
+                            <CardContent className="space-y-4 px-6">
+                                <div>
+                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Current Password</label>
+                                    <Input 
+                                        type="password"
+                                        value={passwordForm.data.current_password} 
+                                        onChange={e => passwordForm.setData('current_password', e.target.value)} 
+                                        required 
+                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                    />
+                                    {passwordForm.errors.current_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.current_password}</p>}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">New Password</label>
+                                        <Input 
+                                            type="password"
+                                            value={passwordForm.data.new_password} 
+                                            onChange={e => passwordForm.setData('new_password', e.target.value)} 
+                                            required 
+                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                        />
+                                        {passwordForm.errors.new_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Confirm New Password</label>
+                                        <Input 
+                                            type="password"
+                                            value={passwordForm.data.new_password_confirmation} 
+                                            onChange={e => passwordForm.setData('new_password_confirmation', e.target.value)} 
+                                            required 
+                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                        />
+                                        {passwordForm.errors.new_password_confirmation && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password_confirmation}</p>}
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                <Button 
+                                    type="submit" 
+                                    disabled={passwordForm.processing} 
+                                    className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer"
+                                >
+                                    {passwordForm.processing ? 'Updating Password...' : 'Update Password'}
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Card>
+                </div>
+            )}
             </div>
 
             {/* Rejecting ID Details reason Modal Dialog */}
@@ -943,6 +1148,8 @@ export default function Dashboard({ auth, stats, bookings = [], vehicles = [], p
                                     <label className="block text-[10px] font-black text-zinc-550 dark:text-zinc-400 uppercase tracking-wider mb-1">Availability Status</label>
                                     <select className="w-full text-xs p-2 h-9 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-805 text-zinc-900 dark:text-zinc-100" value={vehicleForm.data.status} onChange={e => vehicleForm.setData('status', e.target.value)}>
                                         <option value="available">Available</option>
+                                        <option value="reserved">Reserved</option>
+                                        <option value="rented">Rented</option>
                                         <option value="maintenance">Maintenance</option>
                                         <option value="unavailable">Unavailable</option>
                                     </select>

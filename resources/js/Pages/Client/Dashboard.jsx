@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { Head, useForm, router } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
+import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
 
 export default function Dashboard({ auth, bookings = [], vehicles = [], documents = [], addOns = [], promos = [], selectedVehicleId = null }) {
     const [selectedType, setSelectedType] = useState('All');
@@ -17,9 +18,16 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         vehicle_id: selectedVehicleId || '',
         start_datetime: '',
         end_datetime: '',
-        pickup_location: 'Sto Tomas',
-        payment_method: 'cod',
+        pickup_location: 'Sto Tomas Hub',
+        payment_method: 'cash',
         promo_code: '',
+    });
+
+    // Identity update form
+    const identityForm = useForm({
+        drivers_license_number: auth.user.drivers_license_number || '',
+        id_number: auth.user.id_number || '',
+        id_type: auth.user.id_type || 'Passport',
     });
 
     // Upload document form
@@ -106,6 +114,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                 reset();
                 setDaysCount(0);
             }
+        });
+    };
+
+    const handleIdentitySubmit = (e) => {
+        e.preventDefault();
+        identityForm.post(route('client.identity.update'), {
+            preserveScroll: true,
         });
     };
 
@@ -207,7 +222,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         >
             <Head title="Renter Workspace | ELFAA CAR RENTAL" />
 
-            <div className="space-y-8 select-none text-zinc-700 dark:text-zinc-300">
+            <div className="space-y-8 text-zinc-700 dark:text-zinc-300">
                 {/* FLEET FILTERS (Vehicle type and Seats capacity) */}
                 <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-xl shadow-md transition-colors text-left">
                     <div className="flex-1">
@@ -223,7 +238,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         </select>
                     </div>
                     <div className="flex-1">
-                        <label className="block text-[10px] font-black text-zinc-550 dark:text-zinc-505 uppercase tracking-wider mb-1.5">Filter Seating Capacity</label>
+                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Filter Seating Capacity</label>
                         <select
                             value={selectedSeats}
                             onChange={(e) => setSelectedSeats(e.target.value)}
@@ -246,13 +261,76 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                     <span className={`text-lg ${allDocsVerified ? 'text-green-500' : 'text-amber-500'}`}>
                                         {allDocsVerified ? '✓' : '⚠'}
                                     </span>
-                                    Identity Validation Hub
+                                    Identity & Credentials Hub
                                 </CardTitle>
                                 <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                    Submit your credentials below. Access is authorized immediately upon administrator approval.
+                                    Manage your driver's license, identity numbers, and document uploads for rental authorization.
                                 </CardDescription>
                             </CardHeader>
+
                             <CardContent className="space-y-6 px-6 pb-6">
+                                {/* Identity Numbers Form */}
+                                <form onSubmit={handleIdentitySubmit} className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 text-left space-y-4">
+                                    <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">
+                                        Identity Details
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1">
+                                                Driver's License Number
+                                            </label>
+                                            <Input
+                                                type="text"
+                                                placeholder="N01-12-345678"
+                                                value={identityForm.data.drivers_license_number}
+                                                onChange={(e) => identityForm.setData('drivers_license_number', e.target.value)}
+                                                className="h-9 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1">
+                                                Gov ID Type
+                                            </label>
+                                            <select
+                                                value={identityForm.data.id_type}
+                                                onChange={(e) => identityForm.setData('id_type', e.target.value)}
+                                                className="w-full h-9 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0"
+                                            >
+                                                <option value="Passport">Passport</option>
+                                                <option value="UMID">UMID</option>
+                                                <option value="SSS">SSS ID</option>
+                                                <option value="PhilHealth">PhilHealth ID</option>
+                                                <option value="National ID">National ID (PhilSys)</option>
+                                                <option value="Voter ID">Voter ID</option>
+                                                <option value="Other">Other Government ID</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1">
+                                                Gov ID Number
+                                            </label>
+                                            <Input
+                                                type="text"
+                                                placeholder="ID Number"
+                                                value={identityForm.data.id_number}
+                                                onChange={(e) => identityForm.setData('id_number', e.target.value)}
+                                                className="h-9 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end pt-1">
+                                        <Button
+                                            type="submit"
+                                            disabled={identityForm.processing}
+                                            size="sm"
+                                            className="bg-[#FF3B30] hover:bg-red-700 text-white font-bold text-xs"
+                                        >
+                                            {identityForm.processing ? 'Saving...' : 'Save Identity Info'}
+                                        </Button>
+                                    </div>
+                                </form>
+
+                                {/* Document Upload Statuses */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {[
                                         { title: "Driver's License (Gov ID 1)", status: govId1 },
@@ -260,9 +338,9 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         { title: "Proof of Billing Address", status: billingProof }
                                     ].map((docMeta, idx) => (
                                         <div key={idx} className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 flex flex-col justify-between h-20 transition-colors">
-                                            <span className="text-[10px] uppercase font-black text-zinc-450 dark:text-zinc-50 tracking-wider">{docMeta.title}</span>
+                                            <span className="text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400 tracking-wider">{docMeta.title}</span>
                                             <div className="flex items-center justify-between mt-1">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-105 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${docMeta.status.textClass}`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${docMeta.status.textClass}`}>
                                                     <span className={`h-1.5 w-1.5 rounded-full ${docMeta.status.dotClass}`} />
                                                     {docMeta.status.label}
                                                 </span>
@@ -283,7 +361,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         <select 
                                             value={docType}
                                             onChange={(e) => setDocType(e.target.value)}
-                                            className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-red-650 focus:ring-red-650 focus:outline-none transition-colors"
+                                            className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0 focus:outline-none transition-colors"
                                         >
                                             <option value="gov_id_1">Driver's License (Gov ID 1)</option>
                                             <option value="gov_id_2">Second Official ID (Gov ID 2)</option>
@@ -297,13 +375,14 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             type="file" 
                                             accept="image/*,.pdf"
                                             onChange={(e) => setDocFile(e.target.files[0])}
-                                            className="h-10 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-805 text-zinc-900 dark:text-white py-1.5 focus:border-[#FF3B30]"
+                                            className="h-10 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white py-1.5 focus:border-[#FF3B30]"
                                         />
                                     </div>
-                                    <button type="submit" disabled={uploadingDoc} className="w-full md:w-auto h-10 px-5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-lg border border-zinc-808 dark:border-transparent font-black text-xs uppercase tracking-wider hover:bg-zinc-800 dark:hover:bg-zinc-150 transition-colors disabled:opacity-50 cursor-pointer">
-                                        {uploadingDoc ? 'Upload Document' : 'Upload Document'}
+                                    <button type="submit" disabled={uploadingDoc} className="w-full md:w-auto h-10 px-5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-lg border border-zinc-800 dark:border-transparent font-black text-xs uppercase tracking-wider hover:bg-zinc-800 dark:hover:bg-zinc-150 transition-colors disabled:opacity-50 cursor-pointer">
+                                        {uploadingDoc ? 'Uploading...' : 'Upload File'}
                                     </button>
                                 </form>
+                                {uploadError && <p className="text-xs text-red-500 text-left">{uploadError}</p>}
                             </CardContent>
                         </Card>
 
@@ -311,7 +390,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                             {/* LEFT COLUMN: BOOKING FORM */}
                             <div className="lg:col-span-5 space-y-6">
-                                <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-808 shadow-lg rounded-xl overflow-hidden transition-colors">
+                                <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors">
                                     <CardHeader className="px-6 pt-5 pb-3">
                                         <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white text-left">Request a Reservation</CardTitle>
                                         <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs text-left">
@@ -325,7 +404,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 <select 
                                                     value={data.vehicle_id}
                                                     onChange={(e) => setData('vehicle_id', e.target.value)}
-                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-red-650 focus:ring-red-650 focus:outline-none transition-colors"
+                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0 focus:outline-none transition-colors"
                                                     required
                                                 >
                                                     <option value="">-- Choose Car --</option>
@@ -333,8 +412,17 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                         <option key={v.id} value={v.id} className="text-zinc-900 dark:text-white">{v.name} (PHP {parseFloat(v.price_per_day).toLocaleString()}/day)</option>
                                                     ))}
                                                 </select>
-                                                {errors.vehicle_id && <p className="text-xs text-red-500 mt-1">{errors.vehicle_id}</p>}
-                                            </div>
+                                                 {data.vehicle_id && (
+                                                     <div className="mt-3">
+                                                         <CustomerAvailabilityPicker
+                                                             vehicle={vehicles.find(v => v.id.toString() === data.vehicle_id.toString())}
+                                                             startDate={data.start_datetime}
+                                                             endDate={data.end_datetime}
+                                                         />
+                                                     </div>
+                                                 )}
+                                                 {errors.vehicle_id && <p className="text-xs text-red-500 mt-1">{errors.vehicle_id}</p>}
+                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
                                                 <div>
@@ -349,7 +437,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     {errors.start_datetime && <p className="text-xs text-red-500 mt-1">{errors.start_datetime}</p>}
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[10px] font-black text-zinc-550 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Return Date/Time</label>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Return Date/Time</label>
                                                     <Input 
                                                         type="datetime-local" 
                                                         value={data.end_datetime}
@@ -378,7 +466,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 <select 
                                                     value={data.promo_code}
                                                     onChange={(e) => setData('promo_code', e.target.value)}
-                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-[#FF3B30] focus:outline-none transition-colors"
+                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0 focus:outline-none transition-colors"
                                                 >
                                                     <option value="">-- Apply Promo --</option>
                                                     {promos.map(p => (
@@ -393,14 +481,14 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 <div className="grid grid-cols-2 gap-3 mt-1">
                                                     <button 
                                                         type="button"
-                                                        onClick={() => setData('payment_method', 'cod')}
+                                                        onClick={() => setData('payment_method', 'cash')}
                                                         className={`h-10 border rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center transition-all cursor-pointer ${
-                                                            data.payment_method === 'cod' 
+                                                            data.payment_method === 'cash' 
                                                                 ? 'border-[#FF3B30] bg-red-500/10 text-zinc-900 dark:text-white shadow-sm'
                                                                 : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-400'
                                                         }`}
                                                     >
-                                                        COD (Cash)
+                                                        Cash Payment
                                                     </button>
                                                     <button 
                                                         type="button"
@@ -408,7 +496,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                         className={`h-10 border rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center transition-all cursor-pointer ${
                                                             data.payment_method === 'online' 
                                                                 ? 'border-[#FF3B30] bg-red-500/15 text-zinc-900 dark:text-white shadow-sm'
-                                                                : 'border-zinc-250 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-400'
+                                                                : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-400'
                                                         }`}
                                                     >
                                                         Online Pay
@@ -418,10 +506,10 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             </div>
                                         </CardContent>
 
-                                        <CardFooter className="flex flex-col gap-4 border-t border-zinc-200 dark:border-zinc-805/85 px-6 pt-5 pb-5">
+                                        <CardFooter className="flex flex-col gap-4 border-t border-zinc-200 dark:border-zinc-800 px-6 pt-5 pb-5">
                                             {selectedCar && (
                                                 <div className="w-full flex flex-col gap-2 p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                                                    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/80 pb-2">
+                                                    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
                                                         <div className="text-left">
                                                             <span className="block text-xs font-black text-zinc-900 dark:text-white">{selectedCar.name}</span>
                                                             <span className="block text-[10px] text-zinc-500 uppercase tracking-widest">{selectedCar.transmission} • {selectedCar.fuel_type}</span>
@@ -469,7 +557,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
                             {/* RIGHT COLUMN: BOOKINGS LISTING */}
                             <div className="lg:col-span-7 space-y-6">
-                                <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-808 shadow-lg rounded-xl overflow-hidden transition-colors">
+                                <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors">
                                     <CardHeader className="px-6 pt-5 pb-3">
                                         <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white text-left">Your Booking Log</CardTitle>
                                         <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs text-left">
@@ -489,7 +577,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     const currentStatus = getStatusBadge(booking.status);
 
                                                     return (
-                                                        <div key={booking.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-850/80 bg-zinc-50/50 dark:bg-zinc-950/40 hover:border-zinc-300 dark:hover:border-zinc-800 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+                                                        <div key={booking.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 hover:border-zinc-300 dark:hover:border-zinc-800 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
                                                             <div className="space-y-1.5 flex-1 min-w-0">
                                                                 <div className="flex items-center justify-between md:justify-start gap-4">
                                                                     <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white truncate">{booking.vehicle?.name || 'Unknown fleet'}</h4>
@@ -498,13 +586,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                         {currentStatus.label}
                                                                     </span>
                                                                 </div>
-                                                                <div className="text-[11px] text-zinc-650 dark:text-zinc-450 font-semibold space-y-0.5">
+                                                                <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold space-y-0.5">
                                                                     <span className="block">Pickup: {startStr}</span>
                                                                     <span className="block">Return: {endStr}</span>
                                                                     <span className="block">Depot: <span className="text-zinc-700 dark:text-zinc-300">{booking.pickup_location}</span></span>
                                                                 </div>
                                                                 <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 pt-0.5">
-                                                                    Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-520 font-extrabold">{booking.payment_method}</span>
+                                                                    Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-600 font-extrabold">{booking.payment_method}</span>
                                                                 </div>
                                                             </div>
 
@@ -530,7 +618,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                         <div className="text-amber-500 text-xs font-black">
                                                                             {'★'.repeat(booking.rating.stars)}{'☆'.repeat(5 - booking.rating.stars)}
                                                                         </div>
-                                                                        <p className="text-[10px] text-zinc-550 dark:text-zinc-500 italic max-w-[150px] truncate" title={booking.rating.comment}>
+                                                                        <p className="text-[10px] text-zinc-500 dark:text-zinc-500 italic max-w-[150px] truncate" title={booking.rating.comment}>
                                                                             "{booking.rating.comment || 'No comment'}"
                                                                         </p>
                                                                     </div>
@@ -560,11 +648,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                             </CardHeader>
                             <CardContent className="px-6 pb-6">
                                 {filteredVehicles.length === 0 ? (
-                                    <p className="text-center py-12 text-zinc-550 dark:text-zinc-440 text-xs font-medium">No vehicles matching selected vehicle filters.</p>
+                                    <p className="text-center py-12 text-zinc-500 dark:text-zinc-400 text-xs font-medium">No vehicles matching selected vehicle filters.</p>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                         {filteredVehicles.map((car) => (
-                                            <Card key={car.id} className="overflow-hidden bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 flex flex-col justify-between text-zinc-900 dark:text-white text-left transition-colors">
+                                            <Card key={car.id} className="overflow-hidden bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between text-zinc-900 dark:text-white text-left transition-colors">
                                                 <div>
                                                     <div className="h-44 overflow-hidden relative bg-zinc-100 dark:bg-zinc-900">
                                                         <img 
@@ -579,11 +667,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
                                                     <CardHeader className="pb-2">
                                                         <CardTitle className="text-md font-bold">{car.name}</CardTitle>
-                                                        <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">{car.meetup_location || 'Elfaa Hub'}</CardDescription>
+                                                        <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">{car.meetup_location || 'ELFAA Hub'}</CardDescription>
                                                     </CardHeader>
 
                                                     <CardContent className="space-y-4">
-                                                        <div className="grid grid-cols-3 gap-2 py-2 text-center text-[10px] uppercase font-bold bg-zinc-150 dark:bg-zinc-900/50 rounded-lg text-zinc-650 dark:text-zinc-400">
+                                                        <div className="grid grid-cols-3 gap-2 py-2 text-center text-[10px] uppercase font-bold bg-zinc-100 dark:bg-zinc-900/50 rounded-lg text-zinc-600 dark:text-zinc-400">
                                                             <div>
                                                                 <span className="block font-black text-zinc-900 dark:text-zinc-200">{car.seats}</span>
                                                                 Seats
@@ -598,11 +686,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                             </div>
                                                         </div>
 
-                                                        <p className="text-xs text-zinc-550 dark:text-zinc-400 line-clamp-2">{car.description}</p>
+                                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{car.description}</p>
                                                     </CardContent>
                                                 </div>
 
-                                                <CardFooter className="flex items-center justify-between pt-4 bg-zinc-100/55 dark:bg-zinc-900/40 border-t border-zinc-200 dark:border-zinc-808/80">
+                                                <CardFooter className="flex items-center justify-between pt-4 bg-zinc-100/50 dark:bg-zinc-900/40 border-t border-zinc-200 dark:border-zinc-800">
                                                     <div>
                                                         <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Rate/day</div>
                                                         <div className="text-sm font-black text-[#FF3B30]">
@@ -644,11 +732,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                             </CardHeader>
                             <CardContent className="px-6 pb-6">
                                 {promos.length === 0 ? (
-                                    <p className="text-center py-12 text-zinc-550 dark:text-zinc-440 text-xs font-medium">No active promo campaigns currently.</p>
+                                    <p className="text-center py-12 text-zinc-500 dark:text-zinc-400 text-xs font-medium">No active promo campaigns currently.</p>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {promos.map((promo) => (
-                                            <Card key={promo.id} className="overflow-hidden bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 flex flex-col md:flex-row text-zinc-905 dark:text-white text-left transition-colors">
+                                            <Card key={promo.id} className="overflow-hidden bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row text-zinc-900 dark:text-white text-left transition-colors">
                                                 {promo.image_url && (
                                                     <div className="w-full md:w-2/5 h-40 md:h-auto overflow-hidden relative">
                                                         <img 
@@ -667,8 +755,8 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{promo.description}</p>
                                                     </div>
                                                     {promo.promo_code && (
-                                                        <div className="pt-2 border-t border-zinc-200 dark:border-zinc-850 flex items-center justify-between">
-                                                            <div className="text-[10px] text-zinc-450 dark:text-zinc-500 font-bold uppercase tracking-wider">
+                                                        <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                                                            <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
                                                                 Code: <code className="bg-zinc-200 dark:bg-zinc-900 px-2 py-0.5 rounded text-zinc-900 dark:text-white font-mono font-bold text-xs">{promo.promo_code}</code>
                                                             </div>
                                                         </div>
@@ -682,15 +770,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         </Card>
                     </div>
                 )}
-
-
             </div>
 
             {/* LEAVE REVIEW DIALOG */}
             {ratingBooking && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRatingBooking(null)} />
-                    <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-808 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl text-left transition-colors animate-in fade-in zoom-in-95 duration-200">
+                    <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl text-left transition-colors animate-in fade-in zoom-in-95 duration-200">
                         <h2 className="font-extrabold text-lg">Leave a Review</h2>
                         <form onSubmit={handleRatingSubmit} className="space-y-4 mt-4">
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -714,10 +800,10 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black text-zinc-550 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Review Comment</label>
+                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Review Comment</label>
                                 <textarea 
                                     rows="3"
-                                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 p-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-red-650"
+                                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF3B30]"
                                     placeholder="Write your review here..."
                                     value={ratingComment}
                                     onChange={(e) => setRatingComment(e.target.value)}
@@ -725,7 +811,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-850">
+                            <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                                 <Button type="button" variant="ghost" onClick={() => setRatingBooking(null)}>
                                     Cancel
                                 </Button>
