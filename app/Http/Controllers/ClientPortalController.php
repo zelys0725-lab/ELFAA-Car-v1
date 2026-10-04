@@ -29,7 +29,7 @@ class ClientPortalController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $vehicles = Vehicle::where('status', 'available')->get();
+        $vehicles = Vehicle::whereIn('status', ['available', 'rented', 'reserved'])->get();
         $documents = Document::where('user_id', $user->id)->get();
         $addOns = ExtraGood::where('status', 'available')->get();
         $promos = \App\Models\Promo::where('status', 'active')->get();
@@ -51,7 +51,7 @@ class ClientPortalController extends Controller
     {
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
-            'start_datetime' => 'required|date|after_or_equal:now',
+            'start_datetime' => 'required|date',
             'end_datetime' => 'required|date|after:start_datetime',
             'pickup_location' => 'required|string|max:255',
             'payment_method' => 'required|in:cash,online',
@@ -108,7 +108,9 @@ class ClientPortalController extends Controller
         $totalPrice = $originalPrice - $discountAmount;
 
         // Create booking
-        Booking::create([
+        $paymentStatus = $request->payment_method === 'online' ? 'pending_verification' : 'unpaid';
+
+        $booking = Booking::create([
             'user_id' => Auth::id(),
             'vehicle_id' => $vehicleId,
             'start_datetime' => $startCarbon,
@@ -119,10 +121,56 @@ class ClientPortalController extends Controller
             'discount_amount' => $discountAmount,
             'total_price' => $totalPrice,
             'payment_method' => $request->payment_method,
+            'payment_status' => $paymentStatus,
+            'payment_reference' => $request->payment_reference,
             'status' => 'pending',
         ]);
 
+        if ($request->hasFile('payment_proof')) {
+            $file = $request->file('payment_proof');
+            $filename = 'pay_' . $booking->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/payments');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            $file->move($destinationPath, $filename);
+            $booking->update([
+                'payment_proof_path' => '/uploads/payments/' . $filename,
+            ]);
+        }
+
         return redirect()->route('client.dashboard')->with('success', 'Your reservation request was submitted successfully!');
+    }
+
+    /**
+     * Upload or update payment proof for a booking.
+     */
+    public function uploadPaymentProof(Request $request, Booking $booking)
+    {
+        if ($booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'payment_reference' => 'nullable|string|max:100',
+            'payment_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
+        ]);
+
+        $file = $request->file('payment_proof');
+        $filename = 'pay_' . $booking->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $destinationPath = public_path('uploads/payments');
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+        $file->move($destinationPath, $filename);
+
+        $booking->update([
+            'payment_reference' => $request->payment_reference ?: $booking->payment_reference,
+            'payment_proof_path' => '/uploads/payments/' . $filename,
+            'payment_status' => 'pending_verification',
+        ]);
+
+        return back()->with('success', 'Payment proof uploaded successfully.');
     }
 
     /**

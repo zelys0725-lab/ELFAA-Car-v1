@@ -3,6 +3,8 @@ import PortalLayout from '@/Layouts/PortalLayout';
 import { Head, useForm, router } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
 import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
+import VehicleImage from '@/Components/VehicleImage';
+import ElfaaChatbot from '@/Components/ElfaaChatbot';
 
 export default function Dashboard({ auth, bookings = [], vehicles = [], documents = [], addOns = [], promos = [], selectedVehicleId = null }) {
     const [selectedType, setSelectedType] = useState('All');
@@ -824,5 +826,9 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                 </div>
             )}
         </PortalLayout>
+
+        {/* Floating AI Chatbot — booking-aware */}
+        <ElfaaChatbot vehicles={vehicles} promos={promos} addOns={addOns} bookings={bookings} />
+        </>
     );
 }

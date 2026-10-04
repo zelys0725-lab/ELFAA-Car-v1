@@ -117,6 +117,31 @@ export default function Register() {
                     />
 
                     <InputError message={errors.password} className="mt-2" />
+
+                    {/* Password Requirements List */}
+                    <div className="mt-2 p-3 rounded-lg border text-xs space-y-1.5 bg-gray-50 border-gray-200 dark:bg-gray-900/60 dark:border-gray-800">
+                        <div className="font-bold mb-1 text-gray-500 dark:text-gray-400">Password Requirements:</div>
+                        <div className={`flex items-center gap-1.5 ${data.password.length >= 8 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500'}`}>
+                            <span>{data.password.length >= 8 ? '✓' : '○'}</span>
+                            <span>At least 8 characters long</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(data.password) ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500'}`}>
+                            <span>{/[A-Z]/.test(data.password) ? '✓' : '○'}</span>
+                            <span>At least 1 uppercase letter</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${/[a-z]/.test(data.password) ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500'}`}>
+                            <span>{/[a-z]/.test(data.password) ? '✓' : '○'}</span>
+                            <span>At least 1 lowercase letter</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${/[0-9]/.test(data.password) ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500'}`}>
+                            <span>{/[0-9]/.test(data.password) ? '✓' : '○'}</span>
+                            <span>At least 1 number</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${/[!@#$%^&*(),.?":{}|<>]/.test(data.password) ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500'}`}>
+                            <span>{/[!@#$%^&*(),.?":{}|<>]/.test(data.password) ? '✓' : '○'}</span>
+                            <span>At least 1 special character (!@#$%^&*)</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="mt-4">

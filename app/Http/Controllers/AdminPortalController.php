@@ -196,6 +196,22 @@ class AdminPortalController extends Controller
         return redirect()->route('admin.dashboard')->with('success', "Booking status marked as {$statusMap[$request->action]}.");
     }
 
+    /**
+     * Approve or update payment status of a booking.
+     */
+    public function verifyPayment(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'payment_status' => 'required|in:paid,unpaid,pending_verification,refunded',
+        ]);
+
+        $booking->update([
+            'payment_status' => $request->payment_status,
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', "Payment status updated to {$request->payment_status}.");
+    }
+
     /*
      * ==========================================
      *            VEHICLE FLEET CRUD

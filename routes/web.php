@@ -21,7 +21,7 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
-        'vehicles' => Vehicle::where('status', 'available')->get(),
+        'vehicles' => Vehicle::whereIn('status', ['available', 'rented', 'reserved'])->get(),
         'promos' => Promo::where('status', 'active')->get(),
         'addOns' => ExtraGood::where('status', 'available')->get(),
     ]);
@@ -33,6 +33,7 @@ Route::middleware(['auth', 'nocache', 'role:client'])->prefix('client')->name('c
     Route::post('/bookings', [App\Http\Controllers\ClientPortalController::class, 'storeBooking'])->name('bookings.store');
     Route::post('/bookings/{booking}/cancel', [App\Http\Controllers\ClientPortalController::class, 'cancelBooking'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/rate', [App\Http\Controllers\ClientPortalController::class, 'storeRating'])->name('bookings.rate');
+    Route::post('/bookings/{booking}/payment-proof', [App\Http\Controllers\ClientPortalController::class, 'uploadPaymentProof'])->name('bookings.payment_proof');
     Route::post('/documents', [App\Http\Controllers\ClientPortalController::class, 'storeDocument'])->name('documents.store');
     Route::post('/identity', [App\Http\Controllers\ClientPortalController::class, 'updateIdentityDetails'])->name('identity.update');
 });
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::get('/dashboard', [App\Http\Controllers\AdminPortalController::class, 'dashboard'])->name('dashboard');
     Route::post('/users/{user}/toggle', [App\Http\Controllers\AdminPortalController::class, 'toggleUserStatus'])->name('users.toggle');
     Route::post('/documents/{document}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyDocument'])->name('documents.verify');
+    Route::post('/bookings/{booking}/verify-payment', [App\Http\Controllers\AdminPortalController::class, 'verifyPayment'])->name('bookings.verify_payment');
     Route::post('/bookings/{booking}/archive', [App\Http\Controllers\AdminPortalController::class, 'archiveBooking'])->name('bookings.archive');
     Route::post('/bookings/{booking}/restore', [App\Http\Controllers\AdminPortalController::class, 'restoreBooking'])->name('bookings.restore');
     

@@ -22,8 +22,12 @@ export default function Register() {
     const [isDarkMode, setIsDarkMode] = useState(true);
 
     const isMinLength = data.password.length >= 8;
-    const isPasswordMatch = data.password.length > 0 && data.password === data.password_confirmation;
-    const isFormValid = isMinLength && isPasswordMatch && data.terms;
+    const hasUpper = /[A-Z]/.test(data.password);
+    const hasLower = /[a-z]/.test(data.password);
+    const hasNumber = /[0-9]/.test(data.password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(data.password);
+    const isPasswordValid = isMinLength && hasUpper && hasLower && hasNumber && hasSpecial;
+    const isFormValid = isPasswordValid && data.password === data.password_confirmation && data.terms;
 
     const submit = (e) => {
         e.preventDefault();
@@ -213,16 +217,28 @@ export default function Register() {
                                 <InputError message={errors.password_confirmation} className="mt-1 text-xs text-[#FF3B30]" />
                             </div>
 
-                            {/* Password Rules Indicators */}
+                             {/* Password Requirements List */}
                             <div className={`p-3 rounded-lg border text-xs space-y-1.5 ${isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-slate-100 border-slate-200'}`}>
                                 <div className="font-bold mb-1 text-zinc-400">Password Requirements:</div>
                                 <div className={`flex items-center gap-1.5 ${isMinLength ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
                                     <span>{isMinLength ? '✓' : '○'}</span>
                                     <span>At least 8 characters long</span>
                                 </div>
-                                <div className={`flex items-center gap-1.5 ${isPasswordMatch ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
-                                    <span>{isPasswordMatch ? '✓' : '○'}</span>
-                                    <span>Passwords match</span>
+                                <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
+                                    <span>{hasUpper ? '✓' : '○'}</span>
+                                    <span>At least 1 uppercase letter</span>
+                                </div>
+                                <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
+                                    <span>{hasLower ? '✓' : '○'}</span>
+                                    <span>At least 1 lowercase letter</span>
+                                </div>
+                                <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
+                                    <span>{hasNumber ? '✓' : '○'}</span>
+                                    <span>At least 1 number</span>
+                                </div>
+                                <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
+                                    <span>{hasSpecial ? '✓' : '○'}</span>
+                                    <span>At least 1 special character</span>
                                 </div>
                             </div>
 

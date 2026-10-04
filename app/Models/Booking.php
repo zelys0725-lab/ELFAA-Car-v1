@@ -19,6 +19,9 @@ class Booking extends Model
         'pickup_location',
         'total_price',
         'payment_method',
+        'payment_status',
+        'payment_reference',
+        'payment_proof_path',
         'status',
         'archived_at',
     ];

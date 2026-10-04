@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/Components/Shadcn';
 import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
+import VehicleImage from '@/Components/VehicleImage';
+import ElfaaChatbot from '@/Components/ElfaaChatbot';
 
 export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] }) {
     const { settings } = usePage().props;
@@ -53,6 +55,7 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
     const currentYear = new Date().getFullYear();
 
     return (
+        <>
         <div 
             className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 font-sans selection:bg-[#FF3B30] selection:text-white"
             onContextMenu={(e) => {
@@ -282,16 +285,19 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                             <Card key={vehicle.id} className="overflow-hidden hover:shadow-lg transition-transform duration-300 flex flex-col justify-between bg-white border border-gray-200 dark:border-gray-800 dark:bg-gray-950 text-gray-900 dark:text-white">
                                 <div>
                                     <div 
-                                        className="h-48 overflow-hidden relative bg-gray-100 dark:bg-gray-900 cursor-pointer group"
-                                        onClick={() => setLightboxImage(vehicle.images?.[0] || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200')}
-                                        title="Click to expand vehicle photo"
+                                        className="h-48 overflow-hidden relative bg-slate-100 dark:bg-slate-900 cursor-pointer group"
+                                        onClick={() => {
+                                            const firstImg = Array.isArray(vehicle.images) ? vehicle.images[0] : vehicle.images;
+                                            if (firstImg) setLightboxImage(firstImg);
+                                        }}
+                                        title="Click to view vehicle photo"
                                     >
-                                        <img 
-                                            src={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800'} 
-                                            alt={vehicle.name} 
+                                        <VehicleImage 
+                                            images={vehicle.images} 
+                                            name={vehicle.name} 
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
-                                        <Badge className="absolute top-3 right-3 bg-[#FF3B30] text-white uppercase font-bold tracking-wider">
+                                        <Badge className="absolute top-3 right-3 bg-[#FF3B30] text-white uppercase font-bold tracking-wider shadow-sm">
                                             {vehicle.type}
                                         </Badge>
                                     </div>
@@ -509,5 +515,9 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                 </div>
             )}
         </div>
+
+        {/* Floating AI Chatbot */}
+        <ElfaaChatbot vehicles={vehicles} promos={promos} addOns={addOns} />
+        </>
     );
 }

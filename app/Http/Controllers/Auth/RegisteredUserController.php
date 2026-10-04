@@ -36,7 +36,7 @@ class RegisteredUserController extends Controller
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'phone' => 'required|string|max:20',
             'drivers_license_number' => 'nullable|string|max:50',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()->min(8)],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'terms' => 'required|accepted',
         ], [
             'terms.accepted' => 'You must agree to the Terms and Conditions to create an account.',
