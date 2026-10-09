@@ -4,8 +4,11 @@ import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
 import VehicleCalendar from '@/Components/VehicleCalendar';
 import SmartReportsDashboard from '@/Components/SmartReportsDashboard';
+import DailyRentalSchedule from '@/Components/DailyRentalSchedule';
+import BillRecordsManager from '@/Components/BillRecordsManager';
+import VehicleProfitAnalytics from '@/Components/VehicleProfitAnalytics';
 
-export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [] }) {
+export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [] }) {
     const isAdmin = auth.user.role === 'admin';
     const { settings } = usePage().props;
     const [activeTab, setActiveTab] = useState('analytics');
@@ -285,12 +288,15 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     // Sidebar Config
     const tabsConfig = [
         { id: 'analytics', label: 'Dashboard' },
+        { id: 'daily_schedule', label: 'Daily Rental Schedule' },
         { id: 'calendar', label: 'Availability Calendar' },
         { id: 'bookings', label: 'Bookings Log' },
         { id: 'verifications', label: 'Identity Verifications' },
+        { id: 'bill_records', label: 'Utility & Bill Records' },
         { id: 'vehicles', label: 'Fleet Inventory' },
         { id: 'promos', label: 'Promo Campaigns' },
-        { id: 'reports', label: 'Smart Reports & AI Insights' }
+        { id: 'reports', label: 'Smart Reports & AI Insights' },
+        { id: 'profit_analytics', label: 'Per-Car Profit Analytics' }
     ];
     if (isAdmin) {
         tabsConfig.push({ id: 'users', label: 'User Accounts' });
@@ -460,7 +466,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 )}
 
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
-                {!['analytics', 'settings', 'calendar', 'reports'].includes(activeTab) && (
+                {!['analytics', 'settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
                     {/* Header Action Section */}
                     <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
@@ -861,6 +867,22 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     documents={documents} 
                     isAdmin={isAdmin} 
                 />
+            )}
+
+            {activeTab === 'calendar' && (
+                <VehicleCalendar vehicles={vehicles} isAdmin={isAdmin} />
+            )}
+
+            {activeTab === 'daily_schedule' && (
+                <DailyRentalSchedule vehicles={vehicles} bookings={bookings} />
+            )}
+
+            {activeTab === 'bill_records' && (
+                <BillRecordsManager billRecords={billRecords} showConfirm={showConfirm} />
+            )}
+
+            {activeTab === 'profit_analytics' && (
+                <VehicleProfitAnalytics vehicles={vehicles} />
             )}
 
                 {isAdmin && activeTab === 'settings' && (

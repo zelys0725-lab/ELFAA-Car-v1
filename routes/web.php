@@ -65,6 +65,16 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/extra-goods/{extraGood}', [App\Http\Controllers\AdminPortalController::class, 'updateExtraGood'])->name('extra-goods.update');
     Route::post('/extra-goods/{extraGood}/destroy', [App\Http\Controllers\AdminPortalController::class, 'deleteExtraGood'])->name('extra-goods.destroy');
 
+    // Bill Records CRUD
+    Route::post('/bill-records', [App\Http\Controllers\AdminPortalController::class, 'storeBillRecord'])->name('bill_records.store');
+    Route::post('/bill-records/{billRecord}', [App\Http\Controllers\AdminPortalController::class, 'updateBillRecord'])->name('bill_records.update');
+    Route::post('/bill-records/{billRecord}/destroy', [App\Http\Controllers\AdminPortalController::class, 'deleteBillRecord'])->name('bill_records.destroy');
+
+    // Vehicle Profit Analytics API
+    Route::get('/vehicle-analytics', [App\Http\Controllers\AdminPortalController::class, 'vehicleProfitAnalytics'])->name('vehicle_analytics.index');
+    Route::post('/vehicle-expenses', [App\Http\Controllers\AdminPortalController::class, 'storeVehicleExpense'])->name('vehicle_expenses.store');
+    Route::post('/vehicle-expenses/{vehicleExpense}/destroy', [App\Http\Controllers\AdminPortalController::class, 'destroyVehicleExpense'])->name('vehicle_expenses.destroy');
+
     // Site Settings Configurations
     Route::post('/settings', [App\Http\Controllers\AdminPortalController::class, 'updateSettings'])->name('settings.update');
 

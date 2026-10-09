@@ -20,7 +20,10 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         vehicle_id: selectedVehicleId || '',
         start_datetime: '',
         end_datetime: '',
-        pickup_location: 'Sto Tomas Hub',
+        pickup_location: 'Main Garage / HQ (Mercedes Homes Padre Pio, Sto. Tomas)',
+        custom_pickup_address: '',
+        dropoff_location: 'Main Garage / HQ (Mercedes Homes Padre Pio, Sto. Tomas)',
+        custom_dropoff_address: '',
         payment_method: 'cash',
         promo_code: '',
     });
@@ -59,8 +62,18 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         }
     }, [data.vehicle_id, vehicles]);
 
-    // Realtime pricing calculations with promos
+    const standardHubs = [
+        'Main Garage / HQ (Mercedes Homes Padre Pio, Sto. Tomas)',
+        'SM City Santo Tomas',
+        'Victory Mall Tanauan',
+        'SM City Calamba',
+        'Custom Address / Out-of-Service Zone',
+    ];
+
+    // Realtime pricing calculations with location fees & promos
     const [originalPrice, setOriginalPrice] = useState(0);
+    const [locationFee, setLocationFee] = useState(0);
+    const [isOutOfBounds, setIsOutOfBounds] = useState(false);
     const [discountAmount, setDiscountAmount] = useState(0);
     const [finalPrice, setFinalPrice] = useState(0);
 
@@ -82,6 +95,35 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     }, [data.start_datetime, data.end_datetime]);
 
     useEffect(() => {
+        let locFee = 0;
+        let outOfBounds = false;
+
+        const effectivePickup = data.pickup_location === 'Custom Address / Out-of-Service Zone' 
+            ? data.custom_pickup_address 
+            : data.pickup_location;
+        const effectiveDropoff = data.dropoff_location === 'Custom Address / Out-of-Service Zone' 
+            ? data.custom_dropoff_address 
+            : data.dropoff_location;
+
+        if (data.pickup_location === 'Custom Address / Out-of-Service Zone' || (effectivePickup && !standardHubs.slice(0, 4).includes(effectivePickup))) {
+            locFee += 500;
+            outOfBounds = true;
+        }
+
+        if (data.dropoff_location === 'Custom Address / Out-of-Service Zone' || (effectiveDropoff && !standardHubs.slice(0, 4).includes(effectiveDropoff))) {
+            if (data.pickup_location !== 'Custom Address / Out-of-Service Zone') {
+                locFee += 500;
+            }
+            outOfBounds = true;
+        }
+
+        if (effectivePickup && effectiveDropoff && effectivePickup !== effectiveDropoff) {
+            locFee += 300;
+        }
+
+        setLocationFee(locFee);
+        setIsOutOfBounds(outOfBounds);
+
         if (selectedCar && daysCount > 0) {
             const orig = daysCount * parseFloat(selectedCar.price_per_day);
             setOriginalPrice(orig);
@@ -98,15 +140,15 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                     }
                 }
             }
-            const finalDisc = Math.min(disc, orig);
+            const finalDisc = Math.min(disc, orig + locFee);
             setDiscountAmount(finalDisc);
-            setFinalPrice(orig - finalDisc);
+            setFinalPrice(Math.max(0, orig + locFee - finalDisc));
         } else {
             setOriginalPrice(0);
             setDiscountAmount(0);
             setFinalPrice(0);
         }
-    }, [selectedCar, daysCount, data.promo_code, promos]);
+    }, [selectedCar, daysCount, data.pickup_location, data.custom_pickup_address, data.dropoff_location, data.custom_dropoff_address, data.promo_code, promos]);
 
     const handleBookingSubmit = (e) => {
         e.preventDefault();
@@ -178,7 +220,10 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     };
 
     const getDocStatus = (type) => {
-        const doc = documents.find(d => d.type === type);
+        let doc = documents.find(d => d.type === type);
+        if (type === 'proof_of_billing' && !doc) {
+            doc = documents.find(d => d.type.startsWith('proof_of_billing'));
+        }
         if (!doc) return { label: 'Missing', textClass: 'text-rose-500', dotClass: 'bg-rose-500', info: null };
         if (doc.status === 'verified') return { label: 'Verified', textClass: 'text-green-500', dotClass: 'bg-green-500', info: doc };
         if (doc.status === 'rejected') return { label: 'Rejected', textClass: 'text-rose-500', dotClass: 'bg-rose-500', info: doc };
@@ -368,7 +413,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         >
                                             <option value="gov_id_1">Driver's License (Gov ID 1)</option>
                                             <option value="gov_id_2">Second Official ID (Gov ID 2)</option>
-                                            <option value="proof_of_billing">Proof of Billing</option>
+                                            <option value="proof_of_billing">Proof of Billing (General)</option>
+                                            <option value="proof_of_billing_electricity">Proof of Billing — Meralco / Electricity Bills</option>
+                                            <option value="proof_of_billing_water">Proof of Billing — Water Bills</option>
+                                            <option value="proof_of_billing_internet">Proof of Billing — Internet Bills</option>
+                                            <option value="proof_of_billing_other">Proof of Billing — Other Recurring Bills</option>
                                         </select>
                                     </div>
                                     <div className="w-full md:w-1/2 text-left">
@@ -452,17 +501,66 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 </div>
                                             </div>
 
-                                            <div className="text-left">
-                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Pickup Meetup Location</label>
-                                                <Input 
-                                                    placeholder="ELFAA Office, Airport Terminal 3, etc." 
+                                            {/* Pickup Location */}
+                                            <div className="text-left space-y-2">
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Pickup Location</label>
+                                                <select 
                                                     value={data.pickup_location}
                                                     onChange={(e) => setData('pickup_location', e.target.value)}
+                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0"
                                                     required
-                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30]"
-                                                />
+                                                >
+                                                    {standardHubs.map((hub, idx) => (
+                                                        <option key={idx} value={hub}>{hub}</option>
+                                                    ))}
+                                                </select>
+                                                {data.pickup_location === 'Custom Address / Out-of-Service Zone' && (
+                                                    <Input 
+                                                        placeholder="Enter complete custom pickup address..."
+                                                        value={data.custom_pickup_address}
+                                                        onChange={(e) => setData('custom_pickup_address', e.target.value)}
+                                                        required
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs mt-1"
+                                                    />
+                                                )}
                                                 {errors.pickup_location && <p className="text-xs text-red-500 mt-1">{errors.pickup_location}</p>}
                                             </div>
+
+                                            {/* Drop-off Location */}
+                                            <div className="text-left space-y-2">
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Drop-off Location</label>
+                                                <select 
+                                                    value={data.dropoff_location}
+                                                    onChange={(e) => setData('dropoff_location', e.target.value)}
+                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0"
+                                                >
+                                                    {standardHubs.map((hub, idx) => (
+                                                        <option key={idx} value={hub}>{hub}</option>
+                                                    ))}
+                                                </select>
+                                                {data.dropoff_location === 'Custom Address / Out-of-Service Zone' && (
+                                                    <Input 
+                                                        placeholder="Enter complete custom drop-off address..."
+                                                        value={data.custom_dropoff_address}
+                                                        onChange={(e) => setData('custom_dropoff_address', e.target.value)}
+                                                        required
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs mt-1"
+                                                    />
+                                                )}
+                                                {errors.dropoff_location && <p className="text-xs text-red-500 mt-1">{errors.dropoff_location}</p>}
+                                            </div>
+
+                                            {/* Out-of-bounds Location Charge Warning Banner */}
+                                            {isOutOfBounds && (
+                                                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1 text-left">
+                                                    <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-extrabold text-xs">
+                                                        ⚠️ Out-of-Service Area Delivery Surcharge
+                                                    </div>
+                                                    <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                                                        Your selected pickup or drop-off location is outside ELFAA's standard hub area. An additional location fee has been calculated.
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             <div className="text-left">
                                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Apply Promo Code</label>
@@ -529,17 +627,23 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                             </div>
                                                             <div className="flex justify-between">
                                                                 <span className="text-zinc-500">Regular Price:</span>
-                                                                <span className="text-zinc-900 dark:text-white">PHP {originalPrice.toLocaleString()}</span>
+                                                                <span className="text-zinc-900 dark:text-white">PHP {originalPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                                             </div>
-                                                            {discountAmount > 0 && (
-                                                                <div className="flex justify-between text-green-600">
-                                                                    <span>Promo Discount ({data.promo_code}):</span>
-                                                                    <span>- PHP {discountAmount.toLocaleString()}</span>
+                                                            {locationFee > 0 && (
+                                                                <div className="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
+                                                                    <span>Additional Location Fee:</span>
+                                                                    <span>+ PHP {locationFee.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                                                 </div>
                                                             )}
-                                                            <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-1 text-xs font-black">
-                                                                <span className="text-zinc-900 dark:text-white">Estimated Total:</span>
-                                                                <span className="text-[#FF3B30]">PHP {finalPrice.toLocaleString()}</span>
+                                                            {discountAmount > 0 && (
+                                                                <div className="flex justify-between text-green-600 font-semibold">
+                                                                    <span>Promo Discount ({data.promo_code}):</span>
+                                                                    <span>- PHP {discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-1.5 text-xs font-black">
+                                                                <span className="text-zinc-900 dark:text-white">Updated Total Price:</span>
+                                                                <span className="text-[#FF3B30]">PHP {finalPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                                             </div>
                                                         </div>
                                                     )}
@@ -590,9 +694,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                     </span>
                                                                 </div>
                                                                 <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold space-y-0.5">
-                                                                    <span className="block">Pickup: {startStr}</span>
-                                                                    <span className="block">Return: {endStr}</span>
-                                                                    <span className="block">Depot: <span className="text-zinc-700 dark:text-zinc-300">{booking.pickup_location}</span></span>
+                                                                    <span className="block">Pickup: {startStr} ({booking.pickup_location})</span>
+                                                                    <span className="block">Return: {endStr} ({booking.dropoff_location || booking.pickup_location})</span>
+                                                                    {parseFloat(booking.location_fee) > 0 && (
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                                                            Includes PHP {parseFloat(booking.location_fee).toLocaleString()} Location Fee {booking.is_out_of_bounds ? '(Out of bounds)' : ''}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 pt-0.5">
                                                                     Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-600 font-extrabold">{booking.payment_method}</span>

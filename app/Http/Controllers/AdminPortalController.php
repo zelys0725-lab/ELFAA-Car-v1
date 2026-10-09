@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Promo;
 use App\Models\ExtraGood;
+use App\Models\BillRecord;
+use App\Models\VehicleExpense;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -114,6 +116,8 @@ class AdminPortalController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $billRecords = BillRecord::orderBy('due_date', 'asc')->get();
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,
             'monthlyEarnings' => $monthlyEarnings,
@@ -126,6 +130,7 @@ class AdminPortalController extends Controller
             'extraGoods' => $extraGoods,
             'documents' => $documents,
             'users' => $users,
+            'billRecords' => $billRecords,
         ]);
     }
 
@@ -524,5 +529,193 @@ class AdminPortalController extends Controller
         ]);
 
         return redirect()->route('admin.dashboard')->with('success', 'Administrator password updated successfully!');
+    }
+
+    /*
+     * ==========================================
+     *             BILL RECORDS CRUD
+     * ==========================================
+     */
+    public function storeBillRecord(Request $request)
+    {
+        $request->validate([
+            'biller_name' => 'required|string|max:255',
+            'bill_category' => 'required|string|max:100',
+            'account_number' => 'nullable|string|max:100',
+            'amount' => 'required|numeric|min:0',
+            'due_date' => 'required|date',
+            'payment_date' => 'nullable|date',
+            'status' => 'required|in:pending,paid,overdue,cancelled',
+            'notes' => 'nullable|string',
+        ]);
+
+        BillRecord::create([
+            'biller_name' => $request->biller_name,
+            'bill_category' => $request->bill_category,
+            'account_number' => $request->account_number,
+            'amount' => $request->amount,
+            'due_date' => $request->due_date,
+            'payment_date' => $request->payment_date,
+            'status' => $request->status,
+            'notes' => $request->notes,
+            'created_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', 'Bill record added successfully!');
+    }
+
+    public function updateBillRecord(Request $request, BillRecord $billRecord)
+    {
+        $request->validate([
+            'biller_name' => 'required|string|max:255',
+            'bill_category' => 'required|string|max:100',
+            'account_number' => 'nullable|string|max:100',
+            'amount' => 'required|numeric|min:0',
+            'due_date' => 'required|date',
+            'payment_date' => 'nullable|date',
+            'status' => 'required|in:pending,paid,overdue,cancelled',
+            'notes' => 'nullable|string',
+        ]);
+
+        $billRecord->update([
+            'biller_name' => $request->biller_name,
+            'bill_category' => $request->bill_category,
+            'account_number' => $request->account_number,
+            'amount' => $request->amount,
+            'due_date' => $request->due_date,
+            'payment_date' => $request->payment_date,
+            'status' => $request->status,
+            'notes' => $request->notes,
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', 'Bill record updated successfully!');
+    }
+
+    public function deleteBillRecord(BillRecord $billRecord)
+    {
+        $billRecord->delete();
+        return redirect()->route('admin.dashboard')->with('success', 'Bill record deleted.');
+    }
+
+    /**
+     * Per-Vehicle Revenue & Profit Analytics (JSON endpoint for filtered requests).
+     */
+    public function vehicleProfitAnalytics(Request $request)
+    {
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+        $vehicleId = $request->input('vehicle_id');
+
+        $vehicleQuery = Vehicle::with(['expenses'])->orderBy('name');
+        if ($vehicleId) {
+            $vehicleQuery->where('id', $vehicleId);
+        }
+        $vehicles = $vehicleQuery->get();
+
+        $analytics = $vehicles->map(function ($vehicle) use ($dateFrom, $dateTo) {
+            $bookingQuery = Booking::where('vehicle_id', $vehicle->id)
+                ->where('status', 'completed');
+
+            if ($dateFrom) {
+                $bookingQuery->whereDate('start_datetime', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $bookingQuery->whereDate('start_datetime', '<=', $dateTo);
+            }
+
+            $completedBookings = $bookingQuery->get();
+
+            $rentalRevenue      = $completedBookings->sum('original_price') ?: $completedBookings->sum('total_price');
+            $locationFeeTotal   = $completedBookings->sum('location_fee');
+            $discountGiven      = $completedBookings->sum('discount_amount');
+            $grossRevenue       = $completedBookings->sum('total_price');
+            $completedCount     = $completedBookings->count();
+
+            $expenseQuery = $vehicle->expenses();
+            if ($dateFrom) {
+                $expenseQuery->whereDate('expense_date', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $expenseQuery->whereDate('expense_date', '<=', $dateTo);
+            }
+            $expenses     = $expenseQuery->get();
+            $totalExpenses = $expenses->sum('amount');
+
+            $purchaseCost = floatval($vehicle->purchase_cost ?? 0);
+            $netProfit    = floatval($grossRevenue) - floatval($totalExpenses);
+
+            $breakEvenStatus = 'in_progress';
+            if ($purchaseCost > 0) {
+                if ($netProfit >= $purchaseCost) {
+                    $breakEvenStatus = 'reached';
+                } elseif ($netProfit < 0) {
+                    $breakEvenStatus = 'loss';
+                }
+            } elseif ($netProfit >= 0) {
+                $breakEvenStatus = 'profitable';
+            } else {
+                $breakEvenStatus = 'loss';
+            }
+
+            return [
+                'id'                  => $vehicle->id,
+                'name'                => $vehicle->name,
+                'plate_number'        => $vehicle->plate_number,
+                'type'                => $vehicle->type,
+                'status'              => $vehicle->status,
+                'purchase_cost'       => $purchaseCost,
+                'price_per_day'       => floatval($vehicle->price_per_day),
+                'completed_rentals'   => $completedCount,
+                'rental_revenue'      => floatval($rentalRevenue),
+                'location_fee_total'  => floatval($locationFeeTotal),
+                'discount_given'      => floatval($discountGiven),
+                'gross_revenue'       => floatval($grossRevenue),
+                'total_expenses'      => floatval($totalExpenses),
+                'net_profit'          => $netProfit,
+                'break_even_status'   => $breakEvenStatus,
+                'expenses'            => $expenses->map(fn($e) => [
+                    'id'           => $e->id,
+                    'expense_type' => $e->expense_type,
+                    'amount'       => floatval($e->amount),
+                    'description'  => $e->description,
+                    'expense_date' => $e->expense_date?->format('Y-m-d'),
+                ]),
+            ];
+        });
+
+        return response()->json(['analytics' => $analytics]);
+    }
+
+    /**
+     * Store a new vehicle expense record.
+     */
+    public function storeVehicleExpense(Request $request)
+    {
+        $request->validate([
+            'vehicle_id'   => 'required|exists:vehicles,id',
+            'expense_type' => 'required|in:maintenance,repair,other',
+            'amount'       => 'required|numeric|min:0',
+            'description'  => 'nullable|string|max:255',
+            'expense_date' => 'required|date',
+        ]);
+
+        VehicleExpense::create([
+            'vehicle_id'   => $request->vehicle_id,
+            'expense_type' => $request->expense_type,
+            'amount'       => $request->amount,
+            'description'  => $request->description,
+            'expense_date' => $request->expense_date,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Expense recorded successfully.']);
+    }
+
+    /**
+     * Delete a vehicle expense record.
+     */
+    public function destroyVehicleExpense(VehicleExpense $vehicleExpense)
+    {
+        $vehicleExpense->delete();
+        return response()->json(['success' => true, 'message' => 'Expense deleted.']);
     }
 }

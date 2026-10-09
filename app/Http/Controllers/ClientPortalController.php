@@ -54,8 +54,10 @@ class ClientPortalController extends Controller
             'start_datetime' => 'required|date',
             'end_datetime' => 'required|date|after:start_datetime',
             'pickup_location' => 'required|string|max:255',
+            'dropoff_location' => 'nullable|string|max:255',
             'payment_method' => 'required|in:cash,online',
             'promo_code' => 'nullable|string|exists:promos,promo_code',
+            'custom_location_fee' => 'nullable|numeric|min:0',
         ]);
 
         $vehicleId = $request->vehicle_id;
@@ -85,6 +87,38 @@ class ClientPortalController extends Controller
         $days = max(1, ceil($hours / 24));
         $originalPrice = $days * $vehicle->price_per_day;
 
+        // Location Pricing & Out-of-Bounds Fee Calculation
+        $pickupLoc = trim($request->pickup_location);
+        $dropoffLoc = trim($request->dropoff_location ?: $pickupLoc);
+        $isOutOfBounds = false;
+        $locationFee = 0.00;
+
+        $standardHubs = [
+            'Main Garage / HQ (Mercedes Homes Padre Pio, Sto. Tomas)',
+            'SM City Santo Tomas',
+            'Victory Mall Tanauan',
+            'SM City Calamba'
+        ];
+
+        if (!in_array($pickupLoc, $standardHubs)) {
+            $isOutOfBounds = true;
+            $locationFee += 500.00;
+        }
+
+        if ($dropoffLoc !== $pickupLoc) {
+            $locationFee += 300.00;
+            if (!in_array($dropoffLoc, $standardHubs)) {
+                $isOutOfBounds = true;
+            }
+        }
+
+        if ($request->filled('custom_location_fee') && is_numeric($request->custom_location_fee)) {
+            $locationFee = (float)$request->custom_location_fee;
+            if ($locationFee > 0) {
+                $isOutOfBounds = true;
+            }
+        }
+
         // Promo Calculations
         $discountAmount = 0.00;
         $promoCode = $request->promo_code;
@@ -100,12 +134,11 @@ class ClientPortalController extends Controller
                 } else {
                     $discountAmount = $promo->discount_value;
                 }
-                // Cap the discount to avoid negative totals
-                $discountAmount = min($discountAmount, $originalPrice);
+                $discountAmount = min($discountAmount, $originalPrice + $locationFee);
             }
         }
 
-        $totalPrice = $originalPrice - $discountAmount;
+        $totalPrice = max(0, $originalPrice + $locationFee - $discountAmount);
 
         // Create booking
         $paymentStatus = $request->payment_method === 'online' ? 'pending_verification' : 'unpaid';
@@ -115,8 +148,11 @@ class ClientPortalController extends Controller
             'vehicle_id' => $vehicleId,
             'start_datetime' => $startCarbon,
             'end_datetime' => $endCarbon,
-            'pickup_location' => $request->pickup_location,
+            'pickup_location' => $pickupLoc,
+            'dropoff_location' => $dropoffLoc,
             'original_price' => $originalPrice,
+            'location_fee' => $locationFee,
+            'is_out_of_bounds' => $isOutOfBounds,
             'promo_code' => $promoCode,
             'discount_amount' => $discountAmount,
             'total_price' => $totalPrice,
@@ -179,7 +215,7 @@ class ClientPortalController extends Controller
     public function storeDocument(Request $request)
     {
         $request->validate([
-            'type' => 'required|in:gov_id_1,gov_id_2,proof_of_billing',
+            'type' => 'required|in:gov_id_1,gov_id_2,proof_of_billing,proof_of_billing_electricity,proof_of_billing_water,proof_of_billing_internet,proof_of_billing_other',
             'file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB limit
         ]);
 

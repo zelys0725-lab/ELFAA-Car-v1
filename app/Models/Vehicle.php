@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Vehicle extends Model
 {
@@ -18,6 +19,7 @@ class Vehicle extends Model
         'transmission',
         'fuel_type',
         'price_per_day',
+        'purchase_cost',
         'description',
         'features',
         'status',
@@ -32,6 +34,7 @@ class Vehicle extends Model
             'features' => 'array',
             'images' => 'array',
             'price_per_day' => 'decimal:2',
+            'purchase_cost' => 'decimal:2',
         ];
     }
 
@@ -43,6 +46,11 @@ class Vehicle extends Model
     public function unavailableDates(): HasMany
     {
         return $this->hasMany(VehicleUnavailableDate::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(VehicleExpense::class);
     }
 
     public function ratings(): HasMany
