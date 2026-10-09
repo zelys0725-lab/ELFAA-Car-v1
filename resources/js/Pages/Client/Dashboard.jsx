@@ -215,7 +215,8 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     ];
 
     return (
-        <PortalLayout 
+        <>
+            <PortalLayout 
             role="client" 
             sidebarTabs={tabsConfig} 
             activeTab={activeTab} 
