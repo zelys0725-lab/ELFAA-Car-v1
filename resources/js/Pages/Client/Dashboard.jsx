@@ -35,11 +35,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         id_type: auth.user.id_type || 'Passport',
     });
 
-    // Upload document form
-    const [docType, setDocType] = useState('gov_id_1');
-    const [docFile, setDocFile] = useState(null);
-    const [uploadingDoc, setUploadingDoc] = useState(false);
-    const [uploadError, setUploadError] = useState('');
+    // Independent upload document forms state
+    const [docFiles, setDocFiles] = useState({});
+    const [uploadErrors, setUploadErrors] = useState({});
+    const [uploadingType, setUploadingType] = useState(null);
+    const [billingTypeChoice, setBillingTypeChoice] = useState('proof_of_billing');
 
     // Unique vehicle types list helper
     const vehicleTypes = ['All', ...new Set(vehicles.map(v => v.type))];
@@ -168,29 +168,36 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         });
     };
 
-    const handleUploadDoc = (e) => {
+    const handleFileChange = (key, file) => {
+        setDocFiles(prev => ({ ...prev, [key]: file }));
+        setUploadErrors(prev => ({ ...prev, [key]: '' }));
+    };
+
+    const handleDirectUpload = (e, actualType) => {
         e.preventDefault();
-        if (!docFile) {
-            setUploadError('Please select a file to upload.');
+        const fileKey = actualType.startsWith('proof_of_billing') ? 'proof_of_billing' : actualType;
+        const targetFile = docFiles[fileKey];
+
+        if (!targetFile) {
+            setUploadErrors(prev => ({ ...prev, [fileKey]: 'Please choose a file to upload.' }));
             return;
         }
 
-        setUploadingDoc(true);
-        setUploadError('');
+        setUploadingType(fileKey);
+        setUploadErrors(prev => ({ ...prev, [fileKey]: '' }));
 
         const formData = new FormData();
-        formData.append('type', docType);
-        formData.append('file', docFile);
+        formData.append('type', actualType);
+        formData.append('file', targetFile);
 
         router.post(route('client.documents.store'), formData, {
             onFinish: () => {
-                setUploadingDoc(false);
-                setDocFile(null);
-                const fileInput = document.getElementById('doc-file-input');
-                if (fileInput) fileInput.value = '';
+                setUploadingType(null);
+                setDocFiles(prev => ({ ...prev, [fileKey]: null }));
             },
             onError: (err) => {
-                setUploadError(err.file || 'Failed to upload document.');
+                setUploadingType(null);
+                setUploadErrors(prev => ({ ...prev, [fileKey]: err.file || 'Failed to upload document.' }));
             }
         });
     };
@@ -378,63 +385,166 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                     </div>
                                 </form>
 
-                                {/* Document Upload Statuses */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {[
-                                        { title: "Driver's License (Gov ID 1)", status: govId1 },
-                                        { title: "Secondary Official Photo ID", status: govId2 },
-                                        { title: "Proof of Billing Address", status: billingProof }
-                                    ].map((docMeta, idx) => (
-                                        <div key={idx} className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 flex flex-col justify-between h-20 transition-colors">
-                                            <span className="text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400 tracking-wider">{docMeta.title}</span>
-                                            <div className="flex items-center justify-between mt-1">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${docMeta.status.textClass}`}>
-                                                    <span className={`h-1.5 w-1.5 rounded-full ${docMeta.status.dotClass}`} />
-                                                    {docMeta.status.label}
+                                {/* Document Upload Grid (3 Separate Dedicated Cards) */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* 1. DRIVER'S LICENSE */}
+                                    <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 flex flex-col justify-between space-y-4 text-left transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider">
+                                                    Driver's License (Gov ID 1)
                                                 </span>
-                                                {docMeta.status.info?.reject_reason && (
-                                                    <span className="text-[10px] text-red-500 font-bold max-w-[150px] truncate" title={docMeta.status.info.reject_reason}>
-                                                        Refusal: {docMeta.status.info.reject_reason}
-                                                    </span>
-                                                )}
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0 ${govId1.textClass}`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${govId1.dotClass}`} />
+                                                    {govId1.label}
+                                                </span>
                                             </div>
+                                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Primary driver identification card.</p>
+                                            {govId1.info?.reject_reason && (
+                                                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-bold">
+                                                    Refusal Reason: {govId1.info.reject_reason}
+                                                </div>
+                                            )}
+                                            {govId1.info?.file_path && (
+                                                <a href={govId1.info.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                    <span>📄</span> View Current Document
+                                                </a>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
 
-                                {/* File Upload action */}
-                                <form onSubmit={handleUploadDoc} className="border-t border-zinc-200 dark:border-zinc-800/80 pt-4 flex flex-col md:flex-row items-end gap-3">
-                                    <div className="w-full md:w-1/3 text-left">
-                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Document Type</label>
-                                        <select 
-                                            value={docType}
-                                            onChange={(e) => setDocType(e.target.value)}
-                                            className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0 focus:outline-none transition-colors"
-                                        >
-                                            <option value="gov_id_1">Driver's License (Gov ID 1)</option>
-                                            <option value="gov_id_2">Second Official ID (Gov ID 2)</option>
-                                            <option value="proof_of_billing">Proof of Billing (General)</option>
-                                            <option value="proof_of_billing_electricity">Proof of Billing — Meralco / Electricity Bills</option>
-                                            <option value="proof_of_billing_water">Proof of Billing — Water Bills</option>
-                                            <option value="proof_of_billing_internet">Proof of Billing — Internet Bills</option>
-                                            <option value="proof_of_billing_other">Proof of Billing — Other Recurring Bills</option>
-                                        </select>
+                                        <form onSubmit={(e) => handleDirectUpload(e, 'gov_id_1')} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                                                    Select License File (JPG, PNG, PDF max 5MB)
+                                                </label>
+                                                <Input 
+                                                    type="file" 
+                                                    accept="image/*,.pdf"
+                                                    onChange={(e) => handleFileChange('gov_id_1', e.target.files[0])}
+                                                    className="h-9 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 py-1"
+                                                />
+                                            </div>
+                                            {uploadErrors['gov_id_1'] && <p className="text-[11px] text-rose-500 font-semibold">{uploadErrors['gov_id_1']}</p>}
+                                            <button 
+                                                type="submit" 
+                                                disabled={uploadingType === 'gov_id_1' || !docFiles['gov_id_1']} 
+                                                className="w-full h-9 bg-[#FF3B30] hover:bg-red-700 text-white rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
+                                            >
+                                                {uploadingType === 'gov_id_1' ? 'Uploading...' : (govId1.info ? 'Replace License' : 'Upload License')}
+                                            </button>
+                                        </form>
                                     </div>
-                                    <div className="w-full md:w-1/2 text-left">
-                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">File Spec (JPG, PNG, PDF max 5MB)</label>
-                                        <Input 
-                                            id="doc-file-input"
-                                            type="file" 
-                                            accept="image/*,.pdf"
-                                            onChange={(e) => setDocFile(e.target.files[0])}
-                                            className="h-10 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white py-1.5 focus:border-[#FF3B30]"
-                                        />
+
+                                    {/* 2. SECONDARY OFFICIAL PHOTO ID */}
+                                    <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 flex flex-col justify-between space-y-4 text-left transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider">
+                                                    Secondary Official Photo ID
+                                                </span>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0 ${govId2.textClass}`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${govId2.dotClass}`} />
+                                                    {govId2.label}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Passport, UMID, Postal, PhilHealth, or National ID.</p>
+                                            {govId2.info?.reject_reason && (
+                                                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-bold">
+                                                    Refusal Reason: {govId2.info.reject_reason}
+                                                </div>
+                                            )}
+                                            {govId2.info?.file_path && (
+                                                <a href={govId2.info.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                    <span>📄</span> View Current Document
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        <form onSubmit={(e) => handleDirectUpload(e, 'gov_id_2')} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                                                    Select Secondary ID File (JPG, PNG, PDF max 5MB)
+                                                </label>
+                                                <Input 
+                                                    type="file" 
+                                                    accept="image/*,.pdf"
+                                                    onChange={(e) => handleFileChange('gov_id_2', e.target.files[0])}
+                                                    className="h-9 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 py-1"
+                                                />
+                                            </div>
+                                            {uploadErrors['gov_id_2'] && <p className="text-[11px] text-rose-500 font-semibold">{uploadErrors['gov_id_2']}</p>}
+                                            <button 
+                                                type="submit" 
+                                                disabled={uploadingType === 'gov_id_2' || !docFiles['gov_id_2']} 
+                                                className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
+                                            >
+                                                {uploadingType === 'gov_id_2' ? 'Uploading...' : (govId2.info ? 'Replace Secondary ID' : 'Upload Secondary ID')}
+                                            </button>
+                                        </form>
                                     </div>
-                                    <button type="submit" disabled={uploadingDoc} className="w-full md:w-auto h-10 px-5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-lg border border-zinc-800 dark:border-transparent font-black text-xs uppercase tracking-wider hover:bg-zinc-800 dark:hover:bg-zinc-150 transition-colors disabled:opacity-50 cursor-pointer">
-                                        {uploadingDoc ? 'Uploading...' : 'Upload File'}
-                                    </button>
-                                </form>
-                                {uploadError && <p className="text-xs text-red-500 text-left">{uploadError}</p>}
+
+                                    {/* 3. PROOF OF BILLING ADDRESS */}
+                                    <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 flex flex-col justify-between space-y-4 text-left transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider">
+                                                    Proof of Billing Address
+                                                </span>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0 ${billingProof.textClass}`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${billingProof.dotClass}`} />
+                                                    {billingProof.label}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Meralco, Water utility, Internet or Bank statement.</p>
+                                            {billingProof.info?.reject_reason && (
+                                                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-bold">
+                                                    Refusal Reason: {billingProof.info.reject_reason}
+                                                </div>
+                                            )}
+                                            {billingProof.info?.file_path && (
+                                                <a href={billingProof.info.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                    <span>📄</span> View Current Document
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        <form onSubmit={(e) => handleDirectUpload(e, billingTypeChoice)} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                                                    Bill Category
+                                                </label>
+                                                <select 
+                                                    value={billingTypeChoice}
+                                                    onChange={(e) => setBillingTypeChoice(e.target.value)}
+                                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-white mb-2 font-medium focus:border-[#FF3B30] focus:ring-0 focus:outline-none transition-colors"
+                                                >
+                                                    <option value="proof_of_billing">General Proof of Billing</option>
+                                                    <option value="proof_of_billing_electricity">Meralco / Electricity Bill</option>
+                                                    <option value="proof_of_billing_water">Water Utility Bill</option>
+                                                    <option value="proof_of_billing_internet">Internet / Fiber Bill</option>
+                                                    <option value="proof_of_billing_other">Other Recurring Statement</option>
+                                                </select>
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                                                    Select Billing File (JPG, PNG, PDF max 5MB)
+                                                </label>
+                                                <Input 
+                                                    type="file" 
+                                                    accept="image/*,.pdf"
+                                                    onChange={(e) => handleFileChange('proof_of_billing', e.target.files[0])}
+                                                    className="h-9 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 py-1"
+                                                />
+                                            </div>
+                                            {uploadErrors['proof_of_billing'] && <p className="text-[11px] text-rose-500 font-semibold">{uploadErrors['proof_of_billing']}</p>}
+                                            <button 
+                                                type="submit" 
+                                                disabled={uploadingType === 'proof_of_billing' || !docFiles['proof_of_billing']} 
+                                                className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
+                                            >
+                                                {uploadingType === 'proof_of_billing' ? 'Uploading...' : (billingProof.info ? 'Replace Billing Proof' : 'Upload Billing Proof')}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
 

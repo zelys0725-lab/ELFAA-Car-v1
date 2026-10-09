@@ -8,6 +8,7 @@ use App\Models\Rating;
 use App\Models\Vehicle;
 use App\Models\ExtraGood;
 use App\Services\AvailabilityService;
+use App\Services\NotificationConfigService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -175,6 +176,19 @@ class ClientPortalController extends Controller
             ]);
         }
 
+        // Trigger dynamic SMTP email notifications and SMS
+        NotificationConfigService::sendBookingNotification($booking, 'booking_created');
+        NotificationConfigService::sendBookingNotification($booking, 'admin_booking_alert');
+
+        if ($user = Auth::user()) {
+            if ($user->phone) {
+                NotificationConfigService::sendSms(
+                    $user->phone,
+                    "ELFAA CAR RENTAL: Thank you for your reservation! Your booking request #{$booking->id} has been submitted successfully."
+                );
+            }
+        }
+
         return redirect()->route('client.dashboard')->with('success', 'Your reservation request was submitted successfully!');
     }
 
@@ -269,6 +283,17 @@ class ClientPortalController extends Controller
         $booking->update([
             'status' => 'cancelled',
         ]);
+
+        NotificationConfigService::sendBookingNotification($booking, 'booking_cancelled');
+
+        if ($user = Auth::user()) {
+            if ($user->phone) {
+                NotificationConfigService::sendSms(
+                    $user->phone,
+                    "ELFAA CAR RENTAL: Your booking #{$booking->id} has been cancelled."
+                );
+            }
+        }
 
         return redirect()->route('client.dashboard')->with('success', 'Booking reservation cancelled successfully.');
     }

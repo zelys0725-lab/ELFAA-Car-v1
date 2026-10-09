@@ -208,4 +208,62 @@ class NotificationConfigService
         $message = "ELFAA CAR RENTAL: Your SMS notification service is working properly! Time: " . now()->format('h:i A, M d');
         return self::sendSms($recipientPhone, $message, $overrides);
     }
+
+    /**
+     * Send booking lifecycle email notification using configured dynamic SMTP settings.
+     */
+    public static function sendBookingNotification($booking, string $type, ?string $reason = null): bool
+    {
+        try {
+            self::applyMailConfig();
+
+            // Ensure vehicle relationship is loaded
+            if (!$booking->relationLoaded('vehicle')) {
+                $booking->load('vehicle');
+            }
+            if (!$booking->relationLoaded('user')) {
+                $booking->load('user');
+            }
+
+            $recipientEmail = $booking->user->email ?? null;
+            if (empty($recipientEmail) && $type !== 'admin_booking_alert') {
+                Log::warning("Cannot send booking email for Booking #{$booking->id}: User email is missing.");
+                return false;
+            }
+
+            $subjects = [
+                'booking_created'     => "🚗 Booking Request Submitted - #{$booking->id}",
+                'booking_approved'    => "✅ Booking Approved & Confirmed! - #{$booking->id}",
+                'booking_confirmed'   => "✅ Booking Approved & Confirmed! - #{$booking->id}",
+                'booking_rejected'    => "❌ Booking Request Update - #{$booking->id}",
+                'booking_cancelled'   => "⚠️ Booking Cancelled - #{$booking->id}",
+                'admin_booking_alert' => "🚨 New Booking Submitted - #{$booking->id}",
+            ];
+
+            $subject = $subjects[$type] ?? "ELFAA Booking Notification - #{$booking->id}";
+            $fromName  = self::getSetting('mail_from_name', 'ELFAA Car Rental');
+            $fromEmail = self::getSetting('mail_from_address', config('mail.from.address', 'no-reply@elfaacar.com'));
+
+            // Send to admin email for admin alerts, customer email for customer notifications
+            $toEmail = ($type === 'admin_booking_alert') 
+                ? self::getSetting('admin_contact_email', $fromEmail)
+                : $recipientEmail;
+
+            Mail::send('emails.booking_notification', [
+                'booking' => $booking,
+                'type'    => $type,
+                'reason'  => $reason,
+            ], function ($message) use ($toEmail, $subject, $fromEmail, $fromName) {
+                $message->to($toEmail)
+                        ->from($fromEmail, $fromName)
+                        ->subject($subject);
+            });
+
+            Log::info("Booking email '{$type}' successfully dispatched for Booking #{$booking->id} to {$toEmail}.");
+            return true;
+        } catch (\Throwable $e) {
+            Log::error("Failed to send booking email notification ('{$type}') for Booking #{$booking->id}: " . $e->getMessage());
+            return false;
+        }
+    }
 }

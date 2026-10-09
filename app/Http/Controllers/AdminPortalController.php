@@ -202,6 +202,7 @@ class AdminPortalController extends Controller
     {
         $request->validate([
             'action' => 'required|in:confirm,reject,complete',
+            'reason' => 'nullable|string|max:255',
         ]);
 
         $statusMap = [
@@ -210,11 +211,27 @@ class AdminPortalController extends Controller
             'complete' => 'completed',
         ];
 
+        $newStatus = $statusMap[$request->action];
+
         $booking->update([
-            'status' => $statusMap[$request->action],
+            'status' => $newStatus,
         ]);
 
-        return redirect()->route('admin.dashboard')->with('success', "Booking status marked as {$statusMap[$request->action]}.");
+        // Trigger dynamic SMTP email and SMS notifications
+        $notificationType = ($request->action === 'confirm') ? 'booking_confirmed' : (($request->action === 'reject') ? 'booking_rejected' : 'booking_approved');
+        NotificationConfigService::sendBookingNotification($booking, $notificationType, $request->reason);
+
+        if ($booking->user && $booking->user->phone) {
+            $smsMsg = match($newStatus) {
+                'confirmed' => "ELFAA CAR RENTAL: Good news! Your booking #{$booking->id} has been CONFIRMED. We look forward to serving you!",
+                'rejected'  => "ELFAA CAR RENTAL: Your booking #{$booking->id} was not approved." . ($request->reason ? " Reason: {$request->reason}" : ''),
+                'completed' => "ELFAA CAR RENTAL: Thank you for choosing ELFAA! Booking #{$booking->id} is now complete.",
+                default     => "ELFAA CAR RENTAL: Your booking #{$booking->id} status has been updated to {$newStatus}."
+            };
+            NotificationConfigService::sendSms($booking->user->phone, $smsMsg);
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', "Booking status marked as {$newStatus}.");
     }
 
     /**

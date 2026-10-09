@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ELFAA Car Rental — System Guidelines</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #FF3B30;
+            --red-dark: #cc2e25;
+            --bg: #0a0a0a;
+            --surface: #131313;
+            --surface2: #1c1c1c;
+            --border: #2a2a2a;
+            --text: #f0f0f0;
+            --muted: #888;
+            --badge-admin: #FF3B30;
+            --badge-client: #3b82f6;
+            --badge-customer: #10b981;
+            --badge-staff: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ─── HEADER ─── */
+        header {
+            background: linear-gradient(135deg, #0e0e0e 0%, #1a0a0a 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: var(--red);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .brand-icon svg { width: 20px; height: 20px; fill: white; }
+        .brand-name {
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+        .brand-sub {
+            font-size: 9px;
+            color: var(--muted);
+            font-weight: 700;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+        }
+        .version-badge {
+            background: var(--red);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: .05em;
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+            background: linear-gradient(180deg, #1a0808 0%, var(--bg) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 80px 40px 60px;
+            text-align: center;
+        }
+        .hero-eyebrow {
+            display: inline-block;
+            background: rgba(255,59,48,.15);
+            border: 1px solid rgba(255,59,48,.3);
+            color: var(--red);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-size: clamp(28px, 5vw, 52px);
+            font-weight: 900;
+            letter-spacing: -.02em;
+            line-height: 1.1;
+            margin-bottom: 16px;
+        }
+        .hero h1 span { color: var(--red); }
+        .hero p {
+            max-width: 580px;
+            margin: 0 auto 32px;
+            color: var(--muted);
+            font-size: 16px;
+        }
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        .stat { text-align: center; }
+        .stat-num { font-size: 28px; font-weight: 900; color: var(--red); }
+        .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+
+        /* ─── LAYOUT ─── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        /* ─── SECTION TITLE ─── */
+        .section-title {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.01em;
+            margin-bottom: 6px;
+        }
+        .section-sub {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+        .divider {
+            width: 40px;
+            height: 3px;
+            background: var(--red);
+            border-radius: 2px;
+            margin-bottom: 12px;
+        }
+
+        /* ─── ROLE CARDS ─── */
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 60px;
+        }
+        .role-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: border-color .2s, transform .2s;
+        }
+        .role-card:hover { border-color: #444; transform: translateY(-2px); }
+        .role-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 14px;
+        }
+        .badge-admin { background: rgba(255,59,48,.15); color: var(--badge-admin); border: 1px solid rgba(255,59,48,.3); }
+        .badge-client { background: rgba(59,130,246,.15); color: var(--badge-client); border: 1px solid rgba(59,130,246,.3); }
+        .badge-customer { background: rgba(16,185,129,.15); color: var(--badge-customer); border: 1px solid rgba(16,185,129,.3); }
+        .badge-staff { background: rgba(245,158,11,.15); color: var(--badge-staff); border: 1px solid rgba(245,158,11,.3); }
+        .role-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+        .role-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+        .role-perms {
+            list-style: none;
+        }
+        .role-perms li {
+            font-size: 12px;
+            color: #aaa;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .role-perms li::before {
+            content: '✓';
+            color: var(--red);
+            font-weight: 900;
+            font-size: 11px;
+        }
+
+        /* ─── MODULE TABLE ─── */
+        .modules-section { margin-bottom: 60px; }
+        .module-block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 24px;
+            cursor: pointer;
+            user-select: none;
+            transition: background .15s;
+        }
+        .module-header:hover { background: var(--surface2); }
+        .module-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .module-title { font-size: 15px; font-weight: 700; }
+        .module-desc { font-size: 12px; color: var(--muted); }
+        .module-arrow {
+            margin-left: auto;
+            color: var(--muted);
+            font-size: 12px;
+            transition: transform .2s;
+        }
+        .module-block.open .module-arrow { transform: rotate(180deg); }
+        .module-body {
+            display: none;
+            padding: 0 24px 24px;
+            border-top: 1px solid var(--border);
+        }
+        .module-block.open .module-body { display: block; }
+        .feature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+        .feature-table th {
+            text-align: left;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 8px 12px;
+            background: var(--surface2);
+            border-radius: 6px;
+        }
+        .feature-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #1e1e1e;
+            vertical-align: top;
+        }
+        .feature-table tr:last-child td { border-bottom: none; }
+        .feature-table td:first-child { font-weight: 600; width: 28%; }
+        .feature-table td:nth-child(2) { color: #bbb; }
+        .feature-table td:nth-child(3) { width: 20%; }
+        .pill {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin: 1px;
+        }
+        .pill-admin { background: rgba(255,59,48,.15); color: var(--red); }
+        .pill-client { background: rgba(59,130,246,.15); color: #60a5fa; }
+        .pill-customer { background: rgba(16,185,129,.15); color: #34d399; }
+        .pill-staff { background: rgba(245,158,11,.15); color: #fbbf24; }
+        .pill-all { background: rgba(255,255,255,.08); color: #ddd; }
+
+        /* ─── FLOW ─── */
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 4px;
+            margin-bottom: 60px;
+        }
+        .flow-step {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+        }
+        .flow-num {
+            font-size: 32px;
+            font-weight: 900;
+            color: rgba(255,59,48,.2);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .flow-step h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+        .flow-step p { font-size: 12px; color: var(--muted); }
+
+        /* ─── ALERT BOX ─── */
+        .alert {
+            background: rgba(255,59,48,.08);
+            border: 1px solid rgba(255,59,48,.25);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 60px;
+        }
+        .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+        .alert-text h4 { font-size: 13px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
+        .alert-text p { font-size: 12px; color: #bbb; }
+
+        /* ─── FOOTER ─── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 30px 40px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media(max-width: 640px) {
+            header, .hero, .container, footer { padding-left: 20px; padding-right: 20px; }
+            .hero { padding-top: 50px; }
+            .hero-stats { gap: 20px; }
+            .feature-table { display: block; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="header-inner">
+        <div class="brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5h-1M14 17a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm7 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-name">ELFAA Car Rental</div>
+                <div class="brand-sub">System Guidelines</div>
+            </div>
+        </div>
+        <span class="version-badge">v1.0</span>
+    </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-eyebrow">System Documentation</div>
+    <h1>ELFAA <span>Platform</span> Guidelines</h1>
+    <p>Complete reference for all modules, user roles, features, and booking workflows in the ELFAA Car Rental system.</p>
+    <div class="hero-stats">
+        <div class="stat"><div class="stat-num">4</div><div class="stat-label">User Roles</div></div>
+        <div class="stat"><div class="stat-num">12+</div><div class="stat-label">Modules</div></div>
+        <div class="stat"><div class="stat-num">3</div><div class="stat-label">Document Types</div></div>
+        <div class="stat"><div class="stat-num">5</div><div class="stat-label">Booking Stages</div></div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- ROLES -->
+    <div class="divider"></div>
+    <div class="section-title">👤 User Roles</div>
+    <div class="section-sub">The system has 4 distinct roles, each with specific access levels and responsibilities.</div>
+    <div class="roles-grid">
+        <div class="role-card">
+            <span class="role-badge badge-admin">Admin</span>
+            <h3>Administrator</h3>
+            <p>Full system control. Manages all operations, users, settings, and configuration.</p>
+            <ul class="role-perms">
+                <li>Manage all users & staff</li>
+                <li>Approve / reject bookings</li>
+                <li>Manage vehicle fleet</li>
+                <li>View financial reports</li>
+                <li>Configure SMTP & SMS</li>
+                <li>Manage promos & discounts</li>
+                <li>Review & verify documents</li>
+                <li>Access admin analytics</li>
+            </ul>
+        </div>
+        <div class="role-card">
+            <span class="role-badge badge-client">Client (Renter)</span>
+            <h3>Verified Client</h3>
+            <p>Registered renters who have been identity-verified and can create bookings.</p>
+            <ul class="role-perms">
+                <li>Browse the vehicle fleet</li>
+                <li>Submit booking requests</li>
+                <li>Upload required documents</li>
+                <li>Track booking status</li>
+                <li>View booking history</li>
+                <li>Manage profile details</li>
+                <li>Cancel pending bookings</li>
+            </ul>
+        </div>
+        <div class="role-card">
+            <span class="role-badge badge-customer">Customer (Guest)</span>
+            <h3>Unverified Customer</h3>
+            <p>Newly registered users pending identity verification before they can book.</p>
+            <ul class="role-perms">
+                <li>View landing page & fleet</li>
+                <li>Create an account</li>
+                <li>Submit ID documents</li>
+                <li>Wait for Admin approval</li>
+                <li>Receive email notifications</li>
+            </ul>
+        </div>
+        <div class="role-card">
+            <span class="role-badge badge-staff">Staff / Team</span>
+            <h3>Operations Staff</h3>
+            <p>Internal team members who assist with daily operational tasks and bookings.</p>
+            <ul class="role-perms">
+                <li>View assigned bookings</li>
+                <li>Update booking statuses</li>
+                <li>Manage vehicle availability</li>
+                <li>Access team dashboard</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ALERT -->
+    <div class="alert">
+        <div class="alert-icon">🔐</div>
+        <div class="alert-text">
+            <h4>Access Control Notice</h4>
+            <p>Each role is enforced by server-side middleware (Laravel). A customer cannot access admin routes and vice versa. Document verification must be approved by an Admin before a customer is upgraded to a full Client account.</p>
+        </div>
+    </div>
+
+    <!-- MODULES -->
+    <div class="divider"></div>
+    <div class="section-title">📦 Modules & Features</div>
+    <div class="section-sub">Click each module to expand its functions. Access column shows which roles can use that feature.</div>
+    <div class="modules-section">
+
+        <!-- AUTH -->
+        <div class="module-block open">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(255,59,48,.1)">🔑</div>
+                <div>
+                    <div class="module-title">Authentication & Security</div>
+                    <div class="module-desc">Login, registration, password recovery, and session management</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Login</td><td>Email & password login with brute-force rate limiting. Includes show/hide password toggle and "Remember this device" option.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                        <tr><td>Register</td><td>New users create an account. Upon registration, the account is set as "Customer" (unverified) until documents are reviewed.</td><td><span class="pill pill-customer">Customer</span></td></tr>
+                        <tr><td>Forgot Password</td><td>Enter registered email to receive a secure password reset link via SMTP. Link expires after a configured time.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                        <tr><td>Reset Password</td><td>Set a new password using the one-time reset link sent to email.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                        <tr><td>Dark / Light Mode</td><td>Toggle on all auth pages. Preference is stored in local component state.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                        <tr><td>Admin Login</td><td>Separate admin login route with stricter session handling.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FLEET -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(59,130,246,.1)">🚗</div>
+                <div>
+                    <div class="module-title">Vehicle Fleet Management</div>
+                    <div class="module-desc">Add, edit, manage, and display vehicles available for rental</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Vehicle Listing</td><td>Browse all vehicles with filter by type (Sedan, SUV, Van, etc.) and seating capacity. Cards display photo, price, and availability status.</td><td><span class="pill pill-client">Client</span><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>Add Vehicle</td><td>Admin can add new vehicles with photo, type, seats, daily rate, fuel type, transmission, and description.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Edit Vehicle</td><td>Update any vehicle detail including pricing and availability.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Delete Vehicle</td><td>Remove a vehicle from the fleet. Cannot delete if it has active bookings.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Availability Toggle</td><td>Mark vehicles as available or unavailable for booking.</td><td><span class="pill pill-admin">Admin</span><span class="pill pill-staff">Staff</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BOOKINGS -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(16,185,129,.1)">📋</div>
+                <div>
+                    <div class="module-title">Booking Management</div>
+                    <div class="module-desc">Create, manage, and track vehicle rental bookings</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Create Booking</td><td>Client selects a vehicle, pickup/return date, pickup location, and optional add-ons. System calculates total cost automatically.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Apply Promo Code</td><td>Client can enter a promo code at booking to apply a discount to the total.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Booking Status</td><td>Tracks 5 stages: Pending → Confirmed → Approved → Active → Completed. Also supports Rejected and Cancelled states.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                        <tr><td>Approve / Reject</td><td>Admin reviews submitted bookings and either approves or rejects with a reason.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Cancel Booking</td><td>Client can cancel a booking that is still in Pending status.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Booking History</td><td>View all past and current bookings with details, status, dates, and vehicle info.</td><td><span class="pill pill-client">Client</span><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Email Notifications</td><td>Automatic emails are sent when a booking is created, confirmed, approved, rejected, or cancelled.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DOCUMENTS -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(245,158,11,.1)">📄</div>
+                <div>
+                    <div class="module-title">Document Verification</div>
+                    <div class="module-desc">Identity document upload and admin review for renter verification</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Driver's License Upload</td><td>Client uploads a photo or PDF of their valid Driver's License (Gov ID 1). Status shows Pending / Verified / Rejected.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Secondary Photo ID</td><td>Upload a secondary valid government-issued photo ID (e.g. Passport, UMID, SSS). Status tracked independently.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Proof of Billing</td><td>Upload a utility bill (Meralco, Water, Internet, or Bank statement) to verify address. Document category can be selected.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Document Review</td><td>Admin can view uploaded documents and change their status to Verified or Rejected, with an optional rejection reason.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Status Indicators</td><td>Each document card shows a color-coded badge: Green = Verified, Yellow = Pending, Red = Rejected.</td><td><span class="pill pill-client">Client</span><span class="pill pill-admin">Admin</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PROMOS -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(168,85,247,.1)">🎁</div>
+                <div>
+                    <div class="module-title">Promotions & Discounts</div>
+                    <div class="module-desc">Create and manage promo codes to offer booking discounts</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Create Promo</td><td>Admin creates promo codes with a discount value (fixed or percentage), validity dates, and usage limits.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Edit / Deactivate</td><td>Admin can update promo details or deactivate a promo to stop it from being used.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Apply at Booking</td><td>Client enters a promo code during checkout. System validates the code and applies the discount to the booking total.</td><td><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Promo Listing</td><td>Landing page displays active promotions publicly to attract customers.</td><td><span class="pill pill-all">Public</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SMTP / EMAIL -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(6,182,212,.1)">✉️</div>
+                <div>
+                    <div class="module-title">SMTP Email System</div>
+                    <div class="module-desc">Configure and send automated emails for system events</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>SMTP Configuration</td><td>Admin configures SMTP host, port, username, password, encryption, and sender name directly from the Admin Panel without code changes.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Test Email</td><td>Send a test email to verify the SMTP configuration is working correctly.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Password Reset Emails</td><td>Forgot Password flow sends a secure reset link using the configured SMTP settings.</td><td><span class="pill pill-all">All Roles</span></td></tr>
+                        <tr><td>Booking Notifications</td><td>Emails are dispatched on: booking creation, confirmation, approval, rejection, and cancellation.</td><td><span class="pill pill-all">System</span></td></tr>
+                        <tr><td>Email Templates</td><td>Professional HTML email templates consistent with the premium ELFAA brand design.</td><td><span class="pill pill-all">System</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ADMIN DASHBOARD -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(255,59,48,.1)">📊</div>
+                <div>
+                    <div class="module-title">Admin Dashboard & Reports</div>
+                    <div class="module-desc">Analytics, reports, and operational oversight for administrators</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Overview Stats</td><td>Dashboard cards showing total bookings, active rentals, revenue, and registered users at a glance.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Revenue Reports</td><td>Summary of earnings, with booking counts and revenue breakdowns by period.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>PDF Export</td><td>Print-ready executive PDF reports that hide UI controls and present clean, data-rich layouts.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Booking Monitor</td><td>View all bookings across all clients with filtering and status management capabilities.</td><td><span class="pill pill-admin">Admin</span><span class="pill pill-staff">Staff</span></td></tr>
+                        <tr><td>User Management</td><td>View all registered users, update roles, approve documents, and manage accounts.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                        <tr><td>Settings Panel</td><td>Configure site logo, name, SMTP, SMS, and system-wide settings without code deployment.</td><td><span class="pill pill-admin">Admin</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CHATBOT -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(99,102,241,.1)">🤖</div>
+                <div>
+                    <div class="module-title">AI Chatbot Assistant</div>
+                    <div class="module-desc">Floating rule-based chatbot for 24/7 customer support (no API required)</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Floating Widget</td><td>Always-visible floating chat button on the landing page and client dashboard. Opens a chat panel on click.</td><td><span class="pill pill-all">Public</span><span class="pill pill-client">Client</span></td></tr>
+                        <tr><td>Fleet Inquiry</td><td>Ask about available vehicles, pricing, types, and features. System pulls live data from the fleet.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>Booking Guidance</td><td>Chatbot guides users through the booking process step-by-step.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>FAQ Responses</td><td>Answers common questions about operating hours, locations, requirements, and policies.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>No API Dependency</td><td>Fully rule-based and data-driven. Works without any external AI API. All responses are locally generated.</td><td><span class="pill pill-all">System</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- LANDING PAGE -->
+        <div class="module-block">
+            <div class="module-header" onclick="toggle(this)">
+                <div class="module-icon" style="background:rgba(16,185,129,.1)">🌐</div>
+                <div>
+                    <div class="module-title">Landing Page</div>
+                    <div class="module-desc">Public-facing marketing page to attract and onboard new renters</div>
+                </div>
+                <span class="module-arrow">▼</span>
+            </div>
+            <div class="module-body">
+                <table class="feature-table">
+                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Hero Section</td><td>Cinematic animated hero with car imagery, bold headline, and a "Browse Fleet" / "Book Now" CTA for maximum first impression.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>Fleet Showcase</td><td>Interactive vehicle cards with filter by type and seats. Each card links to the booking flow.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>Promos Section</td><td>Displays active promotional offers and discount codes available for new bookings.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>Dark / Light Mode</td><td>A toggle in the header lets visitors switch between dark and light themes stored in localStorage.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>SVG Animations</td><td>Animated road lines, vehicle reveal effects, and scroll transitions for a premium, cinematic feel.</td><td><span class="pill pill-all">Public</span></td></tr>
+                        <tr><td>Services Section</td><td>Highlights ELFAA's key value propositions (self-drive, flexible periods, coverage areas etc.).</td><td><span class="pill pill-all">Public</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOOKING WORKFLOW -->
+    <div class="divider"></div>
+    <div class="section-title">🔄 Booking Workflow</div>
+    <div class="section-sub">The complete lifecycle of a booking from creation to completion.</div>
+    <div class="flow-grid">
+        <div class="flow-step">
+            <div class="flow-num">01</div>
+            <h4>Register & Verify</h4>
+            <p>Customer registers, uploads 3 required documents (License, Secondary ID, Proof of Billing).</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">02</div>
+            <h4>Admin Verification</h4>
+            <p>Admin reviews uploaded documents and approves the account, upgrading the user to Client status.</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">03</div>
+            <h4>Create Booking</h4>
+            <p>Verified Client selects a vehicle, dates, pickup location, and optionally applies a promo code.</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">04</div>
+            <h4>Admin Review</h4>
+            <p>Admin reviews the booking request and either approves it (with schedule) or rejects it with a reason.</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">05</div>
+            <h4>Active Rental</h4>
+            <p>On pickup date the booking becomes Active. Vehicle is marked unavailable for other bookings.</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">06</div>
+            <h4>Completed</h4>
+            <p>On return date the booking is marked Completed. Vehicle availability is restored.</p>
+        </div>
+    </div>
+
+    <!-- DOCUMENT REQUIREMENTS -->
+    <div class="divider"></div>
+    <div class="section-title">📎 Required Documents for Verification</div>
+    <div class="section-sub">All 3 documents must be uploaded and approved before a customer can make a booking.</div>
+    <div class="roles-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))">
+        <div class="role-card">
+            <span class="role-badge badge-admin">Document 1</span>
+            <h3>🪪 Driver's License</h3>
+            <p>A valid government-issued Driver's License is mandatory to prove the renter is legally authorized to drive.</p>
+            <ul class="role-perms">
+                <li>Must be current and not expired</li>
+                <li>JPG, PNG, or PDF accepted</li>
+                <li>Max file size: 5MB</li>
+            </ul>
+        </div>
+        <div class="role-card">
+            <span class="role-badge badge-client">Document 2</span>
+            <h3>📇 Secondary Photo ID</h3>
+            <p>A second government-issued photo ID for dual identity verification (Passport, UMID, SSS, PhilHealth, etc.).</p>
+            <ul class="role-perms">
+                <li>Must display full name & photo</li>
+                <li>JPG, PNG, or PDF accepted</li>
+                <li>Max file size: 5MB</li>
+            </ul>
+        </div>
+        <div class="role-card">
+            <span class="role-badge badge-customer">Document 3</span>
+            <h3>💡 Proof of Billing Address</h3>
+            <p>A recent utility or bank statement to verify the renter's current address.</p>
+            <ul class="role-perms">
+                <li>Meralco / Electricity bill</li>
+                <li>Water utility bill</li>
+                <li>Internet / cable bill</li>
+                <li>Bank statement</li>
+                <li>Must be within 3 months</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>ELFAA Car Rental System &mdash; Internal Guidelines Document &bull; © 2026 ELFAA. All rights reserved.</p>
+    <p style="margin-top:6px">Serving SM Sto. Tomas · Victory Mall Tanauan · SM Calamba · Metro Laguna</p>
+</footer>
+
+<script>
+    function toggle(header) {
+        const block = header.closest('.module-block');
+        block.classList.toggle('open');
+    }
+</script>
+</body>
+</html>

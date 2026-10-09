@@ -74,10 +74,10 @@ export default function Login({ status, canResetPassword }) {
                             <ApplicationLogo className="w-9 h-9 fill-[#FF3B30] text-[#FF3B30] shrink-0 group-hover:scale-105 transition-transform" />
                         )}
                         <div>
-                            <span className="text-xl font-black tracking-wider text-zinc-900 dark:text-white uppercase leading-none block">
+                            <span className={`text-xl font-black tracking-wider uppercase leading-none block ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
                                 {settings?.site_logo || 'ELFAA CARS'}
                             </span>
-                            <span className="text-[9px] font-extrabold uppercase tracking-widest text-zinc-400 block mt-0.5">
+                            <span className={`text-[9px] font-extrabold uppercase tracking-widest block mt-0.5 ${isDarkMode ? 'text-zinc-400' : 'text-zinc-500'}`}>
                                 Premium Self-Drive Fleet
                             </span>
                         </div>
