@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/Components/Shadcn';
-import { CalendarDays, ChevronLeft, ChevronRight, Calendar, Search, Filter, Clock, MapPin, AlertTriangle, User, DollarSign, X } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Calendar, Search, Filter, Clock, MapPin, AlertTriangle, User, DollarSign, X, CheckCircle } from 'lucide-react';
 
 export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
     const [startDate, setStartDate] = useState(() => {
