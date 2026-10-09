@@ -43,6 +43,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::get('/dashboard', [App\Http\Controllers\AdminPortalController::class, 'dashboard'])->name('dashboard');
     Route::post('/users/{user}/toggle', [App\Http\Controllers\AdminPortalController::class, 'toggleUserStatus'])->name('users.toggle');
     Route::post('/documents/{document}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyDocument'])->name('documents.verify');
+    Route::post('/bookings/{booking}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyBooking'])->name('bookings.verify');
     Route::post('/bookings/{booking}/verify-payment', [App\Http\Controllers\AdminPortalController::class, 'verifyPayment'])->name('bookings.verify_payment');
     Route::post('/bookings/{booking}/archive', [App\Http\Controllers\AdminPortalController::class, 'archiveBooking'])->name('bookings.archive');
     Route::post('/bookings/{booking}/restore', [App\Http\Controllers\AdminPortalController::class, 'restoreBooking'])->name('bookings.restore');
