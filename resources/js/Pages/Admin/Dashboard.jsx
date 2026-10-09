@@ -7,6 +7,9 @@ import SmartReportsDashboard from '@/Components/SmartReportsDashboard';
 import DailyRentalSchedule from '@/Components/DailyRentalSchedule';
 import BillRecordsManager from '@/Components/BillRecordsManager';
 import VehicleProfitAnalytics from '@/Components/VehicleProfitAnalytics';
+import VehicleInspectionModal from '@/Components/VehicleInspectionModal';
+import InspectionComparisonDrawer from '@/Components/InspectionComparisonDrawer';
+import BookingPriceBreakdownModal from '@/Components/BookingPriceBreakdownModal';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [] }) {
     const isAdmin = auth.user.role === 'admin';
@@ -27,6 +30,12 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const [rejectReason, setRejectReason] = useState('');
     const [featureInput, setFeatureInput] = useState('');
     const [featuresList, setFeaturesList] = useState([]);
+
+    // Inspection & Breakdown Modal States
+    const [inspectionBooking, setInspectionBooking] = useState(null);
+    const [inspectionType, setInspectionType] = useState('pickup');
+    const [comparisonBooking, setComparisonBooking] = useState(null);
+    const [breakdownBooking, setBreakdownBooking] = useState(null);
 
     // Styled Confirmation Dialog States
     const [confirmDialog, setConfirmDialog] = useState({
@@ -675,6 +684,37 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     {booking.status === 'confirmed' && (
                                                         <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2 py-0.5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
                                                     )}
+                                                    
+                                                    {/* Inspection Buttons */}
+                                                    <button
+                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('pickup'); }}
+                                                        title="Record Vehicle Pickup Inspection"
+                                                        className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                    >
+                                                        +Pickup
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('return'); }}
+                                                        title="Record Vehicle Return Inspection"
+                                                        className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                    >
+                                                        +Return
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setComparisonBooking(booking)}
+                                                        title="View Inspection Comparison & Surcharges"
+                                                        className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                    >
+                                                        Inspections {booking.inspections?.length > 0 ? `(${booking.inspections.length})` : ''}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setBreakdownBooking(booking)}
+                                                        title="Review Complete Price Breakdown & Statement"
+                                                        className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                    >
+                                                        Review Breakdown
+                                                    </button>
+
                                                     <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
                                                 </>
                                             ) : (
@@ -691,13 +731,28 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
                                         </td>
                                         <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{doc.user.name}</td>
-                                        <td className="py-3.5 px-4 uppercase text-zinc-600 dark:text-zinc-450">{doc.id_type}</td>
-                                        <td className="py-3.5 px-4 font-mono text-zinc-700 dark:text-zinc-150">{doc.id_number}</td>
+                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{doc.user?.name || 'Client'}</td>
+                                        <td className="py-3.5 px-4 uppercase text-zinc-600 dark:text-zinc-450">{doc.type || doc.id_type}</td>
+                                        <td className="py-3.5 px-4 font-mono text-zinc-700 dark:text-zinc-150">{doc.id_number || '—'}</td>
                                         <td className="py-3.5 px-4">
-                                            <a href={`/storage/${doc.document_path}`} target="_blank" rel="noopener noreferrer" className="text-red-500/80 hover:text-red-500 font-bold hover:underline">
-                                                Download Attached Identification
-                                            </a>
+                                            {(doc.file_path || doc.document_path) ? (
+                                                <a
+                                                    href={(() => {
+                                                        const p = doc.file_path || doc.document_path;
+                                                        if (!p) return '#';
+                                                        if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('/')) return p;
+                                                        if (p.startsWith('uploads/')) return `/${p}`;
+                                                        return `/storage/${p}`;
+                                                    })()}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-red-500/80 hover:text-red-500 font-bold hover:underline"
+                                                >
+                                                    View / Download Identification
+                                                </a>
+                                            ) : (
+                                                <span className="text-zinc-400 italic font-normal">No File Attached</span>
+                                            )}
                                         </td>
                                         <td className="py-3.5 px-4">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
@@ -1311,6 +1366,33 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Vehicle Inspection Modal */}
+            {inspectionBooking && (
+                <VehicleInspectionModal
+                    booking={inspectionBooking}
+                    type={inspectionType}
+                    onClose={() => setInspectionBooking(null)}
+                />
+            )}
+
+            {/* Inspection Comparison & Surcharge Drawer */}
+            {comparisonBooking && (
+                <InspectionComparisonDrawer
+                    booking={comparisonBooking}
+                    isAdmin={isAdmin}
+                    onClose={() => setComparisonBooking(null)}
+                />
+            )}
+
+            {/* Price Breakdown & Statement Audit Modal (Feature #7) */}
+            {breakdownBooking && (
+                <BookingPriceBreakdownModal
+                    booking={breakdownBooking}
+                    isAdmin={isAdmin}
+                    onClose={() => setBreakdownBooking(null)}
+                />
             )}
         </PortalLayout>
     );

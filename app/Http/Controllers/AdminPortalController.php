@@ -10,6 +10,9 @@ use App\Models\Promo;
 use App\Models\ExtraGood;
 use App\Models\BillRecord;
 use App\Models\VehicleExpense;
+use App\Models\VehicleInspection;
+use App\Models\InspectionCharge;
+use App\Models\BookingPriceHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -93,12 +96,12 @@ class AdminPortalController extends Controller
         $topVehicles = array_slice($vehicleStats, 0, 5);
 
         // Retrieve active items with relationships
-        $bookings = Booking::with(['user', 'vehicle', 'rating'])
+        $bookings = Booking::with(['user', 'vehicle', 'rating', 'inspections.inspector', 'inspectionCharges.creator', 'inspectionCharges.approver', 'priceHistories.changedBy'])
             ->whereNull('archived_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $archivedBookings = Booking::with(['user', 'vehicle', 'rating'])
+        $archivedBookings = Booking::with(['user', 'vehicle', 'rating', 'inspections.inspector', 'inspectionCharges.creator', 'inspectionCharges.approver', 'priceHistories.changedBy'])
             ->whereNotNull('archived_at')
             ->orderBy('archived_at', 'desc')
             ->get();
@@ -718,4 +721,154 @@ class AdminPortalController extends Controller
         $vehicleExpense->delete();
         return response()->json(['success' => true, 'message' => 'Expense deleted.']);
     }
+
+    /**
+     * Store Vehicle Pickup or Return Inspection
+     */
+    public function storeInspection(Request $request)
+    {
+        $request->validate([
+            'booking_id' => 'required|exists:bookings,id',
+            'type' => 'required|in:pickup,return',
+            'fuel_bars' => 'required|integer|min:0|max:8',
+            'odometer_reading' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+            'photos.*' => 'nullable|image|max:10240', // 10MB max per photo
+        ]);
+
+        $booking = Booking::findOrFail($request->booking_id);
+
+        $photoPaths = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                $path = $file->store('inspections', 'public');
+                $photoPaths[] = $path;
+            }
+        }
+
+        $inspection = VehicleInspection::create([
+            'booking_id' => $booking->id,
+            'vehicle_id' => $booking->vehicle_id,
+            'inspector_id' => Auth::id(),
+            'type' => $request->type,
+            'fuel_bars' => $request->fuel_bars,
+            'odometer_reading' => $request->odometer_reading,
+            'notes' => $request->notes,
+            'photos' => $photoPaths,
+            'inspected_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', ucfirst($request->type) . ' inspection record saved successfully!');
+    }
+
+    /**
+     * Store Additional Charge Proposal
+     */
+    public function storeInspectionCharge(Request $request)
+    {
+        $request->validate([
+            'booking_id' => 'required|exists:bookings,id',
+            'inspection_id' => 'nullable|exists:vehicle_inspections,id',
+            'charge_type' => 'required|string|in:damage,fuel_deficit,cleaning,late_return,other',
+            'description' => 'required|string',
+            'amount' => 'required|numeric|min:0',
+            'evidence_photos.*' => 'nullable|image|max:10240',
+        ]);
+
+        $evidencePaths = [];
+        if ($request->hasFile('evidence_photos')) {
+            foreach ($request->file('evidence_photos') as $file) {
+                $path = $file->store('inspection_charges', 'public');
+                $evidencePaths[] = $path;
+            }
+        }
+
+        InspectionCharge::create([
+            'booking_id' => $request->booking_id,
+            'inspection_id' => $request->inspection_id,
+            'created_by' => Auth::id(),
+            'charge_type' => $request->charge_type,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'evidence_photos' => $evidencePaths,
+            'status' => 'proposed',
+        ]);
+
+        return redirect()->back()->with('success', 'Additional charge proposal submitted!');
+    }
+
+    /**
+     * Approve, Reject, or Mark Paid an Inspection Charge
+     */
+    public function updateInspectionChargeStatus(Request $request, InspectionCharge $inspectionCharge)
+    {
+        $request->validate([
+            'status' => 'required|in:proposed,approved,rejected,paid',
+        ]);
+
+        $data = ['status' => $request->status];
+        if (in_array($request->status, ['approved', 'rejected'])) {
+            $data['approved_by'] = Auth::id();
+        }
+
+        $inspectionCharge->update($data);
+
+        return redirect()->back()->with('success', 'Charge status updated to ' . ucfirst($request->status));
+    }
+
+    /**
+     * Adjust Booking Price & Log Audit Trail (Feature #7)
+     */
+    public function adjustBookingPrice(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'new_total' => 'required|numeric|min:0',
+            'security_deposit' => 'nullable|numeric|min:0',
+            'amount_paid' => 'nullable|numeric|min:0',
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $previousTotal = floatval($booking->total_price);
+        $newTotal = floatval($request->new_total);
+        $changeAmount = $newTotal - $previousTotal;
+
+        // Create Price History Audit Trail Record
+        BookingPriceHistory::create([
+            'booking_id' => $booking->id,
+            'changed_by_id' => Auth::id(),
+            'previous_total' => $previousTotal,
+            'new_total' => $newTotal,
+            'change_amount' => $changeAmount,
+            'reason' => $request->reason,
+            'breakdown_snapshot' => [
+                'original_price' => floatval($booking->original_price),
+                'location_fee' => floatval($booking->location_fee),
+                'discount_amount' => floatval($booking->discount_amount),
+                'security_deposit' => floatval($request->input('security_deposit', $booking->security_deposit ?? 0)),
+                'amount_paid' => floatval($request->input('amount_paid', $booking->amount_paid ?? 0)),
+                'approved_charges' => $booking->inspectionCharges()->where('status', 'approved')->sum('amount'),
+            ],
+        ]);
+
+        // Update Booking Total and Paid amounts
+        $booking->update([
+            'total_price' => $newTotal,
+            'security_deposit' => floatval($request->input('security_deposit', $booking->security_deposit ?? 0)),
+            'amount_paid' => floatval($request->input('amount_paid', $booking->amount_paid ?? 0)),
+            'payment_status' => (floatval($request->input('amount_paid', $booking->amount_paid)) >= $newTotal) ? 'paid' : 'partial',
+        ]);
+
+        return redirect()->back()->with('success', 'Booking price updated and audit log saved.');
+    }
+
+    /**
+     * Generate Printable Invoice / Statement View (Feature #7)
+     */
+    public function getInvoice(Booking $booking)
+    {
+        $booking->load(['user', 'vehicle', 'inspections', 'inspectionCharges', 'priceHistories.changedBy']);
+
+        return view('invoice', compact('booking'));
+    }
 }
+

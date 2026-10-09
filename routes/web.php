@@ -75,6 +75,15 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/vehicle-expenses', [App\Http\Controllers\AdminPortalController::class, 'storeVehicleExpense'])->name('vehicle_expenses.store');
     Route::post('/vehicle-expenses/{vehicleExpense}/destroy', [App\Http\Controllers\AdminPortalController::class, 'destroyVehicleExpense'])->name('vehicle_expenses.destroy');
 
+    // Vehicle Pickup & Return Inspection Routes
+    Route::post('/inspections', [App\Http\Controllers\AdminPortalController::class, 'storeInspection'])->name('inspections.store');
+    Route::post('/inspection-charges', [App\Http\Controllers\AdminPortalController::class, 'storeInspectionCharge'])->name('inspection_charges.store');
+    Route::post('/inspection-charges/{inspectionCharge}/status', [App\Http\Controllers\AdminPortalController::class, 'updateInspectionChargeStatus'])->name('inspection_charges.status');
+
+    // Price Breakdown & Adjustment Routes (Feature #7)
+    Route::post('/bookings/{booking}/adjust-price', [App\Http\Controllers\AdminPortalController::class, 'adjustBookingPrice'])->name('bookings.adjust_price');
+    Route::get('/bookings/{booking}/invoice', [App\Http\Controllers\AdminPortalController::class, 'getInvoice'])->name('bookings.invoice');
+
     // Site Settings Configurations
     Route::post('/settings', [App\Http\Controllers\AdminPortalController::class, 'updateSettings'])->name('settings.update');
 

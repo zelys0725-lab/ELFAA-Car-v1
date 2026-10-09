@@ -24,6 +24,9 @@ class Booking extends Model
         'promo_code',
         'discount_amount',
         'total_price',
+        'security_deposit',
+        'amount_paid',
+        'final_total',
         'payment_method',
         'payment_status',
         'payment_reference',
@@ -41,7 +44,10 @@ class Booking extends Model
             'original_price' => 'decimal:2',
             'location_fee' => 'decimal:2',
             'discount_amount' => 'decimal:2',
+            'security_deposit' => 'decimal:2',
+            'amount_paid' => 'decimal:2',
             'total_price' => 'decimal:2',
+            'final_total' => 'decimal:2',
             'is_out_of_bounds' => 'boolean',
         ];
     }
@@ -59,5 +65,20 @@ class Booking extends Model
     public function rating(): HasOne
     {
         return $this->hasOne(Rating::class);
+    }
+
+    public function inspections()
+    {
+        return $this->hasMany(VehicleInspection::class);
+    }
+
+    public function inspectionCharges()
+    {
+        return $this->hasMany(InspectionCharge::class);
+    }
+
+    public function priceHistories()
+    {
+        return $this->hasMany(BookingPriceHistory::class)->orderBy('created_at', 'desc');
     }
 }
