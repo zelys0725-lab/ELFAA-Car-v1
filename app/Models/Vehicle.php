@@ -26,6 +26,9 @@ class Vehicle extends Model
         'damage_notes',
         'meetup_location',
         'images',
+        'created_by',
+        'owner_role',
+        'is_approved',
     ];
 
     protected function casts(): array
@@ -35,7 +38,20 @@ class Vehicle extends Model
             'images' => 'array',
             'price_per_day' => 'decimal:2',
             'purchase_cost' => 'decimal:2',
+            'is_approved' => 'boolean',
         ];
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function scopePrioritized($query)
+    {
+        // Priority 1: Admin-published vehicles
+        // Priority 2: Staff-published vehicles
+        return $query->orderByRaw("CASE WHEN owner_role = 'admin' THEN 1 WHEN owner_role = 'staff' THEN 2 ELSE 3 END");
     }
 
     public function bookings(): HasMany

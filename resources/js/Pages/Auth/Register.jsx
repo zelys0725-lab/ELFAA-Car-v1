@@ -2,10 +2,12 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import Checkbox from '@/Components/Checkbox';
-import { Head, Link, useForm } from '@inertiajs/react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function Register() {
+    const { settings } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -45,9 +47,14 @@ export default function Register() {
                 <div className="mx-auto w-full max-w-sm lg:w-96">
                     {/* Header bar with Theme Toggle */}
                     <div className="flex items-center justify-between mb-4">
-                        <Link href="/" className="inline-block">
-                            <span className="text-2xl font-black tracking-widest text-[#FF3B30] uppercase drop-shadow">
-                                ELFAA CARS
+                        <Link href="/" className="flex items-center gap-3 group">
+                            {settings?.site_logo_image ? (
+                                <img src={settings.site_logo_image} className="h-8 max-w-[150px] object-contain rounded" alt={settings?.site_logo || 'Logo'} />
+                            ) : (
+                                <ApplicationLogo className="w-8 h-8 fill-[#FF3B30] text-[#FF3B30] shrink-0 group-hover:scale-105 transition-transform" />
+                            )}
+                            <span className="text-xl font-black tracking-widest text-[#FF3B30] uppercase drop-shadow">
+                                {settings?.site_logo || 'ELFAA CARS'}
                             </span>
                         </Link>
 

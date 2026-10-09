@@ -10,8 +10,11 @@ import VehicleProfitAnalytics from '@/Components/VehicleProfitAnalytics';
 import VehicleInspectionModal from '@/Components/VehicleInspectionModal';
 import InspectionComparisonDrawer from '@/Components/InspectionComparisonDrawer';
 import BookingPriceBreakdownModal from '@/Components/BookingPriceBreakdownModal';
+import DailyOperationsWidget from '@/Components/DailyOperationsWidget';
+import LegacyImportModal from '@/Components/LegacyImportModal';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone } from 'lucide-react';
 
-export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [] }) {
+export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
     const { settings } = usePage().props;
     const [activeTab, setActiveTab] = useState('analytics');
@@ -36,6 +39,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const [inspectionType, setInspectionType] = useState('pickup');
     const [comparisonBooking, setComparisonBooking] = useState(null);
     const [breakdownBooking, setBreakdownBooking] = useState(null);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     // Styled Confirmation Dialog States
     const [confirmDialog, setConfirmDialog] = useState({
@@ -53,7 +57,23 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
     const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
-    // Site Settings Form
+    // Site & Provider Settings Form State
+    const [settingsSubTab, setSettingsSubTab] = useState('branding'); // 'branding' | 'smtp' | 'sms'
+    const [showMailPassword, setShowMailPassword] = useState(false);
+    const [showSmsApiKey, setShowSmsApiKey] = useState(false);
+
+    // Test Email Modal State
+    const [testEmailOpen, setTestEmailOpen] = useState(false);
+    const [testEmailAddress, setTestEmailAddress] = useState(auth?.user?.email || '');
+    const [testEmailLoading, setTestEmailLoading] = useState(false);
+    const [testEmailResult, setTestEmailResult] = useState(null);
+
+    // Test SMS Modal State
+    const [testSmsOpen, setTestSmsOpen] = useState(false);
+    const [testSmsPhone, setTestSmsPhone] = useState('');
+    const [testSmsLoading, setTestSmsLoading] = useState(false);
+    const [testSmsResult, setTestSmsResult] = useState(null);
+
     const settingsForm = useForm({
         site_logo: settings?.site_logo || '',
         home_hero_title: settings?.home_hero_title || '',
@@ -62,12 +82,91 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         contact_phone: settings?.contact_phone || '',
         site_logo_image_file: null,
         clear_logo_image: false,
+
+        // SMTP Email Settings
+        mail_driver: settings?.mail_driver || 'smtp',
+        mail_host: settings?.mail_host || '',
+        mail_port: settings?.mail_port || '587',
+        mail_encryption: settings?.mail_encryption || 'tls',
+        mail_username: settings?.mail_username || '',
+        mail_password: settings?.mail_password || '',
+        mail_from_name: settings?.mail_from_name || 'ELFAA Car Rental',
+        mail_from_address: settings?.mail_from_address || '',
+        email_notifications_enabled: settings?.email_notifications_enabled ?? '1',
+
+        // SMS Settings
+        sms_provider: settings?.sms_provider || 'semaphore',
+        sms_api_key: settings?.sms_api_key || '',
+        sms_account_sid: settings?.sms_account_sid || '',
+        sms_sender_id: settings?.sms_sender_id || 'ELFAACAR',
+        sms_api_url: settings?.sms_api_url || '',
+        sms_notifications_enabled: settings?.sms_notifications_enabled ?? '1',
     });
 
     const submitSettings = (e) => {
         e.preventDefault();
         settingsForm.post(route('admin.settings.update'), {
             preserveScroll: true,
+        });
+    };
+
+    const handleSendTestEmail = (e) => {
+        e.preventDefault();
+        if (!testEmailAddress) return;
+        setTestEmailLoading(true);
+        setTestEmailResult(null);
+
+        window.axios.post(route('admin.settings.test_email'), {
+            recipient_email: testEmailAddress,
+            mail_driver: settingsForm.data.mail_driver,
+            mail_host: settingsForm.data.mail_host,
+            mail_port: settingsForm.data.mail_port,
+            mail_encryption: settingsForm.data.mail_encryption,
+            mail_username: settingsForm.data.mail_username,
+            mail_password: settingsForm.data.mail_password,
+            mail_from_name: settingsForm.data.mail_from_name,
+            mail_from_address: settingsForm.data.mail_from_address,
+        })
+        .then(res => {
+            setTestEmailResult(res.data);
+        })
+        .catch(err => {
+            setTestEmailResult({
+                success: false,
+                message: err.response?.data?.message || err.message || 'SMTP Connection Error',
+            });
+        })
+        .finally(() => {
+            setTestEmailLoading(false);
+        });
+    };
+
+    const handleSendTestSms = (e) => {
+        e.preventDefault();
+        if (!testSmsPhone) return;
+        setTestSmsLoading(true);
+        setTestSmsResult(null);
+
+        window.axios.post(route('admin.settings.test_sms'), {
+            recipient_phone: testSmsPhone,
+            sms_provider: settingsForm.data.sms_provider,
+            sms_api_key: settingsForm.data.sms_api_key,
+            sms_account_sid: settingsForm.data.sms_account_sid,
+            sms_sender_id: settingsForm.data.sms_sender_id,
+            sms_api_url: settingsForm.data.sms_api_url,
+            sms_notifications_enabled: settingsForm.data.sms_notifications_enabled,
+        })
+        .then(res => {
+            setTestSmsResult(res.data);
+        })
+        .catch(err => {
+            setTestSmsResult({
+                success: false,
+                message: err.response?.data?.message || err.message || 'SMS Gateway Error',
+            });
+        })
+        .finally(() => {
+            setTestSmsLoading(false);
         });
     };
 
@@ -474,6 +573,17 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     </>
                 )}
 
+                {/* Feature 9: Today's Daily Operations & Task Management Widget */}
+                {activeTab === 'bookings' && (
+                    <DailyOperationsWidget
+                        bookings={bookings}
+                        vehicles={vehicles}
+                        manualTasks={operationalTasks}
+                        staffUsers={staffUsers}
+                        onSelectBooking={(b) => setBreakdownBooking(b)}
+                    />
+                )}
+
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
                 {!['analytics', 'settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
@@ -566,6 +676,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     + Add Accessory
                                 </button>
                             )}
+                            {activeTab === 'bookings' && isAdmin && (
+                                <button
+                                    onClick={() => setShowImportModal(true)}
+                                    className="px-3.5 h-9 bg-purple-700 dark:bg-purple-600 text-white hover:bg-purple-800 dark:hover:bg-purple-700 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+                                >
+                                    <span>↑</span> Import Legacy Records
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -652,7 +770,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         </td>
                                         <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
                                         <td className="py-3.5 px-4">
-                                            <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
+                                                {booking.is_legacy && (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-black uppercase">
+                                                        Legacy Import
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email}</span>
                                         </td>
                                         <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">{booking.vehicle?.name || 'Vehicle'}</td>
@@ -941,181 +1066,486 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             )}
 
                 {isAdmin && activeTab === 'settings' && (
-                    <div className="space-y-6 max-w-2xl mx-auto">
+                    <div className="space-y-6 max-w-4xl mx-auto">
+                        {/* Settings Navigation Sub-tabs */}
+                        <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                            <button
+                                type="button"
+                                onClick={() => setSettingsSubTab('branding')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    settingsSubTab === 'branding'
+                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                            >
+                                <Globe className="w-4 h-4 text-[#FF3B30]" />
+                                Branding & Info
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setSettingsSubTab('smtp')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    settingsSubTab === 'smtp'
+                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                            >
+                                <Mail className="w-4 h-4 text-blue-500" />
+                                SMTP Email
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setSettingsSubTab('sms')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    settingsSubTab === 'sms'
+                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                            >
+                                <MessageSquare className="w-4 h-4 text-emerald-500" />
+                                SMS Gateway
+                            </button>
+                        </div>
+
                         <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left">
-                        <CardHeader className="px-6 pt-5 pb-3">
-                            <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Site & Branding Settings</CardTitle>
-                            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                Dynamically customize the global branding assets, banner titles, and contact details.
-                            </CardDescription>
-                        </CardHeader>
-                        <form onSubmit={submitSettings}>
-                            <CardContent className="space-y-5 px-6">
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo / Brand Text (Fallback)</label>
-                                            <Input 
-                                                value={settingsForm.data.site_logo} 
-                                                onChange={e => settingsForm.setData('site_logo', e.target.value)} 
-                                                required 
-                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                            />
-                                            {settingsForm.errors.site_logo && <p className="text-xs text-red-500 mt-1">{settingsForm.errors.site_logo}</p>}
-                                        </div>
+                            <form onSubmit={submitSettings}>
+                                {/* TAB 1: BRANDING & GENERAL INFO */}
+                                {settingsSubTab === 'branding' && (
+                                    <>
+                                        <CardHeader className="px-6 pt-5 pb-3">
+                                            <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                <Globe className="w-4 h-4 text-[#FF3B30]" />
+                                                Site & Branding Settings
+                                            </CardTitle>
+                                            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                                Dynamically customize the global branding assets, banner titles, and contact details across the landing page.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-5 px-6">
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo / Brand Text (Fallback)</label>
+                                                        <Input 
+                                                            value={settingsForm.data.site_logo} 
+                                                            onChange={e => settingsForm.setData('site_logo', e.target.value)} 
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                        />
+                                                    </div>
 
-                                        <div>
-                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo Image</label>
-                                            {settings?.site_logo_image && !settingsForm.data.clear_logo_image ? (
-                                                <div className="flex items-center gap-3 p-1.5 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                                                    <img src={settings.site_logo_image} className="h-6 max-w-[120px] object-contain rounded" alt="Current logo" />
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => {
-                                                            settingsForm.setData({ ...settingsForm.data, clear_logo_image: true, site_logo_image_file: null });
-                                                        }}
-                                                        className="text-[10px] font-black text-red-500 uppercase tracking-wide hover:underline cursor-pointer"
-                                                    >
-                                                        Clear Logo
-                                                    </button>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo Image</label>
+                                                        {settings?.site_logo_image && !settingsForm.data.clear_logo_image ? (
+                                                            <div className="flex items-center gap-3 p-1.5 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                                                                <img src={settings.site_logo_image} className="h-6 max-w-[120px] object-contain rounded" alt="Current logo" />
+                                                                <button 
+                                                                    type="button" 
+                                                                    onClick={() => {
+                                                                        settingsForm.setData({ ...settingsForm.data, clear_logo_image: true, site_logo_image_file: null });
+                                                                    }}
+                                                                    className="text-[10px] font-black text-red-500 uppercase tracking-wide hover:underline cursor-pointer"
+                                                                >
+                                                                    Clear Logo
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <Input 
+                                                                type="file"
+                                                                onChange={e => {
+                                                                    settingsForm.setData({ ...settingsForm.data, site_logo_image_file: e.target.files[0] ? e.target.files[0] : null, clear_logo_image: false });
+                                                                }}
+                                                                accept="image/*"
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 py-1.5 focus:border-[#FF3B30] text-xs"
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            ) : (
-                                                <Input 
-                                                    type="file"
-                                                    onChange={e => {
-                                                        settingsForm.setData({ ...settingsForm.data, site_logo_image_file: e.target.files[0] ? e.target.files[0] : null, clear_logo_image: false });
-                                                    }}
-                                                    accept="image/*"
-                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 py-1.5 focus:border-[#FF3B30] text-xs"
-                                                />
-                                            )}
-                                            {settingsForm.errors.site_logo_image_file && <p className="text-xs text-red-500 mt-1">{settingsForm.errors.site_logo_image_file}</p>}
-                                            {settingsForm.data.clear_logo_image && (
-                                                <p className="text-[9px] text-amber-500 font-bold mt-1">Image logo will be removed on save; using text fallback.</p>
-                                            )}
-                                        </div>
-                                    </div>
 
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Main Title</label>
+                                                    <Input 
+                                                        value={settingsForm.data.home_hero_title} 
+                                                        onChange={e => settingsForm.setData('home_hero_title', e.target.value)} 
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Subtitle / Description</label>
+                                                    <textarea 
+                                                        rows="3"
+                                                        value={settingsForm.data.home_hero_subtitle} 
+                                                        onChange={e => settingsForm.setData('home_hero_subtitle', e.target.value)} 
+                                                        className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF3B30] transition-colors"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Email Address</label>
+                                                        <Input 
+                                                            type="email"
+                                                            value={settingsForm.data.contact_email} 
+                                                            onChange={e => settingsForm.setData('contact_email', e.target.value)} 
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Phone Number</label>
+                                                        <Input 
+                                                            value={settingsForm.data.contact_phone} 
+                                                            onChange={e => settingsForm.setData('contact_phone', e.target.value)} 
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </>
+                                )}
+
+                                {/* TAB 2: SMTP EMAIL SETTINGS */}
+                                {settingsSubTab === 'smtp' && (
+                                    <>
+                                        <CardHeader className="px-6 pt-5 pb-3 flex flex-row items-center justify-between">
+                                            <div>
+                                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                    <Mail className="w-4 h-4 text-blue-500" />
+                                                    SMTP Email Server Configuration
+                                                </CardTitle>
+                                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                                    Configure email server credentials and sender profiles for automated system notifications.
+                                                </CardDescription>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                onClick={() => { setTestEmailOpen(true); setTestEmailResult(null); }}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-3 gap-1.5 rounded-lg"
+                                            >
+                                                <Send className="w-3.5 h-3.5" />
+                                                Send Test Email
+                                            </Button>
+                                        </CardHeader>
+                                        <CardContent className="space-y-5 px-6">
+                                            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                                <div>
+                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white block">Email Dispatch System</span>
+                                                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Enable or disable transactional email notifications platform-wide</span>
+                                                </div>
+                                                <select
+                                                    value={settingsForm.data.email_notifications_enabled}
+                                                    onChange={e => settingsForm.setData('email_notifications_enabled', e.target.value)}
+                                                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                >
+                                                    <option value="1">Enabled</option>
+                                                    <option value="0">Disabled</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Mailer Driver</label>
+                                                    <select
+                                                        value={settingsForm.data.mail_driver}
+                                                        onChange={e => settingsForm.setData('mail_driver', e.target.value)}
+                                                        className="w-full text-xs font-medium h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                    >
+                                                        <option value="smtp">SMTP (Recommended)</option>
+                                                        <option value="sendmail">Sendmail</option>
+                                                        <option value="mailgun">Mailgun</option>
+                                                        <option value="ses">Amazon SES</option>
+                                                        <option value="log">Log Only (Testing)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Host / Server</label>
+                                                    <Input
+                                                        placeholder="e.g. smtp.gmail.com or mail.yourdomain.com"
+                                                        value={settingsForm.data.mail_host}
+                                                        onChange={e => settingsForm.setData('mail_host', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Port</label>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="587, 465, or 25"
+                                                        value={settingsForm.data.mail_port}
+                                                        onChange={e => settingsForm.setData('mail_port', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Encryption Standard</label>
+                                                    <select
+                                                        value={settingsForm.data.mail_encryption}
+                                                        onChange={e => settingsForm.setData('mail_encryption', e.target.value)}
+                                                        className="w-full text-xs font-medium h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-mono"
+                                                    >
+                                                        <option value="tls">TLS (Port 587)</option>
+                                                        <option value="ssl">SSL (Port 465)</option>
+                                                        <option value="none">None / Unencrypted (Port 25)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Username / User Email</label>
+                                                    <Input
+                                                        placeholder="e.g. notifications@elfaa.com"
+                                                        value={settingsForm.data.mail_username}
+                                                        onChange={e => settingsForm.setData('mail_username', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Password / App Secret</label>
+                                                    <div className="relative">
+                                                        <Input
+                                                            type={showMailPassword ? 'text' : 'password'}
+                                                            placeholder="••••••••••••••••"
+                                                            value={settingsForm.data.mail_password}
+                                                            onChange={e => settingsForm.setData('mail_password', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowMailPassword(!showMailPassword)}
+                                                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-200"
+                                                        >
+                                                            {showMailPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender Name</label>
+                                                    <Input
+                                                        placeholder="e.g. ELFAA Car Rental"
+                                                        value={settingsForm.data.mail_from_name}
+                                                        onChange={e => settingsForm.setData('mail_from_name', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender From Address</label>
+                                                    <Input
+                                                        type="email"
+                                                        placeholder="e.g. no-reply@elfaacar.com"
+                                                        value={settingsForm.data.mail_from_address}
+                                                        onChange={e => settingsForm.setData('mail_from_address', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </>
+                                )}
+
+                                {/* TAB 3: SMS GATEWAY SETTINGS */}
+                                {settingsSubTab === 'sms' && (
+                                    <>
+                                        <CardHeader className="px-6 pt-5 pb-3 flex flex-row items-center justify-between">
+                                            <div>
+                                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                    <MessageSquare className="w-4 h-4 text-emerald-500" />
+                                                    SMS Notification Gateway
+                                                </CardTitle>
+                                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                                    Integrate Semaphore, Twilio, or custom SMS API HTTP endpoints for instant customer SMS updates.
+                                                </CardDescription>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                onClick={() => { setTestSmsOpen(true); setTestSmsResult(null); }}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3 gap-1.5 rounded-lg"
+                                            >
+                                                <Send className="w-3.5 h-3.5" />
+                                                Send Test SMS
+                                            </Button>
+                                        </CardHeader>
+                                        <CardContent className="space-y-5 px-6">
+                                            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                                <div>
+                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white block">SMS Service Dispatch</span>
+                                                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Enable or disable automated mobile SMS text alerts</span>
+                                                </div>
+                                                <select
+                                                    value={settingsForm.data.sms_notifications_enabled}
+                                                    onChange={e => settingsForm.setData('sms_notifications_enabled', e.target.value)}
+                                                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                >
+                                                    <option value="1">Enabled</option>
+                                                    <option value="0">Disabled</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMS Provider</label>
+                                                    <select
+                                                        value={settingsForm.data.sms_provider}
+                                                        onChange={e => settingsForm.setData('sms_provider', e.target.value)}
+                                                        className="w-full text-xs font-bold h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                    >
+                                                        <option value="semaphore">Semaphore Philippines (Recommended)</option>
+                                                        <option value="twilio">Twilio SMS</option>
+                                                        <option value="generic_http">Custom HTTP Gateway / REST API</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender ID / Header Name</label>
+                                                    <Input
+                                                        placeholder="e.g. ELFAACAR"
+                                                        value={settingsForm.data.sms_sender_id}
+                                                        onChange={e => settingsForm.setData('sms_sender_id', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs uppercase"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
+                                                        {settingsForm.data.sms_provider === 'twilio' ? 'Twilio Auth Token / API Key' : 'API Key / Secret Token'}
+                                                    </label>
+                                                    <div className="relative">
+                                                        <Input
+                                                            type={showSmsApiKey ? 'text' : 'password'}
+                                                            placeholder="Paste your API key here..."
+                                                            value={settingsForm.data.sms_api_key}
+                                                            onChange={e => settingsForm.setData('sms_api_key', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowSmsApiKey(!showSmsApiKey)}
+                                                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-200"
+                                                        >
+                                                            {showSmsApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {settingsForm.data.sms_provider === 'twilio' && (
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Twilio Account SID</label>
+                                                        <Input
+                                                            placeholder="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                                                            value={settingsForm.data.sms_account_sid}
+                                                            onChange={e => settingsForm.setData('sms_account_sid', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                <div className={settingsForm.data.sms_provider === 'twilio' ? 'sm:col-span-2' : ''}>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">API Endpoint URL (Optional / Custom)</label>
+                                                    <Input
+                                                        placeholder={
+                                                            settingsForm.data.sms_provider === 'semaphore'
+                                                                ? 'Default: https://api.semaphore.co/api/v4/messages'
+                                                                : 'https://your-custom-gateway.com/api/send-sms'
+                                                        }
+                                                        value={settingsForm.data.sms_api_url}
+                                                        onChange={e => settingsForm.setData('sms_api_url', e.target.value)}
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </>
+                                )}
+
+                                <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Button 
+                                        type="submit" 
+                                        disabled={settingsForm.processing} 
+                                        className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer shadow-md"
+                                    >
+                                        {settingsForm.processing ? 'Saving Settings...' : 'Save All Settings'}
+                                    </Button>
+                                </CardFooter>
+                            </form>
+                        </Card>
+
+                        {/* Administrator Password Change Section */}
+                        <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left max-w-4xl mx-auto mt-6">
+                            <CardHeader className="px-6 pt-5 pb-3">
+                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-amber-500" />
+                                    Administrator Security & Password
+                                </CardTitle>
+                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                    Update your administrative login credentials to maintain secure system access.
+                                </CardDescription>
+                            </CardHeader>
+                            <form onSubmit={submitPasswordChange}>
+                                <CardContent className="space-y-4 px-6">
                                     <div>
-                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Main Title</label>
+                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Current Password</label>
                                         <Input 
-                                            value={settingsForm.data.home_hero_title} 
-                                            onChange={e => settingsForm.setData('home_hero_title', e.target.value)} 
+                                            type="password"
+                                            value={passwordForm.data.current_password} 
+                                            onChange={e => passwordForm.setData('current_password', e.target.value)} 
                                             required 
                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                         />
-                                        {settingsForm.errors.home_hero_title && <p className="text-xs text-red-500 mt-1">{settingsForm.errors.home_hero_title}</p>}
+                                        {passwordForm.errors.current_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.current_password}</p>}
                                     </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Subtitle / Description</label>
-                                        <textarea 
-                                            rows="3"
-                                            value={settingsForm.data.home_hero_subtitle} 
-                                            onChange={e => settingsForm.setData('home_hero_subtitle', e.target.value)} 
-                                            required 
-                                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF3B30] transition-colors"
-                                        />
-                                        {settingsForm.errors.home_hero_subtitle && <p className="text-xs text-red-500 mt-1">{settingsForm.errors.home_hero_subtitle}</p>}
-                                    </div>
-
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Email Address</label>
+                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">New Password</label>
                                             <Input 
-                                                type="email"
-                                                value={settingsForm.data.contact_email} 
-                                                onChange={e => settingsForm.setData('contact_email', e.target.value)} 
+                                                type="password"
+                                                value={passwordForm.data.new_password} 
+                                                onChange={e => passwordForm.setData('new_password', e.target.value)} 
                                                 required 
                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                             />
-                                            {settingsForm.errors.contact_email && <p className="text-xs text-red-550 mt-1">{settingsForm.errors.contact_email}</p>}
+                                            {passwordForm.errors.new_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password}</p>}
                                         </div>
-
                                         <div>
-                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Phone Number</label>
+                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Confirm New Password</label>
                                             <Input 
-                                                value={settingsForm.data.contact_phone} 
-                                                onChange={e => settingsForm.setData('contact_phone', e.target.value)} 
+                                                type="password"
+                                                value={passwordForm.data.new_password_confirmation} 
+                                                onChange={e => passwordForm.setData('new_password_confirmation', e.target.value)} 
                                                 required 
                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                             />
-                                            {settingsForm.errors.contact_phone && <p className="text-xs text-red-500 mt-1">{settingsForm.errors.contact_phone}</p>}
+                                            {passwordForm.errors.new_password_confirmation && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password_confirmation}</p>}
                                         </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                <Button 
-                                    type="submit" 
-                                    disabled={settingsForm.processing} 
-                                    className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer"
-                                >
-                                    {settingsForm.processing ? 'Saving Settings...' : 'Save Site Settings'}
-                                </Button>
-                            </CardFooter>
-                        </form>
-                    </Card>
-
-                    {/* Administrator Password Change Section */}
-                    <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left max-w-2xl mx-auto mt-6">
-                        <CardHeader className="px-6 pt-5 pb-3">
-                            <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Administrator Security</CardTitle>
-                            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                Update your administrative login credentials to maintain secure system access.
-                            </CardDescription>
-                        </CardHeader>
-                        <form onSubmit={submitPasswordChange}>
-                            <CardContent className="space-y-4 px-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Current Password</label>
-                                    <Input 
-                                        type="password"
-                                        value={passwordForm.data.current_password} 
-                                        onChange={e => passwordForm.setData('current_password', e.target.value)} 
-                                        required 
-                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                    />
-                                    {passwordForm.errors.current_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.current_password}</p>}
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">New Password</label>
-                                        <Input 
-                                            type="password"
-                                            value={passwordForm.data.new_password} 
-                                            onChange={e => passwordForm.setData('new_password', e.target.value)} 
-                                            required 
-                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                        />
-                                        {passwordForm.errors.new_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password}</p>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Confirm New Password</label>
-                                        <Input 
-                                            type="password"
-                                            value={passwordForm.data.new_password_confirmation} 
-                                            onChange={e => passwordForm.setData('new_password_confirmation', e.target.value)} 
-                                            required 
-                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                        />
-                                        {passwordForm.errors.new_password_confirmation && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password_confirmation}</p>}
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                <Button 
-                                    type="submit" 
-                                    disabled={passwordForm.processing} 
-                                    className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer"
-                                >
-                                    {passwordForm.processing ? 'Updating Password...' : 'Update Password'}
-                                </Button>
-                            </CardFooter>
-                        </form>
-                    </Card>
-                </div>
-            )}
+                                </CardContent>
+                                <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Button 
+                                        type="submit" 
+                                        disabled={passwordForm.processing} 
+                                        className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer"
+                                    >
+                                        {passwordForm.processing ? 'Updating Password...' : 'Update Password'}
+                                    </Button>
+                                </CardFooter>
+                            </form>
+                        </Card>
+                    </div>
+                )}
             </div>
 
             {/* Rejecting ID Details reason Modal Dialog */}
@@ -1393,6 +1823,127 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     isAdmin={isAdmin}
                     onClose={() => setBreakdownBooking(null)}
                 />
+            )}
+
+            {/* Historical Rental Data Import Modal (Feature #11) */}
+            {showImportModal && (
+                <LegacyImportModal
+                    onClose={() => setShowImportModal(false)}
+                />
+            )}
+
+            {/* Test Email Modal Dialog */}
+            {testEmailOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTestEmailOpen(false)} />
+                    <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200 text-left">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Mail className="w-5 h-5 text-blue-500" />
+                            <h2 className="font-extrabold text-base">Send Test SMTP Email</h2>
+                        </div>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+                            Send a test email using the currently configured SMTP server settings to verify connectivity and authentication.
+                        </p>
+
+                        <form onSubmit={handleSendTestEmail} className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Recipient Email Address</label>
+                                <Input
+                                    type="email"
+                                    required
+                                    placeholder="your-email@example.com"
+                                    value={testEmailAddress}
+                                    onChange={e => setTestEmailAddress(e.target.value)}
+                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs"
+                                />
+                            </div>
+
+                            {testEmailResult && (
+                                <div className={`p-3 rounded-lg text-xs flex items-start gap-2 ${testEmailResult.success ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'}`}>
+                                    {testEmailResult.success ? <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                                    <div className="break-words">
+                                        <p className="font-bold">{testEmailResult.success ? 'Email Sent Successfully!' : 'Email Delivery Failed'}</p>
+                                        <p className="text-[11px] mt-0.5 font-mono">{testEmailResult.message}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setTestEmailOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                                <Button
+                                    type="submit"
+                                    disabled={testEmailLoading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 gap-1.5 rounded-lg cursor-pointer"
+                                >
+                                    {testEmailLoading ? 'Connecting...' : 'Dispatch Test Email'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Test SMS Modal Dialog */}
+            {testSmsOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTestSmsOpen(false)} />
+                    <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200 text-left">
+                        <div className="flex items-center gap-2 mb-3">
+                            <MessageSquare className="w-5 h-5 text-emerald-500" />
+                            <h2 className="font-extrabold text-base">Send Test SMS Message</h2>
+                        </div>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+                            Send a test mobile text message using the selected SMS provider credentials ({settingsForm.data.sms_provider.toUpperCase()}).
+                        </p>
+
+                        <form onSubmit={handleSendTestSms} className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Recipient Mobile Number</label>
+                                <Input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. 09171234567 or +639171234567"
+                                    value={testSmsPhone}
+                                    onChange={e => setTestSmsPhone(e.target.value)}
+                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs font-mono"
+                                />
+                            </div>
+
+                            {testSmsResult && (
+                                <div className={`p-3 rounded-lg text-xs flex items-start gap-2 ${testSmsResult.success ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'}`}>
+                                    {testSmsResult.success ? <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                                    <div className="break-words">
+                                        <p className="font-bold">{testSmsResult.success ? 'SMS Dispatched Successfully!' : 'SMS Dispatch Failed'}</p>
+                                        <p className="text-[11px] mt-0.5 font-mono">{testSmsResult.message}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setTestSmsOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                                <Button
+                                    type="submit"
+                                    disabled={testSmsLoading}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-4 gap-1.5 rounded-lg cursor-pointer"
+                                >
+                                    {testSmsLoading ? 'Sending...' : 'Dispatch Test SMS'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </PortalLayout>
     );

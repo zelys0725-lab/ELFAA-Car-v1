@@ -21,7 +21,7 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
-        'vehicles' => Vehicle::whereIn('status', ['available', 'rented', 'reserved'])->get(),
+        'vehicles' => Vehicle::prioritized()->where('is_approved', true)->whereIn('status', ['available', 'rented', 'reserved'])->get(),
         'promos' => Promo::where('status', 'active')->get(),
         'addOns' => ExtraGood::where('status', 'available')->get(),
     ]);
@@ -45,6 +45,17 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/documents/{document}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyDocument'])->name('documents.verify');
     Route::post('/bookings/{booking}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyBooking'])->name('bookings.verify');
     Route::post('/bookings/{booking}/verify-payment', [App\Http\Controllers\AdminPortalController::class, 'verifyPayment'])->name('bookings.verify_payment');
+    Route::post('/bookings/{booking}/payments', [App\Http\Controllers\AdminPortalController::class, 'recordPayment'])->name('bookings.record_payment');
+    
+    // Operational Tasks (Feature #9)
+    Route::post('/tasks', [App\Http\Controllers\AdminPortalController::class, 'storeOperationalTask'])->name('tasks.store');
+    Route::post('/tasks/{task}/toggle', [App\Http\Controllers\AdminPortalController::class, 'toggleOperationalTask'])->name('tasks.toggle');
+    
+    // Historical Legacy Import (Feature #11)
+    Route::get('/import/template', [App\Http\Controllers\LegacyImportController::class, 'downloadTemplate'])->name('import.template');
+    Route::post('/import/preview', [App\Http\Controllers\LegacyImportController::class, 'previewImport'])->name('import.preview');
+    Route::post('/import/process', [App\Http\Controllers\LegacyImportController::class, 'processImport'])->name('import.process');
+    
     Route::post('/bookings/{booking}/archive', [App\Http\Controllers\AdminPortalController::class, 'archiveBooking'])->name('bookings.archive');
     Route::post('/bookings/{booking}/restore', [App\Http\Controllers\AdminPortalController::class, 'restoreBooking'])->name('bookings.restore');
     
@@ -85,8 +96,10 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/bookings/{booking}/adjust-price', [App\Http\Controllers\AdminPortalController::class, 'adjustBookingPrice'])->name('bookings.adjust_price');
     Route::get('/bookings/{booking}/invoice', [App\Http\Controllers\AdminPortalController::class, 'getInvoice'])->name('bookings.invoice');
 
-    // Site Settings Configurations
+    // Site Settings Configurations & Notification Testing
     Route::post('/settings', [App\Http\Controllers\AdminPortalController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/settings/test-email', [App\Http\Controllers\AdminPortalController::class, 'testEmail'])->name('settings.test_email');
+    Route::post('/settings/test-sms', [App\Http\Controllers\AdminPortalController::class, 'testSms'])->name('settings.test_sms');
 
     // Calendar & Maintenance Interval Routes
     Route::get('/calendar/feed', [App\Http\Controllers\CalendarController::class, 'adminFeed'])->name('calendar.admin_feed');

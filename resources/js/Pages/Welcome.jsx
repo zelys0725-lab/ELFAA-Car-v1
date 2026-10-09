@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/Components/Shadcn';
+import { Sun, Moon } from 'lucide-react';
 import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
 import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
+import ModernHero from '@/Components/ModernHero';
 
 export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] }) {
     const { settings } = usePage().props;
@@ -14,6 +16,22 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
     const [typeFilter, setTypeFilter] = useState('All');
     const [activeSection, setActiveSection] = useState('home');
     const [lightboxImage, setLightboxImage] = useState(null);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('theme') !== 'light';
+        }
+        return true;
+    });
+
+    useEffect(() => {
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDarkMode]);
 
     // Track scroll position to highlight navigation items
     useEffect(() => {
@@ -122,6 +140,13 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                     </nav>
 
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsDarkMode(!isDarkMode)}
+                            className="p-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors shadow-sm"
+                            title="Toggle Light / Dark Mode"
+                        >
+                            {isDarkMode ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5 text-slate-700" />}
+                        </button>
                         <a href="#fleet" className="hidden sm:inline-block">
                             <Button variant="outline" size="sm" className="font-bold border-[#FF3B30]/40 text-[#FF3B30] hover:bg-[#FF3B30]/10">
                                 Book Now
@@ -152,44 +177,7 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
             </header>
 
             {/* Hero Section */}
-            <section id="home" className="relative overflow-hidden py-20 bg-gradient-to-b from-gray-100 to-gray-50 dark:from-gray-900 dark:to-gray-950">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-6">
-                        <Badge variant="outline" className="border-[#FF3B30] text-[#FF3B30] font-bold">
-                            ★ ELFAA CAR RENTAL EXCELLENCE
-                        </Badge>
-                        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-gray-900 dark:text-white leading-[1.1] whitespace-pre-line">
-                            {settings?.home_hero_title || 'Rent Premium Vehicles\nWithout Muddle.'}
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-400">
-                            {settings?.home_hero_subtitle || "Discover ELFAA CAR RENTAL's modern self-drive fleet. Real-time availability checks guarantee a seamless double-booking-free rental experience."}
-                        </p>
-                        <div className="flex flex-wrap gap-4 pt-2">
-                            <a href="#fleet">
-                                <Button size="lg" className="px-8 shadow-lg shadow-[#FF3B30]/20 bg-[#FF3B30] hover:bg-red-700 font-black tracking-wider uppercase text-xs">
-                                    Browse Fleet Catalog
-                                </Button>
-                            </a>
-                            <a href="#promos">
-                                <Button size="lg" variant="outline" className="px-6 font-bold border-gray-300 dark:border-gray-700">
-                                    View Active Promos
-                                </Button>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#FF3B30]/10 to-red-900/10 rounded-3xl blur-3xl" />
-                        <img 
-                            src="https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800" 
-                            alt="ELFAA Premium Car Showcase" 
-                            className="relative rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 object-cover w-full h-[320px] sm:h-[400px] cursor-pointer hover:opacity-95 transition-opacity"
-                            onClick={() => setLightboxImage('https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=1600')}
-                            title="Click to expand full size"
-                        />
-                    </div>
-                </div>
-            </section>
+            <ModernHero settings={settings} setLightboxImage={setLightboxImage} />
 
             {/* Promos Section */}
             <section id="promos" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

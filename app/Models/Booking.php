@@ -33,6 +33,9 @@ class Booking extends Model
         'payment_proof_path',
         'status',
         'archived_at',
+        'is_legacy',
+        'legacy_notes',
+        'import_batch_id',
     ];
 
     protected function casts(): array
@@ -49,6 +52,7 @@ class Booking extends Model
             'total_price' => 'decimal:2',
             'final_total' => 'decimal:2',
             'is_out_of_bounds' => 'boolean',
+            'is_legacy' => 'boolean',
         ];
     }
 
@@ -80,5 +84,10 @@ class Booking extends Model
     public function priceHistories()
     {
         return $this->hasMany(BookingPriceHistory::class)->orderBy('created_at', 'desc');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(BookingPayment::class)->orderBy('created_at', 'desc');
     }
 }

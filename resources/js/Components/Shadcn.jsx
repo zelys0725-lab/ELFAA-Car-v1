@@ -83,7 +83,7 @@ export function Badge({ className = "", variant = "default", ...props }) {
         secondary: "border-transparent bg-gray-150 text-gray-900 dark:bg-gray-800 dark:text-gray-150",
         destructive: "border-transparent bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
         outline: "text-gray-950 border border-gray-200 dark:text-gray-50 dark:border-gray-800",
-        success: "border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+        success: "border-transparent bg-emerald-600 text-white dark:bg-emerald-600 dark:text-white font-bold shadow-sm",
     };
 
     return <div className={`${base} ${variants[variant]} ${className}`} {...props} />;

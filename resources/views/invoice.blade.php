@@ -147,6 +147,43 @@
             </tbody>
         </table>
 
+        <!-- Itemized Payment Transaction Logs (Feature #8) -->
+        @if($booking->payments && $booking->payments->count() > 0)
+        <div class="history-box" style="margin-bottom: 24px;">
+            <div class="section-title" style="margin-bottom: 10px;">Itemized Payment & Cash/COD Collections History</div>
+            <table style="margin: 0; font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th style="background: #fff;">Date & Time</th>
+                        <th style="background: #fff;">Method / Type</th>
+                        <th style="background: #fff;">Collector / Reference</th>
+                        <th style="background: #fff;" class="amount">Amount Collected</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($booking->payments as $payment)
+                    <tr>
+                        <td>{{ $payment->created_at->format('M d, Y h:i A') }}</td>
+                        <td>
+                            <strong style="text-transform: uppercase;">{{ $payment->payment_method }}</strong>
+                            <div style="font-size: 10px; color: #71717a;">{{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}</div>
+                        </td>
+                        <td>
+                            {{ $payment->collector->name ?? 'Staff' }}
+                            @if($payment->reference_number)
+                                <div style="font-size: 10px; font-family: monospace; color: #71717a;">Ref: #{{ $payment->reference_number }}</div>
+                            @endif
+                        </td>
+                        <td class="amount" style="color: #059669; font-weight: 700;">
+                            + PHP {{ number_format($payment->amount_collected, 2) }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
         <!-- Price Change History Log (Feature #7 Audit Log) -->
         @if($booking->priceHistories && $booking->priceHistories->count() > 0)
         <div class="history-box">

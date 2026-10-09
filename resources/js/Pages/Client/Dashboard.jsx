@@ -859,7 +859,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 )}
                                                 <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
                                                     <div>
-                                                        <Badge className="bg-green-600 uppercase font-black text-[10px] mb-2 tracking-wider text-white">
+                                                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm uppercase font-black text-[10px] mb-2 tracking-wider px-2.5 py-0.5">
                                                             {promo.discount_text}
                                                         </Badge>
                                                         <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">{promo.title}</h3>

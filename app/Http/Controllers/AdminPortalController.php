@@ -13,6 +13,9 @@ use App\Models\VehicleExpense;
 use App\Models\VehicleInspection;
 use App\Models\InspectionCharge;
 use App\Models\BookingPriceHistory;
+use App\Models\BookingPayment;
+use App\Models\OperationalTask;
+use App\Services\NotificationConfigService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -96,12 +99,12 @@ class AdminPortalController extends Controller
         $topVehicles = array_slice($vehicleStats, 0, 5);
 
         // Retrieve active items with relationships
-        $bookings = Booking::with(['user', 'vehicle', 'rating', 'inspections.inspector', 'inspectionCharges.creator', 'inspectionCharges.approver', 'priceHistories.changedBy'])
+        $bookings = Booking::with(['user', 'vehicle', 'rating', 'inspections.inspector', 'inspectionCharges.creator', 'inspectionCharges.approver', 'priceHistories.changedBy', 'payments.collector'])
             ->whereNull('archived_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $archivedBookings = Booking::with(['user', 'vehicle', 'rating', 'inspections.inspector', 'inspectionCharges.creator', 'inspectionCharges.approver', 'priceHistories.changedBy'])
+        $archivedBookings = Booking::with(['user', 'vehicle', 'rating', 'inspections.inspector', 'inspectionCharges.creator', 'inspectionCharges.approver', 'priceHistories.changedBy', 'payments.collector'])
             ->whereNotNull('archived_at')
             ->orderBy('archived_at', 'desc')
             ->get();
@@ -121,6 +124,14 @@ class AdminPortalController extends Controller
 
         $billRecords = BillRecord::orderBy('due_date', 'asc')->get();
 
+        // Feature 9: Operational Tasks Aggregator
+        $manualTasks = OperationalTask::with(['assignedStaff', 'vehicle', 'booking.user'])
+            ->orderBy('due_datetime', 'asc')
+            ->get();
+
+        // Staff users list for assignment
+        $staffUsers = User::whereIn('role', ['admin', 'staff'])->get(['id', 'name', 'role', 'email']);
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,
             'monthlyEarnings' => $monthlyEarnings,
@@ -134,6 +145,8 @@ class AdminPortalController extends Controller
             'documents' => $documents,
             'users' => $users,
             'billRecords' => $billRecords,
+            'operationalTasks' => $manualTasks,
+            'staffUsers' => $staffUsers,
         ]);
     }
 
@@ -263,6 +276,9 @@ class AdminPortalController extends Controller
             'features' => $request->features ?: [],
             'images' => [$imgUrl],
             'status' => 'available',
+            'created_by' => Auth::id(),
+            'owner_role' => Auth::user()->role ?: 'admin',
+            'is_approved' => true,
         ]);
 
         return redirect()->route('admin.dashboard')->with('success', 'Vehicle fleet added successfully!');
@@ -454,16 +470,45 @@ class AdminPortalController extends Controller
         }
 
         $request->validate([
-            'site_logo' => 'required|string|max:50',
-            'home_hero_title' => 'required|string|max:255',
-            'home_hero_subtitle' => 'required|string|max:500',
-            'contact_email' => 'required|email|max:100',
-            'contact_phone' => 'required|string|max:50',
+            'site_logo' => 'nullable|string|max:50',
+            'home_hero_title' => 'nullable|string|max:255',
+            'home_hero_subtitle' => 'nullable|string|max:500',
+            'contact_email' => 'nullable|email|max:100',
+            'contact_phone' => 'nullable|string|max:50',
             'site_logo_image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
+
+            // SMTP Email Settings
+            'mail_driver' => 'nullable|string|max:50',
+            'mail_host' => 'nullable|string|max:255',
+            'mail_port' => 'nullable|numeric|min:1|max:65535',
+            'mail_encryption' => 'nullable|string|max:20',
+            'mail_username' => 'nullable|string|max:255',
+            'mail_password' => 'nullable|string|max:255',
+            'mail_from_name' => 'nullable|string|max:255',
+            'mail_from_address' => 'nullable|email|max:255',
+            'email_notifications_enabled' => 'nullable|in:0,1',
+
+            // SMS Settings
+            'sms_provider' => 'nullable|string|in:semaphore,twilio,generic_http',
+            'sms_api_key' => 'nullable|string|max:500',
+            'sms_account_sid' => 'nullable|string|max:255',
+            'sms_sender_id' => 'nullable|string|max:50',
+            'sms_api_url' => 'nullable|string|max:500',
+            'sms_notifications_enabled' => 'nullable|in:0,1',
         ]);
 
-        foreach ($request->only(['site_logo', 'home_hero_title', 'home_hero_subtitle', 'contact_email', 'contact_phone']) as $key => $value) {
-            \App\Models\Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+        $settingKeys = [
+            'site_logo', 'home_hero_title', 'home_hero_subtitle', 'contact_email', 'contact_phone',
+            'mail_driver', 'mail_host', 'mail_port', 'mail_encryption', 'mail_username', 'mail_password',
+            'mail_from_name', 'mail_from_address', 'email_notifications_enabled',
+            'sms_provider', 'sms_api_key', 'sms_account_sid', 'sms_sender_id', 'sms_api_url', 'sms_notifications_enabled',
+        ];
+
+        foreach ($settingKeys as $key) {
+            if ($request->has($key)) {
+                $value = $request->input($key);
+                \App\Models\Setting::updateOrCreate(['key' => $key], ['value' => (string) ($value ?? '')]);
+            }
         }
 
         if ($request->boolean('clear_logo_image')) {
@@ -483,7 +528,53 @@ class AdminPortalController extends Controller
             \App\Models\Setting::updateOrCreate(['key' => 'site_logo_image'], ['value' => $logoUrl]);
         }
 
-        return redirect()->route('admin.dashboard')->with('success', 'Site settings updated successfully!');
+        return redirect()->route('admin.dashboard')->with('success', 'Site, SMTP, and SMS settings updated successfully!');
+    }
+
+    /**
+     * Send a test SMTP Email.
+     */
+    public function testEmail(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'recipient_email' => 'required|email',
+        ]);
+
+        $overrides = $request->only([
+            'mail_driver', 'mail_host', 'mail_port', 'mail_encryption',
+            'mail_username', 'mail_password', 'mail_from_name', 'mail_from_address'
+        ]);
+
+        $result = NotificationConfigService::sendTestEmail($request->recipient_email, array_filter($overrides, fn($v) => !is_null($v)));
+
+        return response()->json($result);
+    }
+
+    /**
+     * Send a test SMS message.
+     */
+    public function testSms(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'recipient_phone' => 'required|string',
+        ]);
+
+        $overrides = $request->only([
+            'sms_provider', 'sms_api_key', 'sms_account_sid',
+            'sms_sender_id', 'sms_api_url', 'sms_notifications_enabled'
+        ]);
+
+        $result = NotificationConfigService::sendTestSms($request->recipient_phone, array_filter($overrides, fn($v) => !is_null($v)));
+
+        return response()->json($result);
     }
 
     /**
@@ -866,9 +957,93 @@ class AdminPortalController extends Controller
      */
     public function getInvoice(Booking $booking)
     {
-        $booking->load(['user', 'vehicle', 'inspections', 'inspectionCharges', 'priceHistories.changedBy']);
+        $booking->load(['user', 'vehicle', 'inspections', 'inspectionCharges', 'priceHistories.changedBy', 'payments.collector']);
 
         return view('invoice', compact('booking'));
+    }
+
+    /**
+     * Record an individual cash, COD, or online partial payment.
+     * Updates total amount paid and enforces payment status guard rules (Feature #8).
+     */
+    public function recordPayment(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'amount_collected' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|string|in:cash,cod,gcash,bank_transfer,credit_card',
+            'payment_type' => 'required|string|in:downpayment,partial,final_settlement,surcharge_payment',
+            'reference_number' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        // Create individual payment transaction record
+        BookingPayment::create([
+            'booking_id' => $booking->id,
+            'collector_id' => Auth::id(),
+            'amount_collected' => $request->amount_collected,
+            'payment_method' => $request->payment_method,
+            'payment_type' => $request->payment_type,
+            'reference_number' => $request->reference_number,
+            'notes' => $request->notes,
+        ]);
+
+        // Recalculate total amount collected across all logged payment records
+        $totalCollected = $booking->payments()->sum('amount_collected');
+
+        // Payment Guard Logic: Determine status based on total collected vs final price
+        $paymentStatus = 'unpaid';
+        if ($totalCollected >= $booking->total_price) {
+            $paymentStatus = 'paid';
+        } elseif ($totalCollected > 0) {
+            $paymentStatus = 'partial'; // Strict guard: never mark as fully paid if outstanding balance remains!
+        }
+
+        $booking->update([
+            'amount_paid' => $totalCollected,
+            'payment_status' => $paymentStatus,
+        ]);
+
+        return redirect()->back()->with('success', 'Payment transaction logged successfully.');
+    }
+
+    /**
+     * Store a new operational task (Feature #9)
+     */
+    public function storeOperationalTask(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'task_type' => 'required|string',
+            'due_datetime' => 'required|date',
+            'assigned_staff_id' => 'nullable|exists:users,id',
+            'vehicle_id' => 'nullable|exists:vehicles,id',
+            'booking_id' => 'nullable|exists:bookings,id',
+            'notes' => 'nullable|string',
+        ]);
+
+        OperationalTask::create([
+            'title' => $request->title,
+            'task_type' => $request->task_type,
+            'due_datetime' => $request->due_datetime,
+            'assigned_staff_id' => $request->assigned_staff_id,
+            'vehicle_id' => $request->vehicle_id,
+            'booking_id' => $request->booking_id,
+            'notes' => $request->notes,
+            'status' => 'pending',
+        ]);
+
+        return redirect()->back()->with('success', 'Operational task logged successfully.');
+    }
+
+    /**
+     * Toggle operational task status (pending <-> completed) (Feature #9)
+     */
+    public function toggleOperationalTask(OperationalTask $task)
+    {
+        $newStatus = $task->status === 'completed' ? 'pending' : 'completed';
+        $task->update(['status' => $newStatus]);
+
+        return redirect()->back()->with('success', 'Task status updated.');
     }
 }
 
