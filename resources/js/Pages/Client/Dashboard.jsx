@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, 
 import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
 import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
+import AlertModal from '@/Components/AlertModal';
 
 export default function Dashboard({ auth, bookings = [], vehicles = [], documents = [], addOns = [], promos = [], selectedVehicleId = null }) {
     const [selectedType, setSelectedType] = useState('All');
@@ -14,6 +15,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     const [ratingBooking, setRatingBooking] = useState(null);
     const [ratingStars, setRatingStars] = useState(5);
     const [ratingComment, setRatingComment] = useState('');
+    const [alert, setAlert] = useState(null);
 
     // Booking form
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
@@ -157,7 +159,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
             onSuccess: () => {
                 reset();
                 setDaysCount(0);
-            }
+                setAlert({ type: 'success', title: 'Booking Submitted!', message: 'Your reservation request has been submitted and is pending approval.' });
+            },
+            onError: () => {
+                setAlert({ type: 'error', title: 'Booking Failed', message: 'Failed to submit booking. Please check your inputs and try again.' });
+            },
         });
     };
 
@@ -165,6 +171,12 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         e.preventDefault();
         identityForm.post(route('client.identity.update'), {
             preserveScroll: true,
+            onSuccess: () => {
+                setAlert({ type: 'success', title: 'Identity Saved!', message: 'Your identity information has been updated successfully.' });
+            },
+            onError: () => {
+                setAlert({ type: 'error', title: 'Save Failed', message: 'Failed to save identity info. Please check your inputs.' });
+            },
         });
     };
 
@@ -191,20 +203,30 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         formData.append('file', targetFile);
 
         router.post(route('client.documents.store'), formData, {
+            onSuccess: () => {
+                setAlert({ type: 'success', title: 'Uploaded!', message: 'Your document has been uploaded and is pending review.' });
+            },
             onFinish: () => {
                 setUploadingType(null);
                 setDocFiles(prev => ({ ...prev, [fileKey]: null }));
             },
             onError: (err) => {
-                setUploadingType(null);
                 setUploadErrors(prev => ({ ...prev, [fileKey]: err.file || 'Failed to upload document.' }));
+                setAlert({ type: 'error', title: 'Upload Failed', message: err.file || 'Failed to upload document. Please try again.' });
             }
         });
     };
 
     const handleCancelBooking = (bookingId) => {
         if (confirm('Cancel this booking request?')) {
-            router.post(route('client.bookings.cancel', bookingId));
+            router.post(route('client.bookings.cancel', bookingId), {}, {
+                onSuccess: () => {
+                    setAlert({ type: 'success', title: 'Booking Cancelled', message: 'Your booking request has been cancelled.' });
+                },
+                onError: () => {
+                    setAlert({ type: 'error', title: 'Cancel Failed', message: 'Failed to cancel booking. Please try again.' });
+                },
+            });
         }
     };
 
@@ -222,7 +244,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         }, {
             onSuccess: () => {
                 setRatingBooking(null);
-            }
+                setAlert({ type: 'success', title: 'Rating Submitted!', message: 'Thank you for your feedback. Your rating has been recorded.' });
+            },
+            onError: () => {
+                setAlert({ type: 'error', title: 'Rating Failed', message: 'Failed to submit your rating. Please try again.' });
+            },
         });
     };
 
@@ -268,7 +294,8 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
     return (
         <>
-            <PortalLayout 
+        <AlertModal alert={alert} onClose={() => setAlert(null)} />
+        <PortalLayout 
             role="client" 
             sidebarTabs={tabsConfig} 
             activeTab={activeTab} 

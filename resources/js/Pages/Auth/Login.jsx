@@ -35,7 +35,31 @@ export default function Login({ status, canResetPassword }) {
     const [showPassword, setShowPassword] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isDarkMode, setIsDarkMode] = useState(true);
+    const [countdown, setCountdown] = useState(0);
 
+    // Parse seconds remaining from throttle error message (appended as '|seconds:N')
+    const rawEmailError = errors.email || '';
+    const isThrottled = rawEmailError.includes('|seconds:');
+    const isLocked = rawEmailError === 'Your account has been locked by an administrator. Please contact support.';
+    const isDeactivated = rawEmailError === 'Your account has been deactivated. Please contact support.';
+    const displayEmailError = isThrottled ? rawEmailError.split('|seconds:')[0].trim() : rawEmailError;
+
+    // Start countdown when throttle error is received
+    useEffect(() => {
+        if (isThrottled) {
+            const secs = parseInt(rawEmailError.split('|seconds:')[1] || '60', 10);
+            setCountdown(secs);
+        }
+    }, [rawEmailError]);
+
+    // Tick the countdown down each second
+    useEffect(() => {
+        if (countdown <= 0) return;
+        const timer = setTimeout(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+        return () => clearTimeout(timer);
+    }, [countdown]);
+
+    // Carousel auto-rotate
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentImageIndex((prevIndex) => (prevIndex + 1) % CAROUSEL_IMAGES.length);
@@ -45,7 +69,7 @@ export default function Login({ status, canResetPassword }) {
 
     const submit = (e) => {
         e.preventDefault();
-
+        if (countdown > 0) return; // Prevent submit during active lockout
         post(route('login'), {
             onFinish: () => reset('password'),
             replace: true,
@@ -159,12 +183,51 @@ export default function Login({ status, canResetPassword }) {
                         </div>
                     )}
 
-                    {errors.email && errors.email.includes('seconds') && (
-                        <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-bold text-[#FF3B30] flex items-center gap-2">
-                            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    {/* Rate-limit lockout banner with live countdown */}
+                    {isThrottled && (
+                        <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-bold text-[#FF3B30]">
+                            <div className="flex items-center gap-2 mb-2">
+                                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                                <span>Too many failed attempts. Please wait before trying again.</span>
+                            </div>
+                            {countdown > 0 && (
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex-1 h-1.5 bg-rose-500/20 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-[#FF3B30] rounded-full transition-all duration-1000"
+                                            style={{ width: `${(countdown / 60) * 100}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-[11px] font-black tabular-nums shrink-0">
+                                        {countdown}s remaining
+                                    </span>
+                                </div>
+                            )}
+                            {countdown === 0 && (
+                                <span className="text-emerald-500 text-[11px] font-black">✓ You may try again now.</span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Admin-locked account banner */}
+                    {isLocked && (
+                        <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-start gap-2">
+                            <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                             </svg>
-                            <span>Too many failed attempts. Please wait before trying again.</span>
+                            <span>Your account has been <strong>locked</strong> by an administrator. Please contact support to regain access.</span>
+                        </div>
+                    )}
+
+                    {/* Deactivated account banner */}
+                    {isDeactivated && (
+                        <div className="mb-6 p-3.5 rounded-xl bg-zinc-500/10 border border-zinc-500/30 text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524m8.367 8.367A6 6 0 016.524 5.11m7.366 9.78L5.11 6.524M18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                            </svg>
+                            <span>Your account has been <strong>deactivated</strong>. Please contact support.</span>
                         </div>
                     )}
 
@@ -197,7 +260,7 @@ export default function Login({ status, canResetPassword }) {
                                 />
                             </div>
 
-                            <InputError message={errors.email} className="mt-1.5 text-xs font-semibold text-[#FF3B30]" />
+                            <InputError message={(!isLocked && !isDeactivated && !isThrottled) ? displayEmailError : ''} className="mt-1.5 text-xs font-semibold text-[#FF3B30]" />
                         </div>
 
                         {/* Password Input */}
@@ -278,11 +341,10 @@ export default function Login({ status, canResetPassword }) {
                             )}
                         </div>
 
-                        {/* Submit Button */}
                         <div className="pt-2">
                             <button
                                 type="submit"
-                                disabled={processing}
+                                disabled={processing || countdown > 0}
                                 className="w-full flex items-center justify-center h-12 px-6 border border-transparent rounded-xl shadow-lg shadow-[#FF3B30]/25 text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-[#FF3B30] to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF3B30] focus:ring-offset-zinc-950 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
                             >
                                 {processing ? (
@@ -290,6 +352,8 @@ export default function Login({ status, canResetPassword }) {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
+                                ) : countdown > 0 ? (
+                                    <span>Locked out — retry in {countdown}s</span>
                                 ) : (
                                     <span>Sign In to Dashboard →</span>
                                 )}

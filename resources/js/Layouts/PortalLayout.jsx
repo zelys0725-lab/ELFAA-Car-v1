@@ -191,9 +191,6 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                         {!isAdminOrStaff && (
                             <div className="flex items-center gap-4 overflow-x-auto max-w-[320px] xs:max-w-[420px] sm:max-w-none whitespace-nowrap scrollbar-none py-1 mr-2">
                                 <div className="flex items-center gap-3 pr-4">
-                                    <Link href="/" className="text-xs font-bold text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white uppercase tracking-wider">
-                                        Home
-                                    </Link>
                                     {sidebarTabs.map(tab => (
                                         <button
                                             key={tab.id}

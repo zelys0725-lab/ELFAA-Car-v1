@@ -167,6 +167,43 @@ class AdminPortalController extends Controller
     }
 
     /**
+     * Lock a user account (Admin Only) — prevents login with a locked-specific error.
+     */
+    public function lockUser(User $user)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action. Only admins can lock accounts.');
+        }
+
+        // Prevent admins from locking other admins
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard')->withErrors(['lock' => 'Admin accounts cannot be locked.']);
+        }
+
+        $user->update(['status' => 'locked']);
+
+        // Force logout all active sessions of this user
+        \DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        return redirect()->route('admin.dashboard')->with('success', "User account \"{$user->name}\" has been locked.");
+    }
+
+    /**
+     * Unlock a user account (Admin Only) — restores access.
+     */
+    public function unlockUser(User $user)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action. Only admins can unlock accounts.');
+        }
+
+        $user->update(['status' => 'active']);
+
+        return redirect()->route('admin.dashboard')->with('success', "User account \"{$user->name}\" has been unlocked and restored to active.");
+    }
+
+
+    /**
      * Approve or reject identity verifications.
      */
     public function verifyDocument(Request $request, Document $document)
@@ -512,6 +549,14 @@ class AdminPortalController extends Controller
             'sms_sender_id' => 'nullable|string|max:50',
             'sms_api_url' => 'nullable|string|max:500',
             'sms_notifications_enabled' => 'nullable|in:0,1',
+
+            // Social Media Channels
+            'social_facebook' => 'nullable|string|max:255',
+            'social_instagram' => 'nullable|string|max:255',
+            'social_twitter' => 'nullable|string|max:255',
+            'social_whatsapp' => 'nullable|string|max:255',
+            'social_tiktok' => 'nullable|string|max:255',
+            'social_youtube' => 'nullable|string|max:255',
         ]);
 
         $settingKeys = [
@@ -519,6 +564,7 @@ class AdminPortalController extends Controller
             'mail_driver', 'mail_host', 'mail_port', 'mail_encryption', 'mail_username', 'mail_password',
             'mail_from_name', 'mail_from_address', 'email_notifications_enabled',
             'sms_provider', 'sms_api_key', 'sms_account_sid', 'sms_sender_id', 'sms_api_url', 'sms_notifications_enabled',
+            'social_facebook', 'social_instagram', 'social_twitter', 'social_whatsapp', 'social_tiktok', 'social_youtube',
         ];
 
         foreach ($settingKeys as $key) {

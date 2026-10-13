@@ -11,6 +11,7 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
     const [numDays, setNumDays] = useState(7);
     const [selectedType, setSelectedType] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
     const [inspectingCell, setInspectingCell] = useState(null);
 
     // Generate array of dates starting from startDate
@@ -146,9 +147,9 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
             return {
                 status: 'Currently Rented',
                 code: 'rented',
-                bgClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40 hover:border-purple-500',
-                badgeClass: 'bg-purple-600 text-white',
-                dotClass: 'bg-purple-500',
+                bgClass: 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/40 hover:border-red-500',
+                badgeClass: 'bg-red-600 text-white',
+                dotClass: 'bg-red-500',
                 booking: activeBooking,
                 timeLabel: `${formatExactTime(activeBooking?.start_datetime)} - ${formatExactTime(activeBooking?.end_datetime)}`,
             };
@@ -182,7 +183,12 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
         const matchesSearch = !searchQuery || 
             v.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
             (v.plate_number && v.plate_number.toLowerCase().includes(searchQuery.toLowerCase()));
-        return matchesType && matchesSearch;
+        if (!matchesType || !matchesSearch) return false;
+        if (selectedStatusFilter === 'all') return true;
+        return datesList.some(d => {
+            const st = getVehicleStatusForDate(v, d);
+            return st.code === selectedStatusFilter;
+        });
     });
 
     const shiftDate = (days) => {
@@ -249,26 +255,85 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
                     </div>
 
                     {/* Status Legend */}
-                    <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/60 flex flex-wrap items-center gap-3 text-[11px] font-extrabold uppercase tracking-wider">
-                        <span className="text-zinc-400 text-[10px]">Status Legend:</span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500" /> Available
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
-                            <span className="h-2 w-2 rounded-full bg-sky-500" /> Reserved
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                            <span className="h-2 w-2 rounded-full bg-purple-500" /> Currently Rented
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                            <span className="h-2 w-2 rounded-full bg-amber-500" /> Scheduled Pickup
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
-                            <span className="h-2 w-2 rounded-full bg-rose-500" /> Scheduled Return
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">
-                            <span className="h-2 w-2 rounded-full bg-zinc-400" /> Under Maintenance
-                        </span>
+                    <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/60 flex flex-wrap items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider">
+                        <span className="text-zinc-400 text-[10px] mr-1">Status Legend:</span>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter('all')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'all'
+                                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent shadow-sm'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'
+                            }`}
+                        >
+                            All Statuses
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'available' ? 'all' : 'available')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'available'
+                                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/30'
+                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/50'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'available' ? 'bg-white' : 'bg-emerald-500'}`} /> Available
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'reserved' ? 'all' : 'reserved')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'reserved'
+                                    ? 'bg-sky-500 text-white border-sky-600 shadow-sm ring-2 ring-sky-500/30'
+                                    : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 hover:border-sky-500/60'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'reserved' ? 'bg-white' : 'bg-sky-500'}`} /> Reserved
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'rented' ? 'all' : 'rented')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'rented'
+                                    ? 'bg-red-600 text-white border-red-700 shadow-sm ring-2 ring-red-500/30'
+                                    : 'bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30 hover:border-red-500/60'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'rented' ? 'bg-white' : 'bg-red-500'}`} /> Currently Rented
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'pickup' ? 'all' : 'pickup')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'pickup'
+                                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-2 ring-amber-500/30'
+                                    : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:border-amber-500/60'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'pickup' ? 'bg-white' : 'bg-amber-500'}`} /> Scheduled Pickup
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'return' ? 'all' : 'return')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'return'
+                                    ? 'bg-rose-600 text-white border-rose-700 shadow-sm ring-2 ring-rose-500/30'
+                                    : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:border-rose-500/60'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'return' ? 'bg-white' : 'bg-rose-500'}`} /> Scheduled Return
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'maintenance' ? 'all' : 'maintenance')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                selectedStatusFilter === 'maintenance'
+                                    ? 'bg-zinc-700 text-white border-zinc-800 shadow-sm ring-2 ring-zinc-500/30'
+                                    : 'bg-zinc-800 text-zinc-200 border border-zinc-700 hover:border-zinc-500'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'maintenance' ? 'bg-white' : 'bg-zinc-400'}`} /> Under Maintenance
+                        </button>
                     </div>
 
                     {/* Filters bar */}

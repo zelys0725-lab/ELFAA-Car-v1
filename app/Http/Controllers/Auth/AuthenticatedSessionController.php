@@ -33,7 +33,18 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        // Check if user is active
+        // Check if user is locked by admin
+        if ($user->isLocked()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your account has been locked by an administrator. Please contact support.',
+            ]);
+        }
+
+        // Check if user is deactivated
         if (! $user->isActive()) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
@@ -51,7 +62,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return redirect('/');
+        return redirect()->route('client.dashboard');
     }
 
     /**

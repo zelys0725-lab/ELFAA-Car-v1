@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\Vehicle;
 use App\Models\Promo;
@@ -14,8 +15,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Landing Homepage - Guest accessible
+// Landing Homepage - Guest accessible (Redirect authenticated users to their dashboards)
 Route::get('/', function () {
+    if (Auth::check()) {
+        $user = Auth::user();
+        if ($user->role === 'client') {
+            return redirect()->route('client.dashboard');
+        } elseif (in_array($user->role, ['admin', 'staff'])) {
+            return redirect()->route('admin.dashboard');
+        }
+    }
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -42,6 +52,8 @@ Route::middleware(['auth', 'nocache', 'role:client'])->prefix('client')->name('c
 Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\AdminPortalController::class, 'dashboard'])->name('dashboard');
     Route::post('/users/{user}/toggle', [App\Http\Controllers\AdminPortalController::class, 'toggleUserStatus'])->name('users.toggle');
+    Route::post('/users/{user}/lock', [App\Http\Controllers\AdminPortalController::class, 'lockUser'])->name('users.lock');
+    Route::post('/users/{user}/unlock', [App\Http\Controllers\AdminPortalController::class, 'unlockUser'])->name('users.unlock');
     Route::post('/documents/{document}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyDocument'])->name('documents.verify');
     Route::post('/bookings/{booking}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyBooking'])->name('bookings.verify');
     Route::post('/bookings/{booking}/verify-payment', [App\Http\Controllers\AdminPortalController::class, 'verifyPayment'])->name('bookings.verify_payment');

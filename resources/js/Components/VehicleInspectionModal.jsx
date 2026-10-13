@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { X, Camera, Fuel, Gauge, AlertTriangle, ShieldCheck, Upload } from 'lucide-react';
+import AlertModal from '@/Components/AlertModal';
 
 export default function VehicleInspectionModal({ booking, type = 'pickup', onClose }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -13,6 +14,7 @@ export default function VehicleInspectionModal({ booking, type = 'pickup', onClo
     });
 
     const [previewUrls, setPreviewUrls] = useState([]);
+    const [alert, setAlert] = useState(null);
 
     const handlePhotoChange = (e) => {
         const files = Array.from(e.target.files);
@@ -26,12 +28,31 @@ export default function VehicleInspectionModal({ booking, type = 'pickup', onClo
         e.preventDefault();
         post(route('admin.inspections.store'), {
             onSuccess: () => {
-                onClose();
+                setAlert({
+                    type: 'success',
+                    title: 'Inspection Saved!',
+                    message: `${type === 'pickup' ? 'Pickup' : 'Return'} inspection record has been saved successfully.`,
+                });
+            },
+            onError: () => {
+                setAlert({
+                    type: 'error',
+                    title: 'Save Failed',
+                    message: 'Failed to save inspection record. Please check your inputs and try again.',
+                });
             },
         });
     };
 
+    const handleAlertClose = () => {
+        const wasSuccess = alert?.type === 'success';
+        setAlert(null);
+        if (wasSuccess) onClose();
+    };
+
     return (
+        <>
+        <AlertModal alert={alert} onClose={handleAlertClose} />
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="z-10 w-full max-w-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden transition-colors">
@@ -168,5 +189,6 @@ export default function VehicleInspectionModal({ booking, type = 'pickup', onClo
                 </form>
             </div>
         </div>
+        </>
     );
 }

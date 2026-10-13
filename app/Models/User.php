@@ -74,6 +74,11 @@ class User extends Authenticatable
         return $this->status === 'active';
     }
 
+    public function isLocked(): bool
+    {
+        return $this->status === 'locked';
+    }
+
     // Relationships
     public function bookings(): HasMany
     {

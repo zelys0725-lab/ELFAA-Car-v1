@@ -104,7 +104,7 @@ export default function VehicleCalendar({ vehicles = [], isAdmin = true }) {
             case 'reserved':
                 return 'bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border-amber-500/30';
             case 'rented':
-                return 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-800 dark:text-sky-400 border-sky-500/30';
+                return 'bg-red-500/15 dark:bg-red-500/20 text-red-800 dark:text-red-400 border-red-500/30';
             case 'pending':
                 return 'bg-yellow-500/15 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-400 border-yellow-500/30';
             case 'maintenance':
@@ -212,6 +212,88 @@ export default function VehicleCalendar({ vehicles = [], isAdmin = true }) {
 
             {/* Calendar Canvas View */}
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xl transition-colors">
+                {/* Status Legend & Interactive Quick Filter */}
+                <div className="pb-4 mb-4 border-b border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider">
+                    <span className="text-zinc-400 text-[10px] mr-1">Status Legend:</span>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === ''
+                                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent shadow-sm'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'
+                        }`}
+                    >
+                        All Statuses
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'confirmed' ? '' : 'confirmed')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === 'confirmed'
+                                ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/30'
+                                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60'
+                        }`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'confirmed' ? 'bg-white' : 'bg-emerald-500'}`} /> Confirmed
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'reserved' ? '' : 'reserved')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === 'reserved'
+                                ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-2 ring-amber-500/30'
+                                : 'bg-amber-500/15 text-amber-800 dark:text-amber-400 border-amber-500/30 hover:border-amber-500/60'
+                        }`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'reserved' ? 'bg-white' : 'bg-amber-500'}`} /> Reserved
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'rented' ? '' : 'rented')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === 'rented'
+                                ? 'bg-red-600 text-white border-red-700 shadow-sm ring-2 ring-red-500/30'
+                                : 'bg-red-500/15 text-red-800 dark:text-red-400 border-red-500/30 hover:border-red-500/60'
+                        }`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'rented' ? 'bg-white' : 'bg-red-500'}`} /> Currently Rented
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'pending' ? '' : 'pending')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === 'pending'
+                                ? 'bg-yellow-500 text-white border-yellow-600 shadow-sm ring-2 ring-yellow-500/30'
+                                : 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-400 border-yellow-500/30 hover:border-yellow-500/60'
+                        }`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'pending' ? 'bg-white' : 'bg-yellow-500'}`} /> Pending
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'maintenance' ? '' : 'maintenance')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === 'maintenance'
+                                ? 'bg-purple-600 text-white border-purple-700 shadow-sm ring-2 ring-purple-500/30'
+                                : 'bg-purple-500/15 text-purple-800 dark:text-purple-400 border-purple-500/30 hover:border-purple-500/60'
+                        }`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'maintenance' ? 'bg-white' : 'bg-purple-500'}`} /> Maintenance
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'unavailable' ? '' : 'unavailable')}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            selectedStatusFilter === 'unavailable'
+                                ? 'bg-rose-600 text-white border-rose-700 shadow-sm ring-2 ring-rose-500/30'
+                                : 'bg-rose-500/15 text-rose-800 dark:text-rose-400 border-rose-500/30 hover:border-rose-500/60'
+                        }`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${selectedStatusFilter === 'unavailable' ? 'bg-white' : 'bg-rose-500'}`} /> Unavailable
+                    </button>
+                </div>
+
                 {/* Days of Week Header */}
                 <div className="grid grid-cols-7 gap-2 text-center text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 pb-3 border-b border-zinc-200 dark:border-zinc-800">
                     <span>Sun</span>

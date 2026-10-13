@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
@@ -19,9 +21,19 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
+        // Locked account check — admin has manually locked this user
+        if ($request->user()->isLocked()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your account has been locked by an administrator. Please contact support.',
+            ]);
+        }
+
         // Deactivated check
         if (! $request->user()->isActive()) {
-            \Illuminate\Support\Facades\Auth::guard('web')->logout();
+            Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
             return redirect()->route('login')->withErrors([
@@ -29,8 +41,12 @@ class RoleMiddleware
             ]);
         }
 
+        // Role authorization check
         if (! in_array($request->user()->role, $roles)) {
-            abort(403, 'Access Restricted: Your account role does not have permission to access this route.');
+            // Return Inertia-rendered 403 page so the SPA displays correctly
+            return Inertia::render('Errors/Error', [
+                'status' => 403,
+            ])->toResponse($request)->setStatusCode(403);
         }
 
         return $next($request);

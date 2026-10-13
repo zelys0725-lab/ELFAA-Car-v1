@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button, Input } from '@/Components/Shadcn';
 import { Receipt, Plus, Search, Filter, Trash2, Edit, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import AlertModal from '@/Components/AlertModal';
 
 export default function BillRecordsManager({ billRecords = [], showConfirm }) {
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -9,6 +10,7 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [editingBill, setEditingBill] = useState(null);
+    const [alert, setAlert] = useState(null);
 
     const billForm = useForm({
         biller_name: '',
@@ -44,8 +46,9 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const actionUrl = editingBill 
-            ? route('admin.bill_records.update', editingBill) 
+        const isEditing = !!editingBill;
+        const actionUrl = isEditing
+            ? route('admin.bill_records.update', editingBill)
             : route('admin.bill_records.store');
 
         billForm.post(actionUrl, {
@@ -53,7 +56,21 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
             onSuccess: () => {
                 setModalOpen(false);
                 billForm.reset();
-            }
+                setAlert({
+                    type: 'success',
+                    title: isEditing ? 'Bill Updated!' : 'Bill Saved!',
+                    message: isEditing
+                        ? 'The bill record has been updated successfully.'
+                        : 'New bill record has been saved successfully.',
+                });
+            },
+            onError: () => {
+                setAlert({
+                    type: 'error',
+                    title: 'Save Failed',
+                    message: 'Failed to save bill record. Please check your inputs and try again.',
+                });
+            },
         });
     };
 
@@ -63,7 +80,22 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
             message: 'Are you sure you want to delete this bill record? This action cannot be undone.',
             actionLabel: 'Delete Bill',
             actionClass: 'bg-rose-600 hover:bg-rose-700 text-white',
-            onConfirm: () => router.post(route('admin.bill_records.destroy', billId)),
+            onConfirm: () => router.post(route('admin.bill_records.destroy', billId), {}, {
+                onSuccess: () => {
+                    setAlert({
+                        type: 'success',
+                        title: 'Bill Deleted',
+                        message: 'The bill record has been permanently deleted.',
+                    });
+                },
+                onError: () => {
+                    setAlert({
+                        type: 'error',
+                        title: 'Delete Failed',
+                        message: 'Failed to delete the bill record. Please try again.',
+                    });
+                },
+            }),
         });
     };
 
@@ -100,6 +132,8 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
     };
 
     return (
+        <>
+        <AlertModal alert={alert} onClose={() => setAlert(null)} />
         <div className="space-y-6">
             {/* Overview Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -365,5 +399,6 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
                 </div>
             )}
         </div>
+        </>
     );
 }

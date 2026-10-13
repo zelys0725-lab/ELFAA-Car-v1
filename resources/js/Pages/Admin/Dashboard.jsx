@@ -83,6 +83,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         site_logo_image_file: null,
         clear_logo_image: false,
 
+        // Social Media Channels
+        social_facebook: settings?.social_facebook || '',
+        social_instagram: settings?.social_instagram || '',
+        social_twitter: settings?.social_twitter || '',
+        social_whatsapp: settings?.social_whatsapp || '',
+        social_tiktok: settings?.social_tiktok || '',
+        social_youtube: settings?.social_youtube || '',
+
         // SMTP Email Settings
         mail_driver: settings?.mail_driver || 'smtp',
         mail_host: settings?.mail_host || '',
@@ -274,6 +282,28 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             actionLabel: isActive ? 'Block User' : 'Activate User',
             actionClass: isActive ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white',
             onConfirm: () => router.post(route('admin.users.toggle', userId)),
+        });
+    };
+
+    const handleLockUser = (userId, userName) => {
+        if (!isAdmin) return;
+        showConfirm({
+            title: '🔒 Lock User Account',
+            message: `Lock "${userName}"? They will be immediately logged out and cannot sign in. Their active sessions will be terminated.`,
+            actionLabel: 'Lock Account',
+            actionClass: 'bg-amber-600 hover:bg-amber-700 text-white',
+            onConfirm: () => router.post(route('admin.users.lock', userId)),
+        });
+    };
+
+    const handleUnlockUser = (userId, userName) => {
+        if (!isAdmin) return;
+        showConfirm({
+            title: '🔓 Unlock User Account',
+            message: `Restore access for "${userName}"? Their account will return to Active status and they can sign in again.`,
+            actionLabel: 'Unlock Account',
+            actionClass: 'bg-green-600 hover:bg-green-700 text-white',
+            onConfirm: () => router.post(route('admin.users.unlock', userId)),
         });
     };
 
@@ -989,21 +1019,66 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{u.email}</td>
                                         <td className="py-3.5 px-4 font-mono font-bold uppercase text-[10px] text-zinc-550 dark:text-zinc-400">{u.role}</td>
                                         <td className="py-3.5 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                u.status === 'active' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'
-                                            }`}>
-                                                {u.status}
-                                            </span>
+                                            {u.status === 'active' && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                    Active
+                                                </span>
+                                            )}
+                                            {u.status === 'locked' && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+                                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                    Locked
+                                                </span>
+                                            )}
+                                            {u.status === 'deactivated' && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-500/10 border border-zinc-400/20 text-zinc-500 dark:text-zinc-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                                                    Deactivated
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="py-3.5 px-4 text-right">
                                             {isAdmin && u.id !== auth.user.id && (
-                                                <button onClick={() => handleToggleUser(u.id, u.status)} className={`px-2.5 py-1 rounded text-[10px] font-black uppercase border transition-colors cursor-pointer ${
-                                                    u.status === 'active' 
-                                                        ? 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-550/20 text-rose-600 dark:text-rose-400' 
-                                                        : 'bg-green-500/10 border-green-500/20 hover:bg-green-550/20 text-green-600 dark:text-green-400'
-                                                }`}>
-                                                    {u.status === 'active' ? 'Block user' : 'Activate user'}
-                                                </button>
+                                                <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
+                                                    {/* LOCKED: only show Unlock */}
+                                                    {u.status === 'locked' && (
+                                                        <button
+                                                            onClick={() => handleUnlockUser(u.id, u.name)}
+                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/10 border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 transition-colors cursor-pointer"
+                                                        >
+                                                            🔓 Unlock
+                                                        </button>
+                                                    )}
+                                                    {/* ACTIVE: show Deactivate + Lock */}
+                                                    {u.status === 'active' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleToggleUser(u.id, u.status)}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
+                                                            >
+                                                                Deactivate
+                                                            </button>
+                                                            {u.role !== 'admin' && (
+                                                                <button
+                                                                    onClick={() => handleLockUser(u.id, u.name)}
+                                                                    className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                                                                >
+                                                                    🔒 Lock
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                    {/* DEACTIVATED: show Activate only */}
+                                                    {u.status === 'deactivated' && (
+                                                        <button
+                                                            onClick={() => handleToggleUser(u.id, u.status)}
+                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/10 border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 transition-colors cursor-pointer"
+                                                        >
+                                                            Activate
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </td>
                                     </tr>
@@ -1200,6 +1275,81 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                             onChange={e => settingsForm.setData('contact_phone', e.target.value)} 
                                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                                         />
+                                                    </div>
+                                                </div>
+
+                                                {/* Social Media Links Section */}
+                                                <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                                                    <div className="mb-3">
+                                                        <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                            <Globe className="w-4 h-4 text-[#FF3B30]" />
+                                                            Social Media Channels
+                                                        </span>
+                                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">
+                                                            Configure your brand's official social media profiles displayed on the landing page and footer.
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Facebook Page URL</label>
+                                                            <Input 
+                                                                placeholder="https://facebook.com/yourbrand"
+                                                                value={settingsForm.data.social_facebook} 
+                                                                onChange={e => settingsForm.setData('social_facebook', e.target.value)} 
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Instagram Profile URL</label>
+                                                            <Input 
+                                                                placeholder="https://instagram.com/yourbrand"
+                                                                value={settingsForm.data.social_instagram} 
+                                                                onChange={e => settingsForm.setData('social_instagram', e.target.value)} 
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Twitter / X URL</label>
+                                                            <Input 
+                                                                placeholder="https://x.com/yourbrand"
+                                                                value={settingsForm.data.social_twitter} 
+                                                                onChange={e => settingsForm.setData('social_twitter', e.target.value)} 
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">WhatsApp Number / Link</label>
+                                                            <Input 
+                                                                placeholder="https://wa.me/639123456789 or +639123456789"
+                                                                value={settingsForm.data.social_whatsapp} 
+                                                                onChange={e => settingsForm.setData('social_whatsapp', e.target.value)} 
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">TikTok Profile URL</label>
+                                                            <Input 
+                                                                placeholder="https://tiktok.com/@yourbrand"
+                                                                value={settingsForm.data.social_tiktok} 
+                                                                onChange={e => settingsForm.setData('social_tiktok', e.target.value)} 
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">YouTube Channel URL</label>
+                                                            <Input 
+                                                                placeholder="https://youtube.com/@yourbrand"
+                                                                value={settingsForm.data.social_youtube} 
+                                                                onChange={e => settingsForm.setData('social_youtube', e.target.value)} 
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
