@@ -95,6 +95,11 @@ class User extends Authenticatable
         return $this->hasMany(Rating::class);
     }
 
+    public function documentAuditLogs(): HasMany
+    {
+        return $this->hasMany(DocumentAuditLog::class);
+    }
+
     /**
      * Send the password reset notification.
      *

@@ -8,11 +8,15 @@ use App\Models\Vehicle;
 use App\Models\Promo;
 use App\Models\ExtraGood;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DocumentVerificationController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Secure Authenticated Document File Access (Policy protected)
+    Route::get('/documents/{document}/file', [DocumentVerificationController::class, 'serveFile'])->name('documents.file');
 });
 
 // Landing Homepage - Guest accessible (Redirect authenticated users to their dashboards)
@@ -44,7 +48,7 @@ Route::middleware(['auth', 'nocache', 'role:client'])->prefix('client')->name('c
     Route::post('/bookings/{booking}/cancel', [App\Http\Controllers\ClientPortalController::class, 'cancelBooking'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/rate', [App\Http\Controllers\ClientPortalController::class, 'storeRating'])->name('bookings.rate');
     Route::post('/bookings/{booking}/payment-proof', [App\Http\Controllers\ClientPortalController::class, 'uploadPaymentProof'])->name('bookings.payment_proof');
-    Route::post('/documents', [App\Http\Controllers\ClientPortalController::class, 'storeDocument'])->name('documents.store');
+    Route::post('/documents', [App\Http\Controllers\ClientPortalController::class, 'storeDocument'])->name('documents.store')->middleware('throttle:15,1');
     Route::post('/identity', [App\Http\Controllers\ClientPortalController::class, 'updateIdentityDetails'])->name('identity.update');
 });
 
@@ -54,7 +58,13 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/users/{user}/toggle', [App\Http\Controllers\AdminPortalController::class, 'toggleUserStatus'])->name('users.toggle');
     Route::post('/users/{user}/lock', [App\Http\Controllers\AdminPortalController::class, 'lockUser'])->name('users.lock');
     Route::post('/users/{user}/unlock', [App\Http\Controllers\AdminPortalController::class, 'unlockUser'])->name('users.unlock');
+    
+    // Document Verification, OCR & Decisions
     Route::post('/documents/{document}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyDocument'])->name('documents.verify');
+    Route::post('/documents/{document}/decision', [DocumentVerificationController::class, 'recordDecision'])->name('documents.decision');
+    Route::post('/documents/{document}/reprocess', [DocumentVerificationController::class, 'reprocess'])->name('documents.reprocess')->middleware('throttle:15,1');
+    Route::get('/documents/{document}/details', [DocumentVerificationController::class, 'details'])->name('documents.details');
+
     Route::post('/bookings/{booking}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyBooking'])->name('bookings.verify');
     Route::post('/bookings/{booking}/verify-payment', [App\Http\Controllers\AdminPortalController::class, 'verifyPayment'])->name('bookings.verify_payment');
     Route::post('/bookings/{booking}/payments', [App\Http\Controllers\AdminPortalController::class, 'recordPayment'])->name('bookings.record_payment');

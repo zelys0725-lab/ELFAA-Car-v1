@@ -41,12 +41,16 @@ class RoleMiddleware
             ]);
         }
 
-        // Role authorization check
-        if (! in_array($request->user()->role, $roles)) {
-            // Return Inertia-rendered 403 page so the SPA displays correctly
-            return Inertia::render('Errors/Error', [
-                'status' => 403,
-            ])->toResponse($request)->setStatusCode(403);
+        // Role authorization check (supports comma-separated roles e.g. role:admin,staff)
+        $allowedRoles = [];
+        foreach ($roles as $r) {
+            foreach (explode(',', $r) as $part) {
+                $allowedRoles[] = trim($part);
+            }
+        }
+
+        if (! in_array($request->user()->role, $allowedRoles)) {
+            abort(403, 'Unauthorized access for your account role.');
         }
 
         return $next($request);

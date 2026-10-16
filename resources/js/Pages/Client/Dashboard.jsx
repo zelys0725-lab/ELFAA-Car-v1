@@ -260,6 +260,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         if (!doc) return { label: 'Missing', textClass: 'text-rose-500', dotClass: 'bg-rose-500', info: null };
         if (doc.status === 'verified') return { label: 'Verified', textClass: 'text-green-500', dotClass: 'bg-green-500', info: doc };
         if (doc.status === 'rejected') return { label: 'Rejected', textClass: 'text-rose-500', dotClass: 'bg-rose-500', info: doc };
+        if (doc.status === 'resubmission_requested') return { label: 'Resubmission Requested', textClass: 'text-amber-500', dotClass: 'bg-amber-500', info: doc };
         return { label: 'Pending Review', textClass: 'text-amber-500', dotClass: 'bg-amber-500', info: doc };
     };
 
@@ -432,8 +433,14 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     Refusal Reason: {govId1.info.reject_reason}
                                                 </div>
                                             )}
+                                            {govId1.info?.resubmission_notes && (
+                                                <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                                                    <span className="uppercase block font-black mb-0.5">⚠️ Resubmission Requested:</span>
+                                                    {govId1.info.resubmission_notes}
+                                                </div>
+                                            )}
                                             {govId1.info?.file_path && (
-                                                <a href={govId1.info.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                <a href={govId1.info.secure_url || `/documents/${govId1.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
                                                     <span>📄</span> View Current Document
                                                 </a>
                                             )}
@@ -442,7 +449,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         <form onSubmit={(e) => handleDirectUpload(e, 'gov_id_1')} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
                                             <div>
                                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                                                    Select License File (JPG, PNG, PDF max 5MB)
+                                                    Select License File (JPG, PNG, WebP, PDF max 10MB)
                                                 </label>
                                                 <Input 
                                                     type="file" 
@@ -457,7 +464,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 disabled={uploadingType === 'gov_id_1' || !docFiles['gov_id_1']} 
                                                 className="w-full h-9 bg-[#FF3B30] hover:bg-red-700 text-white rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
                                             >
-                                                {uploadingType === 'gov_id_1' ? 'Uploading...' : (govId1.info ? 'Replace License' : 'Upload License')}
+                                                {uploadingType === 'gov_id_1' ? 'Uploading & Scanning OCR...' : (govId1.info?.status === 'resubmission_requested' ? 'Resubmit License' : govId1.info ? 'Replace License' : 'Upload License')}
                                             </button>
                                         </form>
                                     </div>
@@ -480,8 +487,14 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     Refusal Reason: {govId2.info.reject_reason}
                                                 </div>
                                             )}
+                                            {govId2.info?.resubmission_notes && (
+                                                <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                                                    <span className="uppercase block font-black mb-0.5">⚠️ Resubmission Requested:</span>
+                                                    {govId2.info.resubmission_notes}
+                                                </div>
+                                            )}
                                             {govId2.info?.file_path && (
-                                                <a href={govId2.info.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                <a href={govId2.info.secure_url || `/documents/${govId2.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
                                                     <span>📄</span> View Current Document
                                                 </a>
                                             )}
@@ -490,7 +503,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         <form onSubmit={(e) => handleDirectUpload(e, 'gov_id_2')} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
                                             <div>
                                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                                                    Select Secondary ID File (JPG, PNG, PDF max 5MB)
+                                                    Select Secondary ID File (JPG, PNG, WebP, PDF max 10MB)
                                                 </label>
                                                 <Input 
                                                     type="file" 
@@ -505,7 +518,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 disabled={uploadingType === 'gov_id_2' || !docFiles['gov_id_2']} 
                                                 className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
                                             >
-                                                {uploadingType === 'gov_id_2' ? 'Uploading...' : (govId2.info ? 'Replace Secondary ID' : 'Upload Secondary ID')}
+                                                {uploadingType === 'gov_id_2' ? 'Uploading & Scanning OCR...' : (govId2.info?.status === 'resubmission_requested' ? 'Resubmit Secondary ID' : govId2.info ? 'Replace Secondary ID' : 'Upload Secondary ID')}
                                             </button>
                                         </form>
                                     </div>
@@ -528,8 +541,14 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     Refusal Reason: {billingProof.info.reject_reason}
                                                 </div>
                                             )}
+                                            {billingProof.info?.resubmission_notes && (
+                                                <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                                                    <span className="uppercase block font-black mb-0.5">⚠️ Resubmission Requested:</span>
+                                                    {billingProof.info.resubmission_notes}
+                                                </div>
+                                            )}
                                             {billingProof.info?.file_path && (
-                                                <a href={billingProof.info.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                <a href={billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
                                                     <span>📄</span> View Current Document
                                                 </a>
                                             )}

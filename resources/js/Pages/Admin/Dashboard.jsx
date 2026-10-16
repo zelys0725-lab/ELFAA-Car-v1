@@ -12,13 +12,17 @@ import InspectionComparisonDrawer from '@/Components/InspectionComparisonDrawer'
 import BookingPriceBreakdownModal from '@/Components/BookingPriceBreakdownModal';
 import DailyOperationsWidget from '@/Components/DailyOperationsWidget';
 import LegacyImportModal from '@/Components/LegacyImportModal';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone } from 'lucide-react';
+import DocumentVerificationModal from '@/Components/DocumentVerificationModal';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles } from 'lucide-react';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
     const { settings } = usePage().props;
     const [activeTab, setActiveTab] = useState('analytics');
     const [subFilter, setSubFilter] = useState('all');
+
+    // Document Inspection Modal State
+    const [selectedVerifDoc, setSelectedVerifDoc] = useState(null);
 
     // Booking Logs Sub-view & Search & Pagination
     const [bookingLogTab, setBookingLogTab] = useState('active'); // 'active' | 'archived'
@@ -738,12 +742,12 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     )}
                                     {activeTab === 'verifications' && (
                                         <>
-                                            <th className="py-3 px-4 text-zinc-400">User Identification</th>
-                                            <th className="py-3 px-4 text-zinc-400">ID Type</th>
-                                            <th className="py-3 px-4 text-zinc-400">ID Document Number</th>
-                                            <th className="py-3 px-4 text-zinc-400">File Attachment</th>
+                                            <th className="py-3 px-4 text-zinc-400">Customer Identification</th>
+                                            <th className="py-3 px-4 text-zinc-400">Document Type</th>
+                                            <th className="py-3 px-4 text-zinc-400">OCR Confidence & Readability</th>
+                                            <th className="py-3 px-4 text-zinc-400">Validation Findings</th>
                                             <th className="py-3 px-4 text-zinc-400">Verification Status</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Approval Decisions</th>
+                                            <th className="py-3 px-4 text-zinc-400 text-right">Review Decisions</th>
                                         </>
                                     )}
                                     {activeTab === 'vehicles' && (
@@ -880,58 +884,142 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 ))}
 
                                 {/* B. ID VERIFICATION DATA BODY */}
-                                {activeTab === 'verifications' && documents.map((doc) => (
-                                    <tr key={doc.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
-                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
-                                        </td>
-                                        <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{doc.user?.name || 'Client'}</td>
-                                        <td className="py-3.5 px-4 uppercase text-zinc-600 dark:text-zinc-450">{doc.type || doc.id_type}</td>
-                                        <td className="py-3.5 px-4 font-mono text-zinc-700 dark:text-zinc-150">{doc.id_number || '—'}</td>
-                                        <td className="py-3.5 px-4">
-                                            {(doc.file_path || doc.document_path) ? (
-                                                <a
-                                                    href={(() => {
-                                                        const p = doc.file_path || doc.document_path;
-                                                        if (!p) return '#';
-                                                        if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('/')) return p;
-                                                        if (p.startsWith('uploads/')) return `/${p}`;
-                                                        return `/storage/${p}`;
-                                                    })()}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-red-500/80 hover:text-red-500 font-bold hover:underline"
+                                {activeTab === 'verifications' && documents.map((doc) => {
+                                    const ocrConf = doc.ocr_confidence ? parseFloat(doc.ocr_confidence) : null;
+                                    const summary = doc.verification_summary || {};
+                                    const issues = summary.issues || [];
+                                    const isVerified = doc.status === 'verified';
+                                    const isRejected = doc.status === 'rejected';
+                                    const isResubmit = doc.status === 'resubmission_requested';
+
+                                    return (
+                                        <tr key={doc.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                            <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
+                                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
+                                            </td>
+                                            <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
+                                            
+                                            {/* Customer */}
+                                            <td className="py-3.5 px-4">
+                                                <div className="font-bold text-zinc-900 dark:text-white leading-tight">{doc.user?.name || 'Client'}</div>
+                                                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{doc.user?.email || '—'}</div>
+                                            </td>
+
+                                            {/* Document Type */}
+                                            <td className="py-3.5 px-4">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                                                    {doc.type === 'gov_id_1' ? "Driver's License" :
+                                                     doc.type === 'gov_id_2' ? "Secondary ID" :
+                                                     doc.type?.startsWith('proof_of_billing') ? "Billing Proof" : doc.type}
+                                                </span>
+                                                {(doc.id_number || doc.user?.drivers_license_number) && (
+                                                    <div className="text-[10px] font-mono text-zinc-400 mt-1 truncate max-w-[120px]">
+                                                        ID: {doc.id_number || doc.user?.drivers_license_number}
+                                                    </div>
+                                                )}
+                                            </td>
+
+                                            {/* OCR Confidence & Readability */}
+                                            <td className="py-3.5 px-4">
+                                                {doc.ocr_status === 'completed' && ocrConf !== null ? (
+                                                    <div>
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black font-mono ${
+                                                            ocrConf >= 70 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                                                            ocrConf >= 40 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
+                                                            'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                                        }`}>
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${
+                                                                ocrConf >= 70 ? 'bg-emerald-500' :
+                                                                ocrConf >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                                                            }`} />
+                                                            {ocrConf}% Conf.
+                                                        </span>
+                                                        <span className="block text-[10px] text-zinc-500 mt-0.5">
+                                                            {doc.ocr_word_count || 0} words parsed
+                                                        </span>
+                                                    </div>
+                                                ) : doc.ocr_status === 'failed' ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                                        Scan Failed
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                                                        Pending Scan
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Validation Findings */}
+                                            <td className="py-3.5 px-4 max-w-[200px]">
+                                                {issues.length > 0 ? (
+                                                    <div className="space-y-0.5">
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                                                            {issues.length} {issues.length === 1 ? 'Finding' : 'Findings'}
+                                                        </span>
+                                                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate" title={issues[0]}>
+                                                            {issues[0]}
+                                                        </p>
+                                                    </div>
+                                                ) : doc.ocr_status === 'completed' ? (
+                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                                        <CheckCircle className="w-3 h-3" />
+                                                        Checks Passed
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] text-zinc-400 italic">No automated flags</span>
+                                                )}
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="py-3.5 px-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
+                                                    isVerified ? 'text-emerald-600 dark:text-emerald-500' :
+                                                    isRejected ? 'text-rose-600 dark:text-rose-500' :
+                                                    isResubmit ? 'text-amber-600 dark:text-amber-500' :
+                                                    'text-zinc-600 dark:text-zinc-400'
+                                                }`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${
+                                                        isVerified ? 'bg-emerald-600 dark:bg-emerald-500' :
+                                                        isRejected ? 'bg-rose-600 dark:bg-rose-500' :
+                                                        isResubmit ? 'bg-amber-600 dark:bg-amber-500' :
+                                                        'bg-zinc-500'
+                                                    }`}></span>
+                                                    {isResubmit ? 'Resubmit' : doc.status}
+                                                </span>
+                                                {doc.reject_reason && <span className="text-[9px] text-zinc-500 block mt-1 truncate max-w-[140px]" title={doc.reject_reason}>Reason: {doc.reject_reason}</span>}
+                                                {doc.resubmission_notes && <span className="text-[9px] text-amber-500 block mt-1 truncate max-w-[140px]" title={doc.resubmission_notes}>Note: {doc.resubmission_notes}</span>}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                                <button
+                                                    onClick={() => setSelectedVerifDoc(doc)}
+                                                    className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-[10px] font-black uppercase rounded transition-colors cursor-pointer inline-flex items-center gap-1"
                                                 >
-                                                    View / Download Identification
-                                                </a>
-                                            ) : (
-                                                <span className="text-zinc-400 italic font-normal">No File Attached</span>
-                                            )}
-                                        </td>
-                                        <td className="py-3.5 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                doc.status === 'verified' ? 'text-green-600 dark:text-green-500' :
-                                                doc.status === 'rejected' ? 'text-rose-600 dark:text-rose-500' : 'text-amber-600 dark:text-amber-500'
-                                            }`}>
-                                                <span className={`h-1.5 w-1.5 rounded-full ${
-                                                    doc.status === 'verified' ? 'bg-green-600 dark:bg-green-500' :
-                                                    doc.status === 'rejected' ? 'bg-rose-600 dark:bg-rose-500' : 'bg-amber-600 dark:bg-amber-500'
-                                                }`}></span>
-                                                {doc.status}
-                                            </span>
-                                            {doc.reject_reason && <span className="text-[9px] text-zinc-550 block mt-1">Reason: {doc.reject_reason}</span>}
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1">
-                                            {doc.status === 'pending' && (
-                                                <>
-                                                    <button onClick={() => handleVerifyDoc(doc.id, 'verify')} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Verify ID</button>
-                                                    <button onClick={() => handleVerifyDoc(doc.id, 'reject')} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Reject</button>
-                                                </>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    <Eye className="w-3 h-3" />
+                                                    <span>Inspect & Verify</span>
+                                                </button>
+                                                {doc.status === 'pending' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleVerifyDoc(doc.id, 'verify')}
+                                                            className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleVerifyDoc(doc.id, 'reject')}
+                                                            className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
 
                                 {/* C. FLEET INVENTORY DATA BODY */}
                                 {activeTab === 'vehicles' && filteredVehicles.map((vehicle) => (
@@ -2094,6 +2182,17 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* AI-Assisted Document Verification Modal */}
+            {selectedVerifDoc && (
+                <DocumentVerificationModal
+                    document={selectedVerifDoc}
+                    onClose={() => setSelectedVerifDoc(null)}
+                    onUpdated={(updated) => {
+                        setSelectedVerifDoc(updated);
+                    }}
+                />
             )}
         </PortalLayout>
     );

@@ -9,6 +9,8 @@ use App\Models\Vehicle;
 use App\Models\ExtraGood;
 use App\Services\AvailabilityService;
 use App\Services\NotificationConfigService;
+use App\Services\DocumentVerification\DocumentVerificationService;
+use App\Services\DocumentVerification\DocumentAuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -226,44 +228,62 @@ class ClientPortalController extends Controller
     /**
      * Upload account verification documents.
      */
-    public function storeDocument(Request $request)
+    public function storeDocument(Request $request, DocumentVerificationService $verificationService)
     {
         $request->validate([
             'type' => 'required|in:gov_id_1,gov_id_2,proof_of_billing,proof_of_billing_electricity,proof_of_billing_water,proof_of_billing_internet,proof_of_billing_other',
-            'file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB limit
+            'file' => 'required|file|mimes:jpeg,png,jpg,webp,pdf|max:10240', // 10MB limit
         ]);
 
         $user = Auth::user();
-
-        // Handle file storage to public/uploads/documents/ for absolute browser viewing paths
         $file = $request->file('file');
-        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        
-        // Ensure path exists
-        $uploadPath = public_path('uploads/documents');
-        if (!file_exists($uploadPath)) {
-            mkdir($uploadPath, 0755, true);
-        }
+        $originalFilename = $file->getClientOriginalName();
+        $mimeType = $file->getClientMimeType();
+        $fileSize = $file->getSize();
 
-        $file->move($uploadPath, $filename);
-        $filePath = '/uploads/documents/' . $filename;
+        // Secure private storage outside web root
+        $storedPath = $file->store('documents', 'local');
 
         // Save to Database (update if type already exists for clean records)
-        Document::updateOrCreate(
+        $document = Document::updateOrCreate(
             [
                 'user_id' => $user->id,
                 'type' => $request->type,
             ],
             [
-                'file_path' => $filePath,
+                'file_path' => $storedPath,
+                'storage_disk' => 'local',
+                'original_filename' => $originalFilename,
+                'mime_type' => $mimeType,
+                'file_size' => $fileSize,
                 'status' => 'pending',
                 'reject_reason' => null,
+                'resubmission_notes' => null,
                 'verified_by' => null,
                 'verified_at' => null,
+                'ocr_status' => 'pending',
+                'ocr_error' => null,
             ]
         );
 
-        return redirect()->route('client.dashboard')->with('success', 'Document uploaded successfully and is pending review.');
+        // Record Audit Trail
+        DocumentAuditService::log(
+            $document,
+            'uploaded',
+            "Document uploaded by client ({$originalFilename}).",
+            [
+                'original_filename' => $originalFilename,
+                'mime_type' => $mimeType,
+                'size_bytes' => $fileSize,
+                'storage_disk' => 'local',
+            ],
+            $user
+        );
+
+        // Trigger local AI/OCR analysis
+        $verificationService->processDocument($document);
+
+        return redirect()->route('client.dashboard')->with('success', 'Document uploaded securely and analyzed by OCR. Awaiting administrator review.');
     }
 
     /**

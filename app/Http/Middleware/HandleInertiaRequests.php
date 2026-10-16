@@ -34,7 +34,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
-            'settings' => \App\Models\Setting::pluck('value', 'key')->all(),
+            'settings' => rescue(function () {
+                $settings = \App\Models\Setting::pluck('value', 'key');
+                return is_array($settings) ? $settings : (method_exists($settings, 'all') ? $settings->all() : (array) $settings);
+            }, []),
         ];
     }
 }

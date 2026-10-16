@@ -16,6 +16,8 @@ use App\Models\BookingPriceHistory;
 use App\Models\BookingPayment;
 use App\Models\OperationalTask;
 use App\Services\NotificationConfigService;
+use App\Services\DocumentVerification\DocumentAuditService;
+use App\Services\DocumentVerification\DocumentVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -113,7 +115,7 @@ class AdminPortalController extends Controller
         $promos = Promo::orderBy('created_at', 'desc')->get();
         $extraGoods = ExtraGood::orderBy('created_at', 'desc')->get();
         
-        $documents = Document::with('user')
+        $documents = Document::with(['user', 'verifiedByAdmin', 'auditLogs.user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -204,32 +206,84 @@ class AdminPortalController extends Controller
 
 
     /**
-     * Approve or reject identity verifications.
+     * Approve, reject, or request resubmission for identity verifications with audit logging.
      */
     public function verifyDocument(Request $request, Document $document)
     {
         $request->validate([
-            'action' => 'required|in:verify,reject',
-            'reject_reason' => 'nullable|required_if:action,reject|string|max:255',
+            'action' => 'required|in:verify,approve,reject,request_resubmission',
+            'notes' => 'nullable|string|max:500',
+            'reject_reason' => 'nullable|required_if:action,reject|string|max:500',
+            'resubmission_notes' => 'nullable|required_if:action,request_resubmission|string|max:500',
         ]);
 
-        if ($request->action === 'verify') {
+        $admin = Auth::user();
+        $action = $request->action;
+        $prevStatus = $document->status;
+
+        if ($action === 'verify' || $action === 'approve') {
             $document->update([
                 'status' => 'verified',
                 'reject_reason' => null,
-                'verified_by' => Auth::id(),
+                'resubmission_notes' => null,
+                'verified_by' => $admin->id,
                 'verified_at' => now(),
             ]);
-        } else {
+
+            DocumentAuditService::log(
+                $document,
+                'approved',
+                $request->notes ?: 'Identity document approved by administrator.',
+                ['admin_id' => $admin->id, 'notes' => $request->notes],
+                $admin,
+                $prevStatus,
+                'verified'
+            );
+
+            $msg = 'Document has been verified and approved successfully.';
+        } elseif ($action === 'reject') {
+            $reason = $request->reject_reason ?: $request->notes;
             $document->update([
                 'status' => 'rejected',
-                'reject_reason' => $request->reject_reason,
-                'verified_by' => Auth::id(),
+                'reject_reason' => $reason,
+                'verified_by' => $admin->id,
                 'verified_at' => now(),
             ]);
+
+            DocumentAuditService::log(
+                $document,
+                'rejected',
+                "Document rejected: {$reason}",
+                ['admin_id' => $admin->id, 'reason' => $reason],
+                $admin,
+                $prevStatus,
+                'rejected'
+            );
+
+            $msg = 'Document has been rejected.';
+        } elseif ($action === 'request_resubmission') {
+            $notes = $request->resubmission_notes ?: $request->notes;
+            $document->update([
+                'status' => 'resubmission_requested',
+                'resubmission_notes' => $notes,
+                'verified_by' => $admin->id,
+                'verified_at' => now(),
+            ]);
+
+            DocumentAuditService::log(
+                $document,
+                'resubmission_requested',
+                "Resubmission requested: {$notes}",
+                ['admin_id' => $admin->id, 'instructions' => $notes],
+                $admin,
+                $prevStatus,
+                'resubmission_requested'
+            );
+
+            $msg = 'Resubmission request has been recorded for the customer.';
         }
 
-        return redirect()->route('admin.dashboard')->with('success', 'Document verification processed.');
+        return redirect()->route('admin.dashboard')->with('success', $msg);
     }
 
     /**
