@@ -1,768 +1,879 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ELFAA Car Rental — System Guidelines</title>
+    <title>ELFAA Car Rental — Platform Guidelines & How It Works</title>
+    <meta name="description" content="Complete guidelines for ELFAA Car Rental platform. Learn how AI-powered ID verification, GPS live tracking, smart chatbot, and booking systems work." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
     <style>
         :root {
-            --red: #FF3B30;
-            --red-dark: #cc2e25;
-            --bg: #0a0a0a;
-            --surface: #131313;
-            --surface2: #1c1c1c;
-            --border: #2a2a2a;
-            --text: #f0f0f0;
-            --muted: #888;
-            --badge-admin: #FF3B30;
-            --badge-client: #3b82f6;
-            --badge-customer: #10b981;
-            --badge-staff: #f59e0b;
+            --brand: #FF3B30;
+            --brand-glow: rgba(255, 59, 48, 0.15);
+            --brand-dim:  rgba(255, 59, 48, 0.08);
+            --bg:         #0a0a0b;
+            --bg-2:       #111114;
+            --bg-3:       #18181c;
+            --bg-card:    #1a1a1f;
+            --border:     rgba(255,255,255,0.07);
+            --border-2:   rgba(255,255,255,0.12);
+            --text:       #f4f4f5;
+            --text-2:     #a1a1aa;
+            --text-3:     #71717a;
+            --shadow:     rgba(0,0,0,0.6);
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
+        [data-theme="light"] {
+            --bg:         #f9fafb;
+            --bg-2:       #f3f4f6;
+            --bg-3:       #e5e7eb;
+            --bg-card:    #ffffff;
+            --border:     rgba(0,0,0,0.07);
+            --border-2:   rgba(0,0,0,0.12);
+            --text:       #111827;
+            --text-2:     #374151;
+            --text-3:     #6b7280;
+            --shadow:     rgba(0,0,0,0.1);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
             min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
+        a { color: var(--brand); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--bg-3); padding: 0.1em 0.35em; border-radius: 4px; }
 
-        /* ─── HEADER ─── */
-        header {
-            background: linear-gradient(135deg, #0e0e0e 0%, #1a0a0a 100%);
+        .wrapper { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* Topbar */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,10,11,0.92);
+            backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
-            padding: 0 40px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(20px);
+            padding: 0.75rem 0;
         }
-        .header-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 64px;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .brand-icon {
-            width: 36px; height: 36px;
-            background: var(--red);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .brand-icon svg { width: 20px; height: 20px; fill: white; }
-        .brand-name {
-            font-size: 17px;
-            font-weight: 900;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-        }
-        .brand-sub {
-            font-size: 9px;
-            color: var(--muted);
-            font-weight: 700;
-            letter-spacing: .15em;
-            text-transform: uppercase;
-        }
-        .version-badge {
-            background: var(--red);
-            color: white;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 20px;
-            letter-spacing: .05em;
-        }
+        [data-theme="light"] .topbar { background: rgba(249,250,251,0.92); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .topbar-logo { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text); }
+        .logo-badge { width: 32px; height: 32px; background: var(--brand); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: 900; box-shadow: 0 0 12px var(--brand-glow); }
+        .btn-theme { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 999px; font-size: 0.75rem; font-weight: 700; color: var(--text-2); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
+        .btn-theme:hover { color: var(--text); border-color: var(--brand); }
 
-        /* ─── HERO ─── */
-        .hero {
-            background: linear-gradient(180deg, #1a0808 0%, var(--bg) 100%);
-            border-bottom: 1px solid var(--border);
-            padding: 80px 40px 60px;
-            text-align: center;
-        }
-        .hero-eyebrow {
-            display: inline-block;
-            background: rgba(255,59,48,.15);
-            border: 1px solid rgba(255,59,48,.3);
-            color: var(--red);
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: .15em;
-            text-transform: uppercase;
-            padding: 5px 14px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-        }
-        .hero h1 {
-            font-size: clamp(28px, 5vw, 52px);
-            font-weight: 900;
-            letter-spacing: -.02em;
-            line-height: 1.1;
-            margin-bottom: 16px;
-        }
-        .hero h1 span { color: var(--red); }
-        .hero p {
-            max-width: 580px;
-            margin: 0 auto 32px;
-            color: var(--muted);
-            font-size: 16px;
-        }
-        .hero-stats {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
-        }
-        .stat { text-align: center; }
-        .stat-num { font-size: 28px; font-weight: 900; color: var(--red); }
-        .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+        /* Hero */
+        .hero { padding: 5rem 0 3rem; text-align: center; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(ellipse, rgba(255,59,48,0.12) 0%, transparent 65%); pointer-events: none; }
+        .hero-eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--brand); background: var(--brand-dim); border: 1px solid rgba(255,59,48,0.2); padding: 0.3rem 0.9rem; border-radius: 999px; margin-bottom: 1.5rem; }
+        .hero-eyebrow span { width: 6px; height: 6px; background: var(--brand); border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1rem; }
+        .hero h1 .accent { color: var(--brand); }
+        .hero p { font-size: 1.05rem; color: var(--text-2); max-width: 640px; margin: 0 auto 2rem; }
+        .toc-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+        .toc-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.45rem 0.9rem; border-radius: 999px; border: 1px solid var(--border-2); background: var(--bg-card); color: var(--text-2); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .toc-chip:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-dim); text-decoration: none; }
 
-        /* ─── LAYOUT ─── */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 40px;
-        }
+        /* Section */
+        .section { padding: 4rem 0; border-top: 1px solid var(--border); }
+        .section-label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--brand); margin-bottom: 0.75rem; }
+        .section-label::before { content: ''; display: block; width: 16px; height: 2px; background: var(--brand); border-radius: 99px; }
+        .section h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+        .section-intro { font-size: 0.975rem; color: var(--text-2); max-width: 680px; margin-bottom: 2.5rem; }
 
-        /* ─── SECTION TITLE ─── */
-        .section-title {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -.01em;
-            margin-bottom: 6px;
-        }
-        .section-sub {
-            color: var(--muted);
-            font-size: 14px;
-            margin-bottom: 28px;
-        }
-        .divider {
-            width: 40px;
-            height: 3px;
-            background: var(--red);
-            border-radius: 2px;
-            margin-bottom: 12px;
-        }
+        /* Cards */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; transition: border-color 0.2s, box-shadow 0.2s; }
+        .card:hover { border-color: var(--border-2); box-shadow: 0 4px 30px var(--shadow); }
+        .card.brand-card { border-color: rgba(255,59,48,0.25); background: linear-gradient(135deg, rgba(255,59,48,0.06), var(--bg-card)); }
+        .card-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; font-size: 1.25rem; }
+        .card-icon.red    { background: rgba(255,59,48,0.12); }
+        .card-icon.blue   { background: rgba(59,130,246,0.12); }
+        .card-icon.green  { background: rgba(16,185,129,0.12); }
+        .card-icon.amber  { background: rgba(245,158,11,0.12); }
+        .card-icon.purple { background: rgba(139,92,246,0.12); }
+        .card-icon.teal   { background: rgba(20,184,166,0.12); }
+        .card h3 { font-size: 0.95rem; font-weight: 800; letter-spacing: 0.01em; margin-bottom: 0.4rem; }
+        .card p { font-size: 0.85rem; color: var(--text-2); line-height: 1.65; }
 
-        /* ─── ROLE CARDS ─── */
-        .roles-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-            margin-bottom: 60px;
-        }
-        .role-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            transition: border-color .2s, transform .2s;
-        }
-        .role-card:hover { border-color: #444; transform: translateY(-2px); }
-        .role-badge {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-            padding: 3px 10px;
-            border-radius: 20px;
-            margin-bottom: 14px;
-        }
-        .badge-admin { background: rgba(255,59,48,.15); color: var(--badge-admin); border: 1px solid rgba(255,59,48,.3); }
-        .badge-client { background: rgba(59,130,246,.15); color: var(--badge-client); border: 1px solid rgba(59,130,246,.3); }
-        .badge-customer { background: rgba(16,185,129,.15); color: var(--badge-customer); border: 1px solid rgba(16,185,129,.3); }
-        .badge-staff { background: rgba(245,158,11,.15); color: var(--badge-staff); border: 1px solid rgba(245,158,11,.3); }
-        .role-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-        .role-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
-        .role-perms {
-            list-style: none;
-        }
-        .role-perms li {
-            font-size: 12px;
-            color: #aaa;
-            padding: 4px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .role-perms li::before {
-            content: '✓';
-            color: var(--red);
-            font-weight: 900;
-            font-size: 11px;
-        }
+        /* Pipeline */
+        .pipeline { display: flex; flex-direction: column; gap: 0; }
+        .pipeline-step { display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.5rem 0; }
+        .step-num-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+        .step-num { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 0.8rem; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 16px var(--brand-glow); z-index: 2; }
+        .step-line { flex: 1; width: 2px; background: linear-gradient(to bottom, var(--brand), transparent); margin-top: 4px; min-height: 40px; }
+        .step-content { flex: 1; padding-top: 0.2rem; }
+        .step-content h4 { font-size: 0.95rem; font-weight: 800; letter-spacing: 0.01em; margin-bottom: 0.3rem; }
+        .step-content p { font-size: 0.85rem; color: var(--text-2); line-height: 1.65; }
+        .step-tag { display: inline-block; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 4px; margin-top: 0.5rem; }
+        .step-tag.ocr    { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .step-tag.ai     { background: rgba(139,92,246,0.15); color: #a78bfa; }
+        .step-tag.rules  { background: rgba(16,185,129,0.15); color: #34d399; }
+        .step-tag.human  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .step-tag.gps    { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+        .step-tag.bot    { background: rgba(255,59,48,0.15); color: #ff6b6b; }
 
-        /* ─── MODULE TABLE ─── */
-        .modules-section { margin-bottom: 60px; }
-        .module-block {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-        .module-header {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 18px 24px;
-            cursor: pointer;
-            user-select: none;
-            transition: background .15s;
-        }
-        .module-header:hover { background: var(--surface2); }
-        .module-icon {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        .module-title { font-size: 15px; font-weight: 700; }
-        .module-desc { font-size: 12px; color: var(--muted); }
-        .module-arrow {
-            margin-left: auto;
-            color: var(--muted);
-            font-size: 12px;
-            transition: transform .2s;
-        }
-        .module-block.open .module-arrow { transform: rotate(180deg); }
-        .module-body {
-            display: none;
-            padding: 0 24px 24px;
-            border-top: 1px solid var(--border);
-        }
-        .module-block.open .module-body { display: block; }
-        .feature-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            font-size: 13px;
-        }
-        .feature-table th {
-            text-align: left;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-            color: var(--muted);
-            padding: 8px 12px;
-            background: var(--surface2);
-            border-radius: 6px;
-        }
-        .feature-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #1e1e1e;
-            vertical-align: top;
-        }
-        .feature-table tr:last-child td { border-bottom: none; }
-        .feature-table td:first-child { font-weight: 600; width: 28%; }
-        .feature-table td:nth-child(2) { color: #bbb; }
-        .feature-table td:nth-child(3) { width: 20%; }
-        .pill {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 10px;
-            margin: 1px;
-        }
-        .pill-admin { background: rgba(255,59,48,.15); color: var(--red); }
-        .pill-client { background: rgba(59,130,246,.15); color: #60a5fa; }
-        .pill-customer { background: rgba(16,185,129,.15); color: #34d399; }
-        .pill-staff { background: rgba(245,158,11,.15); color: #fbbf24; }
-        .pill-all { background: rgba(255,255,255,.08); color: #ddd; }
+        /* Check list */
+        .check-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+        .check-list li { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.875rem; color: var(--text-2); line-height: 1.6; }
+        .check-list li::before { content: '✓'; color: #34d399; font-weight: 900; font-size: 0.8rem; width: 18px; height: 18px; background: rgba(16,185,129,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+        .check-list li.warn::before { content: '!'; color: #fbbf24; background: rgba(245,158,11,0.1); }
+        .check-list li.deny::before { content: '✕'; color: #f87171; background: rgba(239,68,68,0.1); }
 
-        /* ─── FLOW ─── */
-        .flow-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 4px;
-            margin-bottom: 60px;
-        }
-        .flow-step {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            position: relative;
-        }
-        .flow-num {
-            font-size: 32px;
-            font-weight: 900;
-            color: rgba(255,59,48,.2);
-            line-height: 1;
-            margin-bottom: 8px;
-        }
-        .flow-step h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-        .flow-step p { font-size: 12px; color: var(--muted); }
+        /* Confidence bars */
+        .confidence-bar-wrap { background: var(--bg-3); border-radius: 999px; height: 8px; overflow: hidden; margin-top: 0.4rem; }
+        .confidence-bar { height: 100%; border-radius: 999px; transition: width 1.2s ease; width: 0; }
+        .conf-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.8rem; font-weight: 700; }
+        .conf-label { color: var(--text-2); }
+        .conf-score { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+        .conf-block { margin-bottom: 1.25rem; }
 
-        /* ─── ALERT BOX ─── */
-        .alert {
-            background: rgba(255,59,48,.08);
-            border: 1px solid rgba(255,59,48,.25);
-            border-radius: 12px;
-            padding: 16px 20px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            margin-bottom: 60px;
-        }
-        .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-        .alert-text h4 { font-size: 13px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
-        .alert-text p { font-size: 12px; color: #bbb; }
+        /* Note boxes */
+        .note-box { display: flex; gap: 0.85rem; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid; font-size: 0.85rem; line-height: 1.65; margin-top: 1.5rem; }
+        .note-box.info   { background: rgba(59,130,246,0.07); border-color: rgba(59,130,246,0.2); color: #93c5fd; }
+        .note-box.warn   { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.2); color: #fcd34d; }
+        .note-box.danger { background: rgba(239,68,68,0.07); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+        .note-box.green  { background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.2); color: #6ee7b7; }
+        .note-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .note-text strong { display: block; margin-bottom: 0.15rem; color: inherit; }
 
-        /* ─── FOOTER ─── */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 30px 40px;
-            text-align: center;
-            color: var(--muted);
-            font-size: 12px;
-        }
+        /* Code block */
+        .code-block { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #34d399; overflow-x: auto; white-space: pre; margin-top: 0.75rem; line-height: 1.7; }
+        .code-block .dim    { color: var(--text-3); }
+        .code-block .yellow { color: #fbbf24; }
+        .code-block .blue   { color: #93c5fd; }
 
-        /* ─── RESPONSIVE ─── */
-        @media(max-width: 640px) {
-            header, .hero, .container, footer { padding-left: 20px; padding-right: 20px; }
-            .hero { padding-top: 50px; }
-            .hero-stats { gap: 20px; }
-            .feature-table { display: block; overflow-x: auto; }
+        /* Badge */
+        .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.25rem 0.65rem; border-radius: 999px; border: 1px solid; }
+        .badge.green  { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.25); color: #34d399; }
+        .badge.amber  { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fbbf24; }
+        .badge.red    { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
+        .badge.blue   { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25); color: #93c5fd; }
+        .badge.purple { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.25); color: #c4b5fd; }
+        .badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 1rem; }
+        .data-table th { text-align: left; padding: 0.65rem 1rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 0.75rem 1rem; color: var(--text-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: var(--bg-2); }
+        .data-table td strong { color: var(--text); font-weight: 700; }
+
+        /* GPS Diagram */
+        .gps-diagram { display: flex; align-items: stretch; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; margin-top: 1.5rem; }
+        .gps-node { flex: 1; padding: 1.25rem; text-align: center; background: var(--bg-card); position: relative; }
+        .gps-node:not(:last-child)::after { content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; color: var(--brand); z-index: 1; font-weight: 900; }
+        .gps-node:not(:last-child) { border-right: 1px solid var(--border); }
+        .gps-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .gps-node h5 { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+        .gps-node p { font-size: 0.72rem; color: var(--text-3); }
+
+        /* Footer */
+        .footer { padding: 2.5rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-3); font-size: 0.8rem; }
+        .footer strong { color: var(--brand); }
+
+        /* Scroll top */
+        #scrollTop { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 40px; height: 40px; background: var(--brand); color: #fff; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; box-shadow: 0 4px 20px rgba(255,59,48,0.35); opacity: 0; transition: opacity 0.3s, transform 0.2s; z-index: 200; transform: translateY(8px); }
+        #scrollTop.visible { opacity: 1; transform: translateY(0); }
+
+        /* details */
+        details summary { cursor: pointer; }
+        details summary::-webkit-details-marker { display: none; }
+
+        @media (max-width: 640px) {
+            .gps-diagram { flex-direction: column; }
+            .gps-node:not(:last-child)::after { content: '↓'; right: auto; top: auto; bottom: -14px; left: 50%; transform: translateX(-50%); }
+            .gps-node:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+            .hero { padding: 3rem 0 2rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-    <div class="header-inner">
-        <div class="brand">
-            <div class="brand-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5h-1M14 17a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm7 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                </svg>
-            </div>
-            <div>
-                <div class="brand-name">ELFAA Car Rental</div>
-                <div class="brand-sub">System Guidelines</div>
-            </div>
+<nav class="topbar">
+    <div class="wrapper topbar-inner">
+        <div class="topbar-logo">
+            <div class="logo-badge">E</div>
+            ELFAA Car Rental
         </div>
-        <span class="version-badge">v1.0</span>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <a href="/gps-guide.html" style="font-size: 0.75rem; font-weight: 700; color: #14b8a6; background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); padding: 0.35rem 0.8rem; border-radius: 999px; text-decoration: none;">🛰️ GPS Setup Guide</a>
+            <button class="btn-theme" onclick="toggleTheme()" id="themeBtn">☀️ Light Mode</button>
+        </div>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="wrapper">
+        <div class="hero-eyebrow"><span></span> Platform Guidelines &amp; Documentation</div>
+        <h1>How <span class="accent">ELFAA</span> Works —<br>Your Complete Guide</h1>
+        <p>Everything you need to know about renting a car, how AI verifies your identity, live GPS tracking, and using every feature of the platform.</p>
+        <div class="toc-chips">
+            <a href="#overview"       class="toc-chip">🚗 Platform Overview</a>
+            <a href="#account"        class="toc-chip">👤 Account &amp; Registration</a>
+            <a href="#booking"        class="toc-chip">📅 How to Book</a>
+            <a href="#ai-verification" class="toc-chip">🤖 AI ID Verification</a>
+            <a href="#gps"            class="toc-chip">📡 GPS Live Tracking</a>
+            <a href="#chatbot"        class="toc-chip">💬 AI Chatbot</a>
+            <a href="#admin"          class="toc-chip">🛡️ Admin &amp; Staff</a>
+            <a href="#rules"          class="toc-chip">📋 Rules &amp; Policies</a>
+            <a href="#faq"            class="toc-chip">❓ FAQ</a>
+        </div>
     </div>
 </header>
 
-<!-- HERO -->
-<div class="hero">
-    <div class="hero-eyebrow">System Documentation</div>
-    <h1>ELFAA <span>Platform</span> Guidelines</h1>
-    <p>Complete reference for all modules, user roles, features, and booking workflows in the ELFAA Car Rental system.</p>
-    <div class="hero-stats">
-        <div class="stat"><div class="stat-num">4</div><div class="stat-label">User Roles</div></div>
-        <div class="stat"><div class="stat-num">12+</div><div class="stat-label">Modules</div></div>
-        <div class="stat"><div class="stat-num">3</div><div class="stat-label">Document Types</div></div>
-        <div class="stat"><div class="stat-num">5</div><div class="stat-label">Booking Stages</div></div>
-    </div>
-</div>
-
-<div class="container">
-
-    <!-- ROLES -->
-    <div class="divider"></div>
-    <div class="section-title">👤 User Roles</div>
-    <div class="section-sub">The system has 4 distinct roles, each with specific access levels and responsibilities.</div>
-    <div class="roles-grid">
-        <div class="role-card">
-            <span class="role-badge badge-admin">Admin</span>
-            <h3>Administrator</h3>
-            <p>Full system control. Manages all operations, users, settings, and configuration.</p>
-            <ul class="role-perms">
-                <li>Manage all users & staff</li>
-                <li>Approve / reject bookings</li>
-                <li>Manage vehicle fleet</li>
-                <li>View financial reports</li>
-                <li>Configure SMTP & SMS</li>
-                <li>Manage promos & discounts</li>
-                <li>Review & verify documents</li>
-                <li>Access admin analytics</li>
-            </ul>
+<!-- OVERVIEW -->
+<section class="section" id="overview">
+    <div class="wrapper">
+        <div class="section-label">Platform Overview</div>
+        <h2>What is ELFAA Car Rental?</h2>
+        <p class="section-intro">ELFAA is a full-stack, AI-assisted self-drive car rental management platform built for the Philippines market. It handles everything from public browsing and booking, to automated document verification, to real-time GPS fleet monitoring — all in one system.</p>
+        <div class="grid-3">
+            <div class="card brand-card">
+                <div class="card-icon red">🚗</div>
+                <h3>Self-Drive Fleet</h3>
+                <p>Browse and book from a curated fleet of Sedans, SUVs, Vans, Pickups, and Sports cars with transparent daily rates, seat capacity, and fuel type information.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon blue">🤖</div>
+                <h3>AI-Powered ID Verification</h3>
+                <p>Uploaded government-issued IDs are scanned locally by <strong>Tesseract OCR</strong>, which reads all text, extracts key identity fields, and cross-references them against your registered profile automatically.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon teal">📡</div>
+                <h3>Live GPS Tracking</h3>
+                <p>Every vehicle can be tracked in real-time using a smartphone as the GPS transmitter — no external hardware needed. The admin fleet map updates every 8 seconds with live coordinates and speed.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon green">💬</div>
+                <h3>Smart AI Chatbot</h3>
+                <p>An intent-driven virtual assistant available 24/7 to answer questions about pricing, booking requirements, promos, fleet availability, and contact information — powered by a local rule engine, no external API needed.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon amber">📊</div>
+                <h3>Admin Analytics</h3>
+                <p>Comprehensive dashboards for earnings, bookings, vehicle performance, profit analytics, operational tasks, daily schedules, billing records, and staff management.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon purple">🔔</div>
+                <h3>Multi-Channel Notifications</h3>
+                <p>Configurable booking confirmation messages sent via Email (SMTP), SMS (Semaphore), or Viber to keep renters updated at every booking status change.</p>
+            </div>
         </div>
-        <div class="role-card">
-            <span class="role-badge badge-client">Client (Renter)</span>
-            <h3>Verified Client</h3>
-            <p>Registered renters who have been identity-verified and can create bookings.</p>
-            <ul class="role-perms">
-                <li>Browse the vehicle fleet</li>
-                <li>Submit booking requests</li>
-                <li>Upload required documents</li>
-                <li>Track booking status</li>
-                <li>View booking history</li>
-                <li>Manage profile details</li>
-                <li>Cancel pending bookings</li>
-            </ul>
-        </div>
-        <div class="role-card">
-            <span class="role-badge badge-customer">Customer (Guest)</span>
-            <h3>Unverified Customer</h3>
-            <p>Newly registered users pending identity verification before they can book.</p>
-            <ul class="role-perms">
-                <li>View landing page & fleet</li>
-                <li>Create an account</li>
-                <li>Submit ID documents</li>
-                <li>Wait for Admin approval</li>
-                <li>Receive email notifications</li>
-            </ul>
-        </div>
-        <div class="role-card">
-            <span class="role-badge badge-staff">Staff / Team</span>
-            <h3>Operations Staff</h3>
-            <p>Internal team members who assist with daily operational tasks and bookings.</p>
-            <ul class="role-perms">
-                <li>View assigned bookings</li>
-                <li>Update booking statuses</li>
-                <li>Manage vehicle availability</li>
-                <li>Access team dashboard</li>
-            </ul>
+        <div class="note-box info">
+            <div class="note-icon">ℹ️</div>
+            <div class="note-text"><strong>Technology Stack</strong>Built with Laravel 12, Inertia.js, React, and Vite. AI verification uses Tesseract OCR (open-source, local, no cloud needed). GPS mapping uses Leaflet + OpenStreetMap (free, no API key). GPS coordinates are captured via the browser's Web Geolocation API on a mounted smartphone.</div>
         </div>
     </div>
+</section>
 
-    <!-- ALERT -->
-    <div class="alert">
-        <div class="alert-icon">🔐</div>
-        <div class="alert-text">
-            <h4>Access Control Notice</h4>
-            <p>Each role is enforced by server-side middleware (Laravel). A customer cannot access admin routes and vice versa. Document verification must be approved by an Admin before a customer is upgraded to a full Client account.</p>
+<!-- ACCOUNT -->
+<section class="section" id="account">
+    <div class="wrapper">
+        <div class="section-label">Account &amp; Registration</div>
+        <h2>Creating Your Account</h2>
+        <p class="section-intro">Every customer must have a verified account before placing a booking. Registration is free and takes under 2 minutes.</p>
+        <div class="grid-2">
+            <div>
+                <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:1rem;">Registration Steps</h3>
+                <ul class="check-list">
+                    <li>Go to the homepage and click <strong>Register / Sign Up</strong></li>
+                    <li>Enter your full legal name, valid email address, and phone number</li>
+                    <li>Choose a strong password (minimum 8 characters)</li>
+                    <li>Your customer account is created instantly</li>
+                    <li>Add your Driver's License Number, ID type, and ID number in Profile Settings</li>
+                    <li>Upload your required identity documents (see table on the right)</li>
+                    <li>Wait for admin review — typically 1–24 hours</li>
+                    <li>Once verified, you can place fully confirmed bookings</li>
+                </ul>
+                <div class="note-box warn">
+                    <div class="note-icon">⚠️</div>
+                    <div class="note-text"><strong>Booking Restriction</strong>You must have at least your primary Driver's License uploaded and admin-verified before your booking will be confirmed. Unverified accounts remain in pending status.</div>
+                </div>
+            </div>
+            <div>
+                <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:1rem;">Required Identity Documents</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Document Slot</th><th>What to Upload</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>Primary Gov ID</strong></td><td>Driver's License — Required for all bookings</td></tr>
+                        <tr><td><strong>Secondary Gov ID</strong></td><td>Passport, PhilSys, UMID, Postal ID — Required</td></tr>
+                        <tr><td><strong>Proof of Billing</strong></td><td>Utility / electricity / water bill — Required</td></tr>
+                    </tbody>
+                </table>
+                <div class="note-box green">
+                    <div class="note-icon">✅</div>
+                    <div class="note-text"><strong>Accepted File Formats</strong>JPEG, PNG, and PDF files up to 5 MB each. For best AI OCR accuracy, upload clear, well-lit, unobstructed photos with the entire document visible in frame.</div>
+                </div>
+            </div>
         </div>
     </div>
+</section>
 
-    <!-- MODULES -->
-    <div class="divider"></div>
-    <div class="section-title">📦 Modules & Features</div>
-    <div class="section-sub">Click each module to expand its functions. Access column shows which roles can use that feature.</div>
-    <div class="modules-section">
-
-        <!-- AUTH -->
-        <div class="module-block open">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(255,59,48,.1)">🔑</div>
-                <div>
-                    <div class="module-title">Authentication & Security</div>
-                    <div class="module-desc">Login, registration, password recovery, and session management</div>
+<!-- BOOKING -->
+<section class="section" id="booking">
+    <div class="wrapper">
+        <div class="section-label">Booking Process</div>
+        <h2>How to Book a Vehicle</h2>
+        <p class="section-intro">The booking flow is designed to be quick, transparent, and automated. Here is every step from browsing the fleet to completing your rental.</p>
+        <div class="pipeline">
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">1</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Browse the Fleet</h4>
+                    <p>Log in and go to <strong>Browse Fleet</strong>. Filter by vehicle type (Sedan, SUV, Van, Pickup, Sports) and seating capacity. Each card shows the daily rate, transmission, fuel type, features, and the meeting/depot location.</p>
                 </div>
-                <span class="module-arrow">▼</span>
             </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Login</td><td>Email & password login with brute-force rate limiting. Includes show/hide password toggle and "Remember this device" option.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                        <tr><td>Register</td><td>New users create an account. Upon registration, the account is set as "Customer" (unverified) until documents are reviewed.</td><td><span class="pill pill-customer">Customer</span></td></tr>
-                        <tr><td>Forgot Password</td><td>Enter registered email to receive a secure password reset link via SMTP. Link expires after a configured time.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                        <tr><td>Reset Password</td><td>Set a new password using the one-time reset link sent to email.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                        <tr><td>Dark / Light Mode</td><td>Toggle on all auth pages. Preference is stored in local component state.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                        <tr><td>Admin Login</td><td>Separate admin login route with stricter session handling.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- FLEET -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(59,130,246,.1)">🚗</div>
-                <div>
-                    <div class="module-title">Vehicle Fleet Management</div>
-                    <div class="module-desc">Add, edit, manage, and display vehicles available for rental</div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">2</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Check Real-Time Availability</h4>
+                    <p>Use the <strong>Availability Calendar</strong> on each vehicle card. Booked dates are shown in red, available dates in green. The system blocks double-booking automatically in real time.</p>
                 </div>
-                <span class="module-arrow">▼</span>
             </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Vehicle Listing</td><td>Browse all vehicles with filter by type (Sedan, SUV, Van, etc.) and seating capacity. Cards display photo, price, and availability status.</td><td><span class="pill pill-client">Client</span><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>Add Vehicle</td><td>Admin can add new vehicles with photo, type, seats, daily rate, fuel type, transmission, and description.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Edit Vehicle</td><td>Update any vehicle detail including pricing and availability.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Delete Vehicle</td><td>Remove a vehicle from the fleet. Cannot delete if it has active bookings.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Availability Toggle</td><td>Mark vehicles as available or unavailable for booking.</td><td><span class="pill pill-admin">Admin</span><span class="pill pill-staff">Staff</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- BOOKINGS -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(16,185,129,.1)">📋</div>
-                <div>
-                    <div class="module-title">Booking Management</div>
-                    <div class="module-desc">Create, manage, and track vehicle rental bookings</div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">3</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Fill Booking Details</h4>
+                    <p>Select pick-up and return dates/times. Enter pick-up and drop-off locations (pre-filled with the main garage or enter a custom address). Optionally apply a promo code. Choose payment method: <strong>Cash on Delivery</strong> or <strong>Online Payment</strong>. Select any add-on services.</p>
                 </div>
-                <span class="module-arrow">▼</span>
             </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Create Booking</td><td>Client selects a vehicle, pickup/return date, pickup location, and optional add-ons. System calculates total cost automatically.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Apply Promo Code</td><td>Client can enter a promo code at booking to apply a discount to the total.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Booking Status</td><td>Tracks 5 stages: Pending → Confirmed → Approved → Active → Completed. Also supports Rejected and Cancelled states.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                        <tr><td>Approve / Reject</td><td>Admin reviews submitted bookings and either approves or rejects with a reason.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Cancel Booking</td><td>Client can cancel a booking that is still in Pending status.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Booking History</td><td>View all past and current bookings with details, status, dates, and vehicle info.</td><td><span class="pill pill-client">Client</span><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Email Notifications</td><td>Automatic emails are sent when a booking is created, confirmed, approved, rejected, or cancelled.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- DOCUMENTS -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(245,158,11,.1)">📄</div>
-                <div>
-                    <div class="module-title">Document Verification</div>
-                    <div class="module-desc">Identity document upload and admin review for renter verification</div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">4</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Booking Submitted — Pending Review</h4>
+                    <p>Your booking is saved with status <span class="badge amber"><span class="dot"></span> Pending</span>. Staff reviews your documents and booking details. You receive a notification (Email/SMS/Viber) once the status is updated.</p>
                 </div>
-                <span class="module-arrow">▼</span>
             </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Driver's License Upload</td><td>Client uploads a photo or PDF of their valid Driver's License (Gov ID 1). Status shows Pending / Verified / Rejected.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Secondary Photo ID</td><td>Upload a secondary valid government-issued photo ID (e.g. Passport, UMID, SSS). Status tracked independently.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Proof of Billing</td><td>Upload a utility bill (Meralco, Water, Internet, or Bank statement) to verify address. Document category can be selected.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Document Review</td><td>Admin can view uploaded documents and change their status to Verified or Rejected, with an optional rejection reason.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Status Indicators</td><td>Each document card shows a color-coded badge: Green = Verified, Yellow = Pending, Red = Rejected.</td><td><span class="pill pill-client">Client</span><span class="pill pill-admin">Admin</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- PROMOS -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(168,85,247,.1)">🎁</div>
-                <div>
-                    <div class="module-title">Promotions & Discounts</div>
-                    <div class="module-desc">Create and manage promo codes to offer booking discounts</div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">5</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Confirmation &amp; Active Rental</h4>
+                    <p>Once approved: <span class="badge green"><span class="dot"></span> Confirmed</span>. On pick-up day the booking becomes <strong>Active</strong>. GPS tracking activates if configured for the vehicle. At the end: <span class="badge blue"><span class="dot"></span> Completed</span>.</p>
                 </div>
-                <span class="module-arrow">▼</span>
             </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Create Promo</td><td>Admin creates promo codes with a discount value (fixed or percentage), validity dates, and usage limits.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Edit / Deactivate</td><td>Admin can update promo details or deactivate a promo to stop it from being used.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Apply at Booking</td><td>Client enters a promo code during checkout. System validates the code and applies the discount to the booking total.</td><td><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Promo Listing</td><td>Landing page displays active promotions publicly to attract customers.</td><td><span class="pill pill-all">Public</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- SMTP / EMAIL -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(6,182,212,.1)">✉️</div>
-                <div>
-                    <div class="module-title">SMTP Email System</div>
-                    <div class="module-desc">Configure and send automated emails for system events</div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">6</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Rate &amp; Review</h4>
+                    <p>After completion, submit a star rating and written comment from your booking history. Ratings are visible to admin for fleet quality monitoring.</p>
                 </div>
-                <span class="module-arrow">▼</span>
-            </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>SMTP Configuration</td><td>Admin configures SMTP host, port, username, password, encryption, and sender name directly from the Admin Panel without code changes.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Test Email</td><td>Send a test email to verify the SMTP configuration is working correctly.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Password Reset Emails</td><td>Forgot Password flow sends a secure reset link using the configured SMTP settings.</td><td><span class="pill pill-all">All Roles</span></td></tr>
-                        <tr><td>Booking Notifications</td><td>Emails are dispatched on: booking creation, confirmation, approval, rejection, and cancellation.</td><td><span class="pill pill-all">System</span></td></tr>
-                        <tr><td>Email Templates</td><td>Professional HTML email templates consistent with the premium ELFAA brand design.</td><td><span class="pill pill-all">System</span></td></tr>
-                    </tbody>
-                </table>
             </div>
         </div>
-
-        <!-- ADMIN DASHBOARD -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(255,59,48,.1)">📊</div>
-                <div>
-                    <div class="module-title">Admin Dashboard & Reports</div>
-                    <div class="module-desc">Analytics, reports, and operational oversight for administrators</div>
-                </div>
-                <span class="module-arrow">▼</span>
+        <div class="grid-2" style="margin-top:2rem;">
+            <div class="card">
+                <div class="card-icon amber">💳</div>
+                <h3>Payment Methods</h3>
+                <ul class="check-list" style="margin-top:0.5rem;">
+                    <li><strong>Cash on Delivery</strong> — Pay in full upon vehicle pick-up at the depot</li>
+                    <li><strong>Online Payment</strong> — Bank transfer or e-wallet (coordinate with admin after booking)</li>
+                    <li>Promo codes apply automatic discounts at checkout (percentage or fixed PHP amount)</li>
+                    <li>Only one promo code per booking is allowed</li>
+                </ul>
             </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Overview Stats</td><td>Dashboard cards showing total bookings, active rentals, revenue, and registered users at a glance.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Revenue Reports</td><td>Summary of earnings, with booking counts and revenue breakdowns by period.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>PDF Export</td><td>Print-ready executive PDF reports that hide UI controls and present clean, data-rich layouts.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Booking Monitor</td><td>View all bookings across all clients with filtering and status management capabilities.</td><td><span class="pill pill-admin">Admin</span><span class="pill pill-staff">Staff</span></td></tr>
-                        <tr><td>User Management</td><td>View all registered users, update roles, approve documents, and manage accounts.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                        <tr><td>Settings Panel</td><td>Configure site logo, name, SMTP, SMS, and system-wide settings without code deployment.</td><td><span class="pill pill-admin">Admin</span></td></tr>
-                    </tbody>
-                </table>
+            <div class="card">
+                <div class="card-icon green">📦</div>
+                <h3>Add-On Services</h3>
+                <ul class="check-list" style="margin-top:0.5rem;">
+                    <li>Add-ons (e.g., GPS Device, Child Seat, Extra Driver Insurance) can be selected during booking</li>
+                    <li>Add-ons are priced per day and automatically included in your total cost breakdown</li>
+                    <li>Only add-ons with <span class="badge green">Available</span> status can be selected</li>
+                    <li>A detailed price breakdown modal shows your full cost before confirmation</li>
+                </ul>
             </div>
-        </div>
-
-        <!-- CHATBOT -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(99,102,241,.1)">🤖</div>
-                <div>
-                    <div class="module-title">AI Chatbot Assistant</div>
-                    <div class="module-desc">Floating rule-based chatbot for 24/7 customer support (no API required)</div>
-                </div>
-                <span class="module-arrow">▼</span>
-            </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Floating Widget</td><td>Always-visible floating chat button on the landing page and client dashboard. Opens a chat panel on click.</td><td><span class="pill pill-all">Public</span><span class="pill pill-client">Client</span></td></tr>
-                        <tr><td>Fleet Inquiry</td><td>Ask about available vehicles, pricing, types, and features. System pulls live data from the fleet.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>Booking Guidance</td><td>Chatbot guides users through the booking process step-by-step.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>FAQ Responses</td><td>Answers common questions about operating hours, locations, requirements, and policies.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>No API Dependency</td><td>Fully rule-based and data-driven. Works without any external AI API. All responses are locally generated.</td><td><span class="pill pill-all">System</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- LANDING PAGE -->
-        <div class="module-block">
-            <div class="module-header" onclick="toggle(this)">
-                <div class="module-icon" style="background:rgba(16,185,129,.1)">🌐</div>
-                <div>
-                    <div class="module-title">Landing Page</div>
-                    <div class="module-desc">Public-facing marketing page to attract and onboard new renters</div>
-                </div>
-                <span class="module-arrow">▼</span>
-            </div>
-            <div class="module-body">
-                <table class="feature-table">
-                    <thead><tr><th>Feature</th><th>Description</th><th>Access</th></tr></thead>
-                    <tbody>
-                        <tr><td>Hero Section</td><td>Cinematic animated hero with car imagery, bold headline, and a "Browse Fleet" / "Book Now" CTA for maximum first impression.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>Fleet Showcase</td><td>Interactive vehicle cards with filter by type and seats. Each card links to the booking flow.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>Promos Section</td><td>Displays active promotional offers and discount codes available for new bookings.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>Dark / Light Mode</td><td>A toggle in the header lets visitors switch between dark and light themes stored in localStorage.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>SVG Animations</td><td>Animated road lines, vehicle reveal effects, and scroll transitions for a premium, cinematic feel.</td><td><span class="pill pill-all">Public</span></td></tr>
-                        <tr><td>Services Section</td><td>Highlights ELFAA's key value propositions (self-drive, flexible periods, coverage areas etc.).</td><td><span class="pill pill-all">Public</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- BOOKING WORKFLOW -->
-    <div class="divider"></div>
-    <div class="section-title">🔄 Booking Workflow</div>
-    <div class="section-sub">The complete lifecycle of a booking from creation to completion.</div>
-    <div class="flow-grid">
-        <div class="flow-step">
-            <div class="flow-num">01</div>
-            <h4>Register & Verify</h4>
-            <p>Customer registers, uploads 3 required documents (License, Secondary ID, Proof of Billing).</p>
-        </div>
-        <div class="flow-step">
-            <div class="flow-num">02</div>
-            <h4>Admin Verification</h4>
-            <p>Admin reviews uploaded documents and approves the account, upgrading the user to Client status.</p>
-        </div>
-        <div class="flow-step">
-            <div class="flow-num">03</div>
-            <h4>Create Booking</h4>
-            <p>Verified Client selects a vehicle, dates, pickup location, and optionally applies a promo code.</p>
-        </div>
-        <div class="flow-step">
-            <div class="flow-num">04</div>
-            <h4>Admin Review</h4>
-            <p>Admin reviews the booking request and either approves it (with schedule) or rejects it with a reason.</p>
-        </div>
-        <div class="flow-step">
-            <div class="flow-num">05</div>
-            <h4>Active Rental</h4>
-            <p>On pickup date the booking becomes Active. Vehicle is marked unavailable for other bookings.</p>
-        </div>
-        <div class="flow-step">
-            <div class="flow-num">06</div>
-            <h4>Completed</h4>
-            <p>On return date the booking is marked Completed. Vehicle availability is restored.</p>
         </div>
     </div>
+</section>
 
-    <!-- DOCUMENT REQUIREMENTS -->
-    <div class="divider"></div>
-    <div class="section-title">📎 Required Documents for Verification</div>
-    <div class="section-sub">All 3 documents must be uploaded and approved before a customer can make a booking.</div>
-    <div class="roles-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))">
-        <div class="role-card">
-            <span class="role-badge badge-admin">Document 1</span>
-            <h3>🪪 Driver's License</h3>
-            <p>A valid government-issued Driver's License is mandatory to prove the renter is legally authorized to drive.</p>
-            <ul class="role-perms">
-                <li>Must be current and not expired</li>
-                <li>JPG, PNG, or PDF accepted</li>
-                <li>Max file size: 5MB</li>
-            </ul>
+<!-- AI VERIFICATION -->
+<section class="section" id="ai-verification">
+    <div class="wrapper">
+        <div class="section-label">AI &amp; Machine Learning</div>
+        <h2>How AI-Powered ID Verification Works</h2>
+        <p class="section-intro">ELFAA uses a multi-layer automated document analysis pipeline powered by <strong>Tesseract OCR</strong> (Google's open-source, locally-run optical character recognition engine) combined with custom rules-based AI to verify the authenticity and accuracy of your uploaded identity documents — completely offline, no external cloud API required.</p>
+
+        <div class="pipeline" style="margin-bottom:2.5rem;">
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">1</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Document Upload &amp; Secure Storage</h4>
+                    <p>You upload a photo (JPEG/PNG) or PDF of your ID. The file is stored on the server's <strong>private disk</strong> — never on a public URL. All document access requires authentication and is protected by Laravel Gate authorization policies.</p>
+                    <span class="step-tag ai">Private Disk Storage · Laravel Gate</span>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">2</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Tesseract OCR Text Extraction</h4>
+                    <p>The server runs <strong>Tesseract OCR</strong> locally against your document image. Tesseract reads every character on the ID and returns two things: the <strong>raw extracted text</strong> (all words it could read), and an <strong>authentic per-word confidence score</strong> averaged into a single mean confidence percentage (0–100%).</p>
+                    <span class="step-tag ocr">Tesseract OCR Engine · Local · No Cloud</span>
+                    <div class="code-block">
+<span class="dim"># Example raw OCR output from a Philippine Driver's License image</span>
+<span class="yellow">LAND TRANSPORTATION OFFICE</span>
+REPUBLIC OF THE PHILIPPINES
+<span class="blue">LICENSE NO: N01-21-012345</span>
+NAME: REYES, MARIA SANTOS
+DATE OF BIRTH: 15 JAN 1995
+<span class="yellow">EXPIRATION DATE: 2026-01-15</span>
+BLOOD TYPE: O+   SEX: F
+<span class="dim">→ Mean Confidence Score: 87.4%  |  Words Recognized: 24</span></div>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">3</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Document Type Auto-Detection</h4>
+                    <p>The AI scans for specific <strong>keywords</strong> in the extracted text to automatically classify what type of document was uploaded. It recognizes: Philippine Driver's License, Passport, PhilSys National ID, UMID/SSS ID, Postal ID, and Proof of Billing documents (Meralco, Maynilad, PLDT/Globe bills, etc.).</p>
+                    <span class="step-tag ai">Keyword Classification Engine</span>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">4</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Structured Identity Field Extraction</h4>
+                    <p>Custom <strong>regex pattern matching</strong> and heuristic text analysis extract specific fields from the raw OCR text:</p>
+                    <ul class="check-list" style="margin-top:0.6rem;">
+                        <li><strong>Full Name</strong> — via keyword anchors (NAME:, BEARER:) or scanning for lines with 2–5 capitalized words, filtering out known non-name keywords (REPUBLIC, TRANSPORT, etc.)</li>
+                        <li><strong>ID / License Number</strong> — PH Driver's License format (N01-21-012345), PhilSys 16-digit, Passport alphanumeric (P1234567)</li>
+                        <li><strong>Date of Birth</strong> — Multiple format patterns: ISO, MM/DD/YYYY, DD MMM YYYY</li>
+                        <li><strong>Expiration Date</strong> — Keyword-anchored patterns (EXPIRY, VALID UNTIL, EXP. DATE) plus fallback scan for future-year dates in 2020–2040 range</li>
+                    </ul>
+                    <span class="step-tag ai">Regex + Heuristic Parsing</span>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">5</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Cross-Reference Against Your Customer Profile</h4>
+                    <p>Every extracted field is compared against the data you registered in your customer account. Each comparison generates a <strong>pass / warning / fail</strong> result that feeds the overall verification score:</p>
+                    <div style="margin-top:1rem;max-width:480px;">
+                        <div class="conf-block">
+                            <div class="conf-row"><span class="conf-label">Image Readability (OCR Confidence)</span><span class="conf-score">87%</span></div>
+                            <div class="confidence-bar-wrap"><div class="confidence-bar" data-target="87" style="background:linear-gradient(90deg,#34d399,#10b981);"></div></div>
+                        </div>
+                        <div class="conf-block">
+                            <div class="conf-row"><span class="conf-label">Full Name Match</span><span class="conf-score">Pass ✓</span></div>
+                            <div class="confidence-bar-wrap"><div class="confidence-bar" data-target="95" style="background:linear-gradient(90deg,#34d399,#10b981);"></div></div>
+                        </div>
+                        <div class="conf-block">
+                            <div class="conf-row"><span class="conf-label">License / ID Number Match</span><span class="conf-score">Pass ✓</span></div>
+                            <div class="confidence-bar-wrap"><div class="confidence-bar" data-target="100" style="background:linear-gradient(90deg,#34d399,#10b981);"></div></div>
+                        </div>
+                        <div class="conf-block">
+                            <div class="conf-row"><span class="conf-label">Document Expiry Status</span><span class="conf-score">Valid ✓</span></div>
+                            <div class="confidence-bar-wrap"><div class="confidence-bar" data-target="100" style="background:linear-gradient(90deg,#60a5fa,#3b82f6);"></div></div>
+                        </div>
+                    </div>
+                    <span class="step-tag rules">Rules-Based Scoring Engine</span>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">6</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>AI Recommendation Generation</h4>
+                    <p>Based on all checks combined, the system automatically generates one of four recommendations displayed to the admin:</p>
+                    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:0.6rem;">
+                        <span class="badge green"><span class="dot"></span> Approve Ready</span>
+                        <span class="badge amber"><span class="dot"></span> Manual Review</span>
+                        <span class="badge red"><span class="dot"></span> Likely Reject</span>
+                        <span class="badge purple"><span class="dot"></span> OCR Failed – Manual Review</span>
+                    </div>
+                    <span class="step-tag ai">Decision Recommendation Engine</span>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">7</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Human Admin Review &amp; Final Decision</h4>
+                    <p>An admin reviews the full verification panel: the actual document image (with zoom, rotate, and full-screen controls), all extracted OCR fields vs. your profile data, the confidence score, the AI recommendation, the raw OCR text, and the complete timestamped audit trail. The admin makes the final legally-binding decision: <strong>Approve</strong>, <strong>Reject</strong> (with reason), or <strong>Request Resubmission</strong> (with instructions).</p>
+                    <span class="step-tag human">Human-in-the-Loop Final Decision</span>
+                </div>
+            </div>
         </div>
-        <div class="role-card">
-            <span class="role-badge badge-client">Document 2</span>
-            <h3>📇 Secondary Photo ID</h3>
-            <p>A second government-issued photo ID for dual identity verification (Passport, UMID, SSS, PhilHealth, etc.).</p>
-            <ul class="role-perms">
-                <li>Must display full name & photo</li>
-                <li>JPG, PNG, or PDF accepted</li>
-                <li>Max file size: 5MB</li>
-            </ul>
+
+        <div class="note-box info">
+            <div class="note-icon">🔒</div>
+            <div class="note-text"><strong>Privacy &amp; Security</strong>Your document files are stored on the private server disk, never exposed publicly. Only authenticated admin/staff can view your documents — and only after passing Laravel Gate authorization checks. Every document access, approval, rejection, or reprocessing event is recorded in an immutable audit log with timestamp, actor name, role, and action type.</div>
         </div>
-        <div class="role-card">
-            <span class="role-badge badge-customer">Document 3</span>
-            <h3>💡 Proof of Billing Address</h3>
-            <p>A recent utility or bank statement to verify the renter's current address.</p>
-            <ul class="role-perms">
-                <li>Meralco / Electricity bill</li>
-                <li>Water utility bill</li>
-                <li>Internet / cable bill</li>
-                <li>Bank statement</li>
-                <li>Must be within 3 months</li>
-            </ul>
+
+        <h3 style="font-size:0.95rem;font-weight:800;margin-top:2rem;margin-bottom:0.5rem;">Supported ID Types &amp; Detection Patterns</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Document</th><th>Keywords Detected by AI</th><th>ID Number Pattern</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Driver's License</strong></td><td>LAND TRANSPORTATION OFFICE, LTO, NON-PROFESSIONAL, DRIVER LICENSE</td><td>N01-21-012345</td></tr>
+                <tr><td><strong>Philippine Passport</strong></td><td>PASSPORT, PASAPORTE, REPUBLIC OF THE PHILIPPINES PASSPORT</td><td>P1234567 (1 letter + 7 digits)</td></tr>
+                <tr><td><strong>PhilSys National ID</strong></td><td>PHILIPPINE IDENTIFICATION SYSTEM, PHILSYS, PAMBANSANG PAGKAKAKILANLAN</td><td>1234-5678-9012-3456</td></tr>
+                <tr><td><strong>UMID / SSS ID</strong></td><td>UNIFIED MULTI-PURPOSE ID, UMID, SOCIAL SECURITY SYSTEM</td><td>CRN-XXXX-XXXX</td></tr>
+                <tr><td><strong>Postal ID</strong></td><td>POSTAL ID, PHILPOST</td><td>Variable alphanumeric</td></tr>
+                <tr><td><strong>Proof of Billing</strong></td><td>MERALCO, MAYNILAD, BILLING, STATEMENT OF ACCOUNT, INTERNET BILL</td><td>Account number / address</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note-box warn" style="margin-top:1.5rem;">
+            <div class="note-icon">📸</div>
+            <div class="note-text"><strong>Tips for Best OCR Results</strong>Photograph your ID in good daylight with no shadows over the text. Make sure the entire ID is within frame with no cut-off edges. Avoid blurry, heavily rotated (&gt;15°), or over-compressed JPEG images. The OCR confidence threshold for an automatic "Approve Ready" recommendation is 70%+ confidence with at least 6 words recognized.</div>
         </div>
     </div>
+</section>
 
-</div>
+<!-- GPS -->
+<section class="section" id="gps">
+    <div class="wrapper">
+        <div class="section-label">Live GPS Fleet Tracking</div>
+        <h2>How GPS Tracking Works</h2>
+        <p class="section-intro">ELFAA uses a zero-hardware-cost GPS system where a smartphone acts as the in-car GPS transmitter. No physical GPS device or paid mapping API is needed — just a phone mounted in the vehicle running our web transmitter page.</p>
 
-<!-- FOOTER -->
-<footer>
-    <p>ELFAA Car Rental System &mdash; Internal Guidelines Document &bull; © 2026 ELFAA. All rights reserved.</p>
-    <p style="margin-top:6px">Serving SM Sto. Tomas · Victory Mall Tanauan · SM Calamba · Metro Laguna</p>
+        <div class="gps-diagram">
+            <div class="gps-node">
+                <div class="gps-icon">📱</div>
+                <h5>Smartphone</h5>
+                <p>Browser Geolocation API reads GPS coordinates at high accuracy using device sensors</p>
+            </div>
+            <div class="gps-node">
+                <div class="gps-icon">📡</div>
+                <h5>Ping API</h5>
+                <p>Phone sends lat/lng + speed + heading every 3–30 seconds to <code>/api/gps/ping</code></p>
+            </div>
+            <div class="gps-node">
+                <div class="gps-icon">🗄️</div>
+                <h5>Laravel Backend</h5>
+                <p>Updates vehicle's current position and appends a breadcrumb to the GPS history log table</p>
+            </div>
+            <div class="gps-node">
+                <div class="gps-icon">🗺️</div>
+                <h5>Admin Fleet Map</h5>
+                <p>Leaflet + OpenStreetMap renders live vehicle pins, speed, status, and 24h route history</p>
+            </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:2rem;">
+            <div>
+                <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:1rem;">Phone Transmitter Features</h3>
+                <ul class="check-list">
+                    <li>High-accuracy GPS via <code>navigator.geolocation.watchPosition()</code> with <code>enableHighAccuracy: true</code></li>
+                    <li>Live digital speedometer display in km/h</li>
+                    <li>Latitude / longitude shown to 6 decimal places</li>
+                    <li>GPS accuracy radius indicator in meters</li>
+                    <li>Configurable transmission interval: 3, 5, 10, or 30 seconds</li>
+                    <li><strong>Screen Wake Lock API</strong> — prevents the phone screen from sleeping while driving, ensuring continuous GPS uptime</li>
+                    <li>Real-time activity log showing the timestamp and result of each ping</li>
+                    <li>Works in any modern mobile browser (Chrome for Android, Safari for iOS)</li>
+                    <li>Also supports the open-source <strong>Traccar Client</strong> Android/iOS app via standard Traccar HTTP protocol</li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:1rem;">Admin Fleet Monitor Features</h3>
+                <ul class="check-list">
+                    <li>Free OpenStreetMap tiles — no Google Maps API key or paid plan required</li>
+                    <li>Auto-refreshes all vehicle positions every 8 seconds</li>
+                    <li>Color-coded status markers: <span class="badge green"><span class="dot"></span>Moving</span> <span class="badge amber"><span class="dot"></span>Idle</span> <span class="badge red"><span class="dot"></span>Offline</span></li>
+                    <li>"Focus Pin" button centers the map on any selected vehicle</li>
+                    <li>Route History — draws the last 24 hours of GPS breadcrumbs as a polyline path on the map</li>
+                    <li>One-click copy of the smartphone transmitter URL for any vehicle</li>
+                    <li>Vehicle cards show speed, coordinates, last ping time, and active renter name</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3 style="font-size:0.95rem;font-weight:800;margin-top:2rem;margin-bottom:0.75rem;">GPS Vehicle Status Logic</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Status</th><th>Condition</th><th>Visual</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge green"><span class="dot"></span>Moving</span></td><td>Last ping was less than 2 minutes ago AND current speed is greater than 3 km/h</td><td>Animated pulsing green dot on map</td></tr>
+                <tr><td><span class="badge amber"><span class="dot"></span>Idle / Parked</span></td><td>Last ping &lt; 2 min ago AND speed ≤ 3 km/h, OR last ping was 2–10 minutes ago</td><td>Static amber dot on map</td></tr>
+                <tr><td><span class="badge red"><span class="dot"></span>Offline</span></td><td>No ping received for more than 10 minutes, or GPS was never activated for this vehicle</td><td>Red dot, "Signal Lost" label</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note-box green" style="margin-top:1.5rem;">
+            <div class="note-icon">🎓</div>
+            <div class="note-text">
+                <strong>For Thesis/Research Use</strong>This GPS telemetry system was engineered specifically for academic thesis-level research into IoT fleet telematics using consumer mobile hardware. All source data (latitude, longitude, speed, heading, timestamp) is persisted in the <code>vehicle_gps_logs</code> database table and can be exported for data analysis. The system also supports the free Traccar Client app as an alternative transmitter using <code>/api/gps/traccar?id=DEVICE&amp;lat=...&amp;lon=...</code>
+                <div style="margin-top: 0.85rem;">
+                    <a href="/gps-guide.html" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #14b8a6; color: #000; font-weight: 800; font-size: 0.8rem; padding: 0.45rem 1rem; border-radius: 8px; text-decoration: none;">🛰️ Open Complete GPS Setup &amp; Configuration Guide &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CHATBOT -->
+<section class="section" id="chatbot">
+    <div class="wrapper">
+        <div class="section-label">AI Virtual Assistant</div>
+        <h2>ELFAA AI Chatbot</h2>
+        <p class="section-intro">The floating chat bubble (bottom-right of the website) is a local intent-classification AI assistant that answers customer questions using live database data — no external AI API or internet connection required for the AI logic itself.</p>
+        <div class="grid-2">
+            <div>
+                <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:1rem;">How the AI Intent Engine Works</h3>
+                <ul class="check-list">
+                    <li>Converts user input to lowercase and runs it through <strong>regex keyword pattern matching</strong> to identify the user's intent</li>
+                    <li>Each intent maps to a dynamic response function that queries live data (real fleet list, real prices, real active promos from the database)</li>
+                    <li>Generates contextual quick-reply chips for the most likely follow-up questions</li>
+                    <li>Understands Filipino language inputs: <em>magkano, musta, kamusta, kamano, book</em>, etc.</li>
+                    <li>Gracefully falls back to a human contact/escalation message for unrecognized queries</li>
+                    <li>No personal data is ever sent to a third-party AI service</li>
+                </ul>
+
+                <h3 style="font-size:0.95rem;font-weight:800;margin-top:1.5rem;margin-bottom:0.75rem;">Supported Intent Categories</h3>
+                <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                    <span class="step-tag ai">Greetings (Hi/Hello/Musta)</span>
+                    <span class="step-tag rules">How to Book</span>
+                    <span class="step-tag ocr">Fleet / Available Cars</span>
+                    <span class="step-tag human">Pricing &amp; Rates</span>
+                    <span class="step-tag gps">Promos &amp; Discounts</span>
+                    <span class="step-tag bot">Document Requirements</span>
+                    <span class="step-tag ai">Payment Methods</span>
+                    <span class="step-tag rules">Contact &amp; Location</span>
+                    <span class="step-tag ocr">My Bookings</span>
+                    <span class="step-tag human">Cancellation Policy</span>
+                    <span class="step-tag gps">Add-On Services</span>
+                    <span class="step-tag bot">Late Return Policy</span>
+                </div>
+            </div>
+            <div class="card" style="background:var(--bg-2);">
+                <h3 style="font-size:0.85rem;font-weight:800;margin-bottom:1rem;">Sample Conversation</h3>
+                <div style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.82rem;">
+                    <div style="align-self:flex-end;background:var(--brand);color:#fff;padding:0.5rem 0.85rem;border-radius:12px 12px 2px 12px;max-width:85%;">magkano ang rental ng SUV?</div>
+                    <div style="align-self:flex-start;background:var(--bg-card);border:1px solid var(--border);padding:0.6rem 0.85rem;border-radius:12px 12px 12px 2px;max-width:92%;color:var(--text-2);">
+                        💰 <strong style="color:var(--text);">ELFAA Rate Card:</strong><br>
+                        • Honda City — PHP 1,500/day<br>
+                        • Toyota Fortuner SUV — PHP 3,500/day<br>
+                        • Toyota HiAce Van — PHP 5,000/day<br><br>
+                        <em>Rates range from PHP 1,500 to PHP 5,000/day. Note: prices may vary with active promos.</em>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <span style="font-size:0.7rem;background:var(--bg-3);border:1px solid var(--border);padding:0.25rem 0.6rem;border-radius:999px;color:var(--text-2);cursor:pointer;">View Promos 🎉</span>
+                        <span style="font-size:0.7rem;background:var(--bg-3);border:1px solid var(--border);padding:0.25rem 0.6rem;border-radius:999px;color:var(--text-2);cursor:pointer;">Book a Car 🚗</span>
+                        <span style="font-size:0.7rem;background:var(--bg-3);border:1px solid var(--border);padding:0.25rem 0.6rem;border-radius:999px;color:var(--text-2);cursor:pointer;">Requirements 📄</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ADMIN -->
+<section class="section" id="admin">
+    <div class="wrapper">
+        <div class="section-label">Admin &amp; Staff Portal</div>
+        <h2>Portal Features for Administrators &amp; Staff</h2>
+        <p class="section-intro">The admin portal is a comprehensive fleet management system with specialized modules accessible from the sidebar. Staff and Admin roles have different access levels.</p>
+        <div class="grid-2">
+            <div class="card"><div class="card-icon red">📊</div><h3>Analytics Dashboard</h3><p>Real-time stats: total bookings, earnings, active promos, pending verifications. Monthly earnings chart, revenue by vehicle category, and top-performing vehicle leaderboard.</p></div>
+            <div class="card"><div class="card-icon blue">📅</div><h3>Booking Management</h3><p>Full CRUD for all customer bookings. Approve, confirm, complete, or cancel. View detailed price breakdowns with tax, promo discounts, add-on costs, and full payment history per booking.</p></div>
+            <div class="card"><div class="card-icon purple">🛡️</div><h3>Document Verification</h3><p>Review AI-scanned customer IDs with full OCR output, extracted field comparison panel, confidence scores, and audit trail. Approve / Reject / Request Resubmission with admin notes. Trigger OCR reprocessing on demand.</p></div>
+            <div class="card"><div class="card-icon teal">📡</div><h3>Fleet GPS Monitor</h3><p>Live Leaflet map of all GPS-enabled vehicles with moving/idle/offline status. Route history playback for the past 24 hours. Per-vehicle GPS configuration and smartphone transmitter link management.</p></div>
+            <div class="card"><div class="card-icon amber">📋</div><h3>Daily Operations &amp; Tasks</h3><p>Assign maintenance tasks, vehicle inspections, and operational duties to staff. Track task status (Pending → In Progress → Done). Schedule view for upcoming tasks.</p></div>
+            <div class="card"><div class="card-icon green">💰</div><h3>Profit Analytics</h3><p>Per-vehicle profit and loss reports: rental income minus recorded expenses. Identify your highest and lowest earning fleet units with visual charts and trend analysis.</p></div>
+            <div class="card"><div class="card-icon red">🔔</div><h3>Notification Config</h3><p>Configure automated booking notification channels: Email (SMTP), SMS (Semaphore API), or Viber. Set sender names, API keys, and toggle each channel on/off independently.</p></div>
+            <div class="card"><div class="card-icon blue">👥</div><h3>User Account Management</h3><p>View, lock, unlock, or promote user accounts to admin/staff roles. Full control over access levels. (Administrator role only — staff cannot manage other accounts.)</p></div>
+        </div>
+
+        <h3 style="font-size:0.95rem;font-weight:800;margin-top:2rem;margin-bottom:0.75rem;">Role Permissions Matrix</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Feature</th><th>Customer</th><th>Staff</th><th>Administrator</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Browse &amp; Book Vehicles</td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Upload Identity Documents</td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Approve / Reject Any Booking</td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Verify Customer Documents (OCR + Decision)</td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Add / Edit / Delete Vehicles &amp; Promos</td><td><span class="badge red">✗ No</span></td><td><span class="badge amber">⚠ Limited</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Manage User Accounts &amp; Roles</td><td><span class="badge red">✗ No</span></td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>View Fleet GPS Live Monitor</td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Configure GPS per Vehicle</td><td><span class="badge red">✗ No</span></td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>System Settings &amp; Notification Config</td><td><span class="badge red">✗ No</span></td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+                <tr><td>Profit Analytics &amp; Billing Records</td><td><span class="badge red">✗ No</span></td><td><span class="badge green">✓ Yes</span></td><td><span class="badge green">✓ Yes</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- RULES -->
+<section class="section" id="rules">
+    <div class="wrapper">
+        <div class="section-label">Rules &amp; Policies</div>
+        <h2>Terms, Rules &amp; Rental Policies</h2>
+        <p class="section-intro">All users must comply with these platform rules. Violations may result in booking cancellation, account suspension, or legal action.</p>
+        <div class="grid-2">
+            <div class="card brand-card">
+                <div class="card-icon red">✅</div>
+                <h3>Customer Responsibilities</h3>
+                <ul class="check-list" style="margin-top:0.5rem;">
+                    <li>Provide accurate, truthful personal information at registration</li>
+                    <li>Upload clear, authentic, and unaltered identity documents</li>
+                    <li>Ensure your Driver's License is valid and non-expired at time of rental</li>
+                    <li>Return the vehicle in the same condition as when picked up</li>
+                    <li>Report any accidents, damage, or incidents immediately to ELFAA staff</li>
+                    <li>Respect the rental return date and time agreed in your booking</li>
+                    <li>Do not sub-rent or lend the vehicle to unauthorized third parties</li>
+                    <li>Follow all Philippine traffic laws and road safety regulations</li>
+                </ul>
+            </div>
+            <div class="card">
+                <div class="card-icon red">🚫</div>
+                <h3>Prohibited Actions</h3>
+                <ul class="check-list" style="margin-top:0.5rem;">
+                    <li class="deny">Uploading fake, edited, or fraudulently altered ID documents</li>
+                    <li class="deny">Impersonating another person during account registration or document upload</li>
+                    <li class="deny">Using the vehicle for any illegal activities</li>
+                    <li class="deny">Operating the vehicle outside agreed areas without admin permission</li>
+                    <li class="deny">Disabling, removing, or tampering with the GPS tracking phone/device</li>
+                    <li class="deny">Allowing unlicensed drivers to operate the vehicle</li>
+                    <li class="deny">Smoking inside the vehicle</li>
+                    <li class="deny">Transporting hazardous, flammable, or illegal materials</li>
+                </ul>
+            </div>
+            <div class="card">
+                <div class="card-icon amber">🔒</div>
+                <h3>Document Privacy Policy</h3>
+                <ul class="check-list" style="margin-top:0.5rem;">
+                    <li>All uploaded documents are stored on the private server disk — never on a public URL</li>
+                    <li>Only authenticated admin/staff with verified system access can view your documents</li>
+                    <li>Every single document access and decision is recorded in an immutable audit trail</li>
+                    <li class="warn">Uploading fraudulent documents is a criminal offense (RA 10175, Cybercrime Prevention Act)</li>
+                    <li>Rejected documents can be corrected and resubmitted at any time</li>
+                    <li>Document data is used solely for identity verification — never shared with third parties</li>
+                </ul>
+            </div>
+            <div class="card">
+                <div class="card-icon green">🔄</div>
+                <h3>Cancellation &amp; Late Return</h3>
+                <ul class="check-list" style="margin-top:0.5rem;">
+                    <li>Cancellations must be requested through your customer dashboard booking history</li>
+                    <li>Cancellation fees are at admin discretion based on how close to the rental date</li>
+                    <li class="warn">Late returns may incur additional charges per hour or per day at the agreed daily rate</li>
+                    <li>Contact admin immediately if you cannot return the vehicle on time</li>
+                    <li>Failure to return the vehicle without contact may be treated as unauthorized use</li>
+                </ul>
+            </div>
+        </div>
+        <div class="note-box danger" style="margin-top:1.5rem;">
+            <div class="note-icon">⛔</div>
+            <div class="note-text"><strong>Zero-Tolerance: Document Fraud Policy</strong>Uploading forged, tampered, or fraudulent identification documents will result in immediate and permanent account suspension. ELFAA reserves the right to report fraudulent submissions to the appropriate Philippine authorities under RA 10175 (Cybercrime Prevention Act) and relevant identity fraud statutes. The AI-generated verification audit trail and document images constitute admissible digital evidence.</div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+    <div class="wrapper">
+        <div class="section-label">Frequently Asked Questions</div>
+        <h2>Common Questions Answered</h2>
+        <p class="section-intro">Quick, accurate answers to the most common questions about the platform, AI systems, and booking process.</p>
+        <div style="display:flex;flex-direction:column;gap:0.85rem;max-width:800px;">
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>How long does AI ID verification take?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">The Tesseract OCR scan runs automatically within seconds of your document upload. However, the final human admin approval typically takes 1–24 hours depending on submission time. You will receive a notification (Email/SMS/Viber, if configured) once your document is reviewed.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>Why did my OCR result show a low confidence score?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">Low OCR confidence (below 70%) typically means the uploaded image was blurry, too dark, too small, had heavy shadows over the text, or was a heavily compressed JPEG. Try re-uploading a clearer photo taken in daylight. After re-uploading, you can also request OCR reprocessing from the document panel in your dashboard. The admin can also manually trigger reprocessing.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>Can I book without a Driver's License?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">No. A valid Philippine Driver's License is mandatory as the primary government ID for all vehicle rentals. This is both a legal requirement and an insurance condition. The license must be non-expired on the scheduled rental date. Expired licenses will be flagged by the AI and rejected by admin.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>Is the GPS tracking visible to me as a customer?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">The live GPS fleet map is accessible only to admin and staff accounts. As a customer, you will not see a real-time tracking map of yourself. GPS tracking is used exclusively for fleet safety, vehicle recovery, and operational management purposes by ELFAA staff.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>How do promo codes work?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">Enter a promo code in the designated field during booking. The system automatically validates the code against the database of active promos and applies the discount to your total. Discounts can be either a fixed peso amount (e.g., PHP 500 off) or a percentage (e.g., 10% off). Only one promo code is allowed per booking.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>What technology powers the AI chatbot — does it send my data to ChatGPT?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">No. The ELFAA chatbot uses a completely local, custom-built intent engine based on keyword regex pattern matching — no external AI API (ChatGPT, Gemini, etc.) is called. All responses come from live database queries on your own server. No user messages or personal data are ever sent to third-party AI services. The chatbot also understands common Filipino language inputs.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>What happens if I cancel a confirmed booking?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">Cancellation requests are submitted through your dashboard booking history and reviewed by admin. Cancellation fees may apply depending on how close to the rental date the request is made. For urgent cancellations, contact admin directly via the chatbot or the provided contact details. Cancellation processing is at admin discretion.</p>
+            </details>
+
+            <details class="card" style="cursor:pointer;">
+                <summary style="font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:1rem;"><span>How do I use my phone as a GPS tracker inside the car?</span><span class="faq-arrow" style="color:var(--brand);font-size:1.1rem;flex-shrink:0;">+</span></summary>
+                <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-2);">Admin will provide you (or mount the phone themselves) with a unique tracker URL in the format <code>/tracker/[KEY]</code>. Open that URL in Chrome or Safari on the smartphone, tap "Start GPS Transmission," allow location access when prompted, and mount the phone on the car's dashboard holder. The phone will send live GPS coordinates to the admin map every few seconds. Make sure the phone stays connected to mobile data or Wi-Fi for uninterrupted transmission.</p>
+            </details>
+
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="wrapper">
+        <p><strong>ELFAA Car Rental</strong> — Platform Guidelines &amp; System Documentation</p>
+        <p style="margin-top:0.4rem;color:var(--text-3);">Built with Laravel 12 + Inertia React · Tesseract OCR · OpenStreetMap / Leaflet · Web Geolocation API</p>
+        <p style="margin-top:0.25rem;">&copy; <span id="yr"></span> ELFAA Car Rental. All rights reserved.</p>
+    </div>
 </footer>
 
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
 <script>
-    function toggle(header) {
-        const block = header.closest('.module-block');
-        block.classList.toggle('open');
+    document.getElementById('yr').textContent = new Date().getFullYear();
+
+    // Theme toggle
+    const html = document.documentElement;
+    let theme = localStorage.getItem('elfaa-theme') || 'dark';
+    function applyTheme(t) {
+        html.setAttribute('data-theme', t);
+        theme = t;
+        document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+        localStorage.setItem('elfaa-theme', t);
     }
+    function toggleTheme() { applyTheme(theme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(theme);
+
+    // Scroll to top button
+    const scrollBtn = document.getElementById('scrollTop');
+    window.addEventListener('scroll', () => {
+        scrollBtn.classList.toggle('visible', window.scrollY > 400);
+    });
+
+    // FAQ chevron toggle
+    document.querySelectorAll('details').forEach(el => {
+        el.addEventListener('toggle', () => {
+            const arrow = el.querySelector('.faq-arrow');
+            if (arrow) arrow.textContent = el.open ? '−' : '+';
+        });
+    });
+
+    // Animate confidence bars on scroll into view
+    const bars = document.querySelectorAll('.confidence-bar[data-target]');
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                e.target.style.width = e.target.getAttribute('data-target') + '%';
+                io.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.5 });
+    bars.forEach(b => io.observe(b));
 </script>
 </body>
 </html>

@@ -21,6 +21,8 @@ use App\Services\DocumentVerification\DocumentVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use App\Http\Controllers\GpsTrackerController;
 use Inertia\Inertia;
 
 class AdminPortalController extends Controller
@@ -110,6 +112,18 @@ class AdminPortalController extends Controller
             ->whereNotNull('archived_at')
             ->orderBy('archived_at', 'desc')
             ->get();
+
+        GpsTrackerController::ensureSchema();
+
+        // Ensure all existing vehicles have active GPS tracker keys generated
+        $vehiclesWithoutGps = Vehicle::whereNull('gps_tracker_key')->get();
+        foreach ($vehiclesWithoutGps as $v) {
+            $v->update([
+                'gps_enabled'     => true,
+                'gps_device_id'   => $v->gps_device_id ?: ('ELFAA-GPS-' . str_pad($v->id, 3, '0', STR_PAD_LEFT)),
+                'gps_tracker_key' => Str::random(32),
+            ]);
+        }
 
         $vehicles = Vehicle::orderBy('created_at', 'desc')->get();
         $promos = Promo::orderBy('created_at', 'desc')->get();
@@ -371,6 +385,8 @@ class AdminPortalController extends Controller
             $imgUrl = '/uploads/vehicles/' . $filename;
         }
 
+        GpsTrackerController::ensureSchema();
+
         Vehicle::create([
             'name' => $request->name,
             'plate_number' => $request->plate_number,
@@ -387,6 +403,9 @@ class AdminPortalController extends Controller
             'created_by' => Auth::id(),
             'owner_role' => Auth::user()->role ?: 'admin',
             'is_approved' => true,
+            'gps_enabled' => $request->has('gps_enabled') ? (bool) $request->gps_enabled : true,
+            'gps_device_id' => $request->gps_device_id ?: ('ELFAA-GPS-' . Str::upper(Str::random(4))),
+            'gps_tracker_key' => Str::random(32),
         ]);
 
         return redirect()->route('admin.dashboard')->with('success', 'Vehicle fleet added successfully!');
@@ -417,7 +436,7 @@ class AdminPortalController extends Controller
             $images = ['/uploads/vehicles/' . $filename];
         }
 
-        $vehicle->update([
+        $updateData = [
             'name' => $request->name,
             'plate_number' => $request->plate_number,
             'type' => $request->type,
@@ -430,7 +449,19 @@ class AdminPortalController extends Controller
             'features' => $request->features ?: [],
             'images' => $images,
             'status' => $request->status,
-        ]);
+        ];
+
+        if ($request->has('gps_enabled')) {
+            $updateData['gps_enabled'] = (bool) $request->gps_enabled;
+        }
+        if ($request->filled('gps_device_id')) {
+            $updateData['gps_device_id'] = $request->gps_device_id;
+        }
+        if (!$vehicle->gps_tracker_key) {
+            $updateData['gps_tracker_key'] = Str::random(32);
+        }
+
+        $vehicle->update($updateData);
 
         return redirect()->route('admin.dashboard')->with('success', 'Vehicle fleet updated successfully!');
     }

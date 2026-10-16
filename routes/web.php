@@ -128,7 +128,17 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/unavailable-dates', [App\Http\Controllers\CalendarController::class, 'storeUnavailableDate'])->name('unavailable_dates.store');
     Route::post('/unavailable-dates/{unavailableDate}/destroy', [App\Http\Controllers\CalendarController::class, 'destroyUnavailableDate'])->name('unavailable_dates.destroy');
     Route::get('/reports/smart-insights-data', [App\Http\Controllers\CalendarController::class, 'smartInsights'])->name('reports.smart_insights_data');
+
+    // Fleet GPS Real-Time Monitoring & Route Tracking
+    Route::get('/gps/live-fleet', [App\Http\Controllers\GpsTrackerController::class, 'liveFleet'])->name('gps.live_fleet');
+    Route::get('/gps/route-history/{vehicle}', [App\Http\Controllers\GpsTrackerController::class, 'routeHistory'])->name('gps.route_history');
+    Route::post('/vehicles/{vehicle}/gps-config', [App\Http\Controllers\GpsTrackerController::class, 'updateConfig'])->name('vehicles.gps_config');
 });
+
+// Public GPS Phone Transmitter & Traccar Ingestion Endpoints
+Route::post('/api/gps/ping', [App\Http\Controllers\GpsTrackerController::class, 'recordPing'])->name('gps.ping');
+Route::match(['get', 'post'], '/api/gps/traccar', [App\Http\Controllers\GpsTrackerController::class, 'recordTraccar'])->name('gps.traccar');
+Route::get('/tracker/{key}', [App\Http\Controllers\GpsTrackerController::class, 'renderTransmitter'])->name('gps.transmitter');
 
 // Public / Guest / Customer Calendar API
 Route::get('/api/calendar/customer', [App\Http\Controllers\CalendarController::class, 'customerFeed'])->name('calendar.customer_feed');

@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import { Sun, Moon, Car, Mail, Lock, CheckCircle2, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 
 const CAROUSEL_IMAGES = [
     {
@@ -93,16 +94,12 @@ export default function ResetPassword({ token, email }) {
                     >
                         {isDarkMode ? (
                             <>
-                                <svg className="w-3.5 h-3.5 text-amber-400 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
-                                </svg>
+                                <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                                 <span>Light</span>
                             </>
                         ) : (
                             <>
-                                <svg className="w-3.5 h-3.5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                </svg>
+                                <Moon className="w-3.5 h-3.5 text-indigo-600" />
                                 <span>Dark</span>
                             </>
                         )}
@@ -112,32 +109,10 @@ export default function ResetPassword({ token, email }) {
                 {/* Form Body Container */}
                 <div className="mx-auto w-full max-w-sm lg:w-[380px] my-auto py-6">
                     
-                    {/* Animated SVG Sports Car Icon Accent */}
+                    {/* Brand Vehicle Icon Accent */}
                     <div className="mb-6 flex items-center justify-center">
-                        <div className="relative p-4 rounded-2xl bg-gradient-to-b from-[#FF3B30]/10 to-transparent border border-[#FF3B30]/20 shadow-inner group">
-                            <svg className="w-16 h-12 text-[#FF3B30] transition-transform duration-500 group-hover:scale-110" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                {/* Speed Lines Animation */}
-                                <line x1="5" y1="42" x2="25" y2="42" stroke="#FF3B30" strokeWidth="2" strokeLinecap="round" className="animate-pulse" />
-                                <line x1="2" y1="46" x2="18" y2="46" stroke="#FF3B30" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-                                
-                                {/* Sleek Car Body */}
-                                <path d="M20 38 L28 24 C32 17, 42 14, 55 14 L72 16 C80 18, 86 24, 90 30 L95 38 Z" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
-                                <path d="M35 24 L48 18 L68 18 L76 24 Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.5" />
-                                <path d="M15 38 L95 38" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-
-                                {/* Glowing Headlight */}
-                                <circle cx="90" cy="34" r="2.5" fill="#FF3B30" className="animate-ping" />
-                                <circle cx="90" cy="34" r="2" fill="#FFFFFF" />
-
-                                {/* Wheels */}
-                                <circle cx="32" cy="38" r="7" fill={isDarkMode ? "#09090b" : "#ffffff"} stroke="currentColor" strokeWidth="2.5" />
-                                <circle cx="32" cy="38" r="3" fill="currentColor" />
-                                <circle cx="78" cy="38" r="7" fill={isDarkMode ? "#09090b" : "#ffffff"} stroke="currentColor" strokeWidth="2.5" />
-                                <circle cx="78" cy="38" r="3" fill="currentColor" />
-                            </svg>
-                            
-                            {/* Ambient Light Beam */}
-                            <div className="absolute top-1/2 right-2 w-10 h-6 bg-gradient-to-r from-[#FF3B30]/40 to-transparent blur-sm rounded-full pointer-events-none" />
+                        <div className="relative p-3.5 rounded-2xl bg-[#FF3B30]/10 border border-[#FF3B30]/20 shadow-inner group flex items-center justify-center">
+                            <Car className="w-8 h-8 text-[#FF3B30] transition-transform duration-500 group-hover:scale-110 stroke-[1.75]" />
                         </div>
                     </div>
 
@@ -158,9 +133,7 @@ export default function ResetPassword({ token, email }) {
 
                             <div className="relative rounded-xl shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                                    </svg>
+                                    <Mail className="w-4 h-4" />
                                 </div>
                                 <TextInput
                                     id="email"
@@ -186,9 +159,7 @@ export default function ResetPassword({ token, email }) {
 
                             <div className="relative rounded-xl shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
+                                    <Lock className="w-4 h-4" />
                                 </div>
                                 <TextInput
                                     id="password"
@@ -212,8 +183,9 @@ export default function ResetPassword({ token, email }) {
                                     className={`absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold transition-colors cursor-pointer ${
                                         isDarkMode ? 'text-zinc-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
                                     }`}
+                                    title={showPassword ? "Hide password" : "Show password"}
                                 >
-                                    {showPassword ? "Hide" : "Show"}
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
                             <InputError message={errors.password} className="mt-1.5 text-xs font-semibold text-[#FF3B30]" />
@@ -225,9 +197,7 @@ export default function ResetPassword({ token, email }) {
 
                             <div className="relative rounded-xl shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                                    <CheckCircle2 className="w-4 h-4" />
                                 </div>
                                 <TextInput
                                     id="password_confirmation"
@@ -256,10 +226,7 @@ export default function ResetPassword({ token, email }) {
                                 className="w-full flex items-center justify-center h-12 px-6 border border-transparent rounded-xl shadow-lg shadow-[#FF3B30]/25 text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-[#FF3B30] to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF3B30] focus:ring-offset-zinc-950 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
                             >
                                 {processing ? (
-                                    <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
+                                    <Loader2 className="w-5 h-5 text-white animate-spin" />
                                 ) : (
                                     <span>Reset Password & Sign In →</span>
                                 )}
@@ -273,7 +240,7 @@ export default function ResetPassword({ token, email }) {
                             href={route('login')}
                             className="text-xs font-extrabold text-zinc-400 hover:text-[#FF3B30] transition-colors inline-flex items-center gap-1.5 group"
                         >
-                            <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+                            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                             <span>Back to Login</span>
                         </Link>
                     </div>

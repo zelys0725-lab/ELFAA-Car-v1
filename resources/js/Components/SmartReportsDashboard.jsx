@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
 
 export default function SmartReportsDashboard({ isAdmin = true, stats = null, vehicles = [], bookings = [], documents = [] }) {
     const [timeRange, setTimeRange] = useState('this_month');
@@ -218,9 +219,7 @@ export default function SmartReportsDashboard({ isAdmin = true, stats = null, ve
                             onClick={handleExportPDF}
                             className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-lg transition-all cursor-pointer flex items-center gap-2"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                            <Download className="w-4 h-4" />
                             <span>Export PDF Report</span>
                         </button>
                     </div>

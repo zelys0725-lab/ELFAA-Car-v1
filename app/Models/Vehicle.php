@@ -29,6 +29,13 @@ class Vehicle extends Model
         'created_by',
         'owner_role',
         'is_approved',
+        'gps_enabled',
+        'gps_device_id',
+        'gps_tracker_key',
+        'last_latitude',
+        'last_longitude',
+        'current_speed',
+        'last_gps_updated_at',
     ];
 
     protected function casts(): array
@@ -39,7 +46,17 @@ class Vehicle extends Model
             'price_per_day' => 'decimal:2',
             'purchase_cost' => 'decimal:2',
             'is_approved' => 'boolean',
+            'gps_enabled' => 'boolean',
+            'last_latitude' => 'decimal:7',
+            'last_longitude' => 'decimal:7',
+            'current_speed' => 'decimal:2',
+            'last_gps_updated_at' => 'datetime',
         ];
+    }
+
+    public function gpsLogs(): HasMany
+    {
+        return $this->hasMany(VehicleGpsLog::class)->orderBy('recorded_at', 'desc');
     }
 
     public function creator(): BelongsTo

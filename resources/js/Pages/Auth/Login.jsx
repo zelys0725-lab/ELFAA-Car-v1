@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const CAROUSEL_IMAGES = [
     {
@@ -118,16 +119,12 @@ export default function Login({ status, canResetPassword }) {
                     >
                         {isDarkMode ? (
                             <>
-                                <svg className="w-3.5 h-3.5 text-amber-400 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
-                                </svg>
+                                <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                                 <span>Light</span>
                             </>
                         ) : (
                             <>
-                                <svg className="w-3.5 h-3.5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                </svg>
+                                <Moon className="w-3.5 h-3.5 text-indigo-600" />
                                 <span>Dark</span>
                             </>
                         )}
@@ -137,32 +134,10 @@ export default function Login({ status, canResetPassword }) {
                 {/* Form Body Container */}
                 <div className="mx-auto w-full max-w-sm lg:w-[380px] my-auto py-6">
                     
-                    {/* Animated SVG Sports Car Icon Accent */}
+                    {/* Brand Vehicle Icon Accent */}
                     <div className="mb-6 flex items-center justify-center">
-                        <div className="relative p-4 rounded-2xl bg-gradient-to-b from-[#FF3B30]/10 to-transparent border border-[#FF3B30]/20 shadow-inner group">
-                            <svg className="w-16 h-12 text-[#FF3B30] transition-transform duration-500 group-hover:scale-110" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                {/* Speed Lines Animation */}
-                                <line x1="5" y1="42" x2="25" y2="42" stroke="#FF3B30" strokeWidth="2" strokeLinecap="round" className="animate-pulse" />
-                                <line x1="2" y1="46" x2="18" y2="46" stroke="#FF3B30" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-                                
-                                {/* Sleek Car Body */}
-                                <path d="M20 38 L28 24 C32 17, 42 14, 55 14 L72 16 C80 18, 86 24, 90 30 L95 38 Z" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
-                                <path d="M35 24 L48 18 L68 18 L76 24 Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.5" />
-                                <path d="M15 38 L95 38" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-
-                                {/* Glowing Headlight */}
-                                <circle cx="90" cy="34" r="2.5" fill="#FF3B30" className="animate-ping" />
-                                <circle cx="90" cy="34" r="2" fill="#FFFFFF" />
-
-                                {/* Wheels */}
-                                <circle cx="32" cy="38" r="7" fill={isDarkMode ? "#09090b" : "#ffffff"} stroke="currentColor" strokeWidth="2.5" />
-                                <circle cx="32" cy="38" r="3" fill="currentColor" />
-                                <circle cx="78" cy="38" r="7" fill={isDarkMode ? "#09090b" : "#ffffff"} stroke="currentColor" strokeWidth="2.5" />
-                                <circle cx="78" cy="38" r="3" fill="currentColor" />
-                            </svg>
-                            
-                            {/* Ambient Light Beam */}
-                            <div className="absolute top-1/2 right-2 w-10 h-6 bg-gradient-to-r from-[#FF3B30]/40 to-transparent blur-sm rounded-full pointer-events-none" />
+                        <div className="relative p-3.5 rounded-2xl bg-[#FF3B30]/10 border border-[#FF3B30]/20 shadow-inner group flex items-center justify-center">
+                            <Car className="w-8 h-8 text-[#FF3B30] transition-transform duration-500 group-hover:scale-110 stroke-[1.75]" />
                         </div>
                     </div>
 
@@ -187,9 +162,7 @@ export default function Login({ status, canResetPassword }) {
                     {isThrottled && (
                         <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-bold text-[#FF3B30]">
                             <div className="flex items-center gap-2 mb-2">
-                                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
+                                <AlertCircle className="w-4 h-4 shrink-0" />
                                 <span>Too many failed attempts. Please wait before trying again.</span>
                             </div>
                             {countdown > 0 && (
@@ -214,9 +187,7 @@ export default function Login({ status, canResetPassword }) {
                     {/* Admin-locked account banner */}
                     {isLocked && (
                         <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-start gap-2">
-                            <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                            </svg>
+                            <Lock className="w-4 h-4 shrink-0 mt-0.5" />
                             <span>Your account has been <strong>locked</strong> by an administrator. Please contact support to regain access.</span>
                         </div>
                     )}
@@ -224,9 +195,7 @@ export default function Login({ status, canResetPassword }) {
                     {/* Deactivated account banner */}
                     {isDeactivated && (
                         <div className="mb-6 p-3.5 rounded-xl bg-zinc-500/10 border border-zinc-500/30 text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524m8.367 8.367A6 6 0 016.524 5.11m7.366 9.78L5.11 6.524M18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
-                            </svg>
+                            <UserX className="w-4 h-4 shrink-0" />
                             <span>Your account has been <strong>deactivated</strong>. Please contact support.</span>
                         </div>
                     )}
@@ -238,9 +207,7 @@ export default function Login({ status, canResetPassword }) {
 
                             <div className="relative rounded-xl shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                                    </svg>
+                                    <Mail className="w-4 h-4" />
                                 </div>
                                 <TextInput
                                     id="email"
@@ -269,9 +236,7 @@ export default function Login({ status, canResetPassword }) {
 
                             <div className="relative rounded-xl shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
+                                    <Lock className="w-4 h-4" />
                                 </div>
                                 <TextInput
                                     id="password"
@@ -297,15 +262,9 @@ export default function Login({ status, canResetPassword }) {
                                     title={showPassword ? "Hide password" : "Show password"}
                                 >
                                     {showPassword ? (
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3l18 18" />
-                                        </svg>
+                                        <EyeOff className="w-4 h-4" />
                                     ) : (
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
+                                        <Eye className="w-4 h-4" />
                                     )}
                                 </button>
                             </div>
@@ -348,10 +307,7 @@ export default function Login({ status, canResetPassword }) {
                                 className="w-full flex items-center justify-center h-12 px-6 border border-transparent rounded-xl shadow-lg shadow-[#FF3B30]/25 text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-[#FF3B30] to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF3B30] focus:ring-offset-zinc-950 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
                             >
                                 {processing ? (
-                                    <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
+                                    <Loader2 className="w-5 h-5 text-white animate-spin" />
                                 ) : countdown > 0 ? (
                                     <span>Locked out — retry in {countdown}s</span>
                                 ) : (

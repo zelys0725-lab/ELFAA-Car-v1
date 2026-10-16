@@ -6,6 +6,22 @@ import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker'
 import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
 import AlertModal from '@/Components/AlertModal';
+import { 
+    CheckCircle2, 
+    AlertTriangle, 
+    FileText, 
+    ShieldCheck, 
+    User, 
+    Upload, 
+    Car, 
+    Calendar, 
+    Clock, 
+    MapPin, 
+    Star, 
+    CreditCard, 
+    Receipt, 
+    ExternalLink 
+} from 'lucide-react';
 
 export default function Dashboard({ auth, bookings = [], vehicles = [], documents = [], addOns = [], promos = [], selectedVehicleId = null }) {
     const [selectedType, setSelectedType] = useState('All');
@@ -341,9 +357,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 border-l-4 ${allDocsVerified ? 'border-l-green-500' : 'border-l-amber-500'} shadow-lg rounded-xl overflow-hidden transition-colors`}>
                             <CardHeader className="pb-3 px-6 pt-5">
                                 <CardTitle className="flex items-center gap-2.5 text-sm font-black uppercase tracking-wider text-zinc-900 dark:text-white">
-                                    <span className={`text-lg ${allDocsVerified ? 'text-green-500' : 'text-amber-500'}`}>
-                                        {allDocsVerified ? '✓' : '⚠'}
-                                    </span>
+                                    {allDocsVerified ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                                    ) : (
+                                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                                    )}
                                     Identity & Credentials Hub
                                 </CardTitle>
                                 <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
@@ -419,15 +437,46 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                     <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 flex flex-col justify-between space-y-4 text-left transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm">
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider">
-                                                    Driver's License (Gov ID 1)
-                                                </span>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider truncate">
+                                                        Driver's License (Gov ID 1)
+                                                    </span>
+                                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                                                        <User className="w-3 h-3 text-[#FF3B30] shrink-0" />
+                                                        {auth.user.name}
+                                                    </span>
+                                                </div>
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0 ${govId1.textClass}`}>
                                                     <span className={`h-1.5 w-1.5 rounded-full ${govId1.dotClass}`} />
                                                     {govId1.label}
                                                 </span>
                                             </div>
                                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Primary driver identification card.</p>
+
+                                            {/* Dedicated ID Image Preview Surface */}
+                                            <div className="w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center justify-center my-2 shadow-inner group">
+                                                {govId1.info?.file_path ? (
+                                                    (govId1.info.mime_type === 'application/pdf' || govId1.info.file_path.toLowerCase().endsWith('.pdf')) ? (
+                                                        <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-1">
+                                                            <FileText className="w-8 h-8 text-[#FF3B30]" />
+                                                            <span className="text-[11px] font-bold">PDF License Document</span>
+                                                        </div>
+                                                    ) : (
+                                                        <img 
+                                                            src={govId1.info.secure_url || `/documents/${govId1.info.id}/file`} 
+                                                            alt={`${auth.user.name} - Driver's License`} 
+                                                            className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                                                        />
+                                                    )
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 gap-1">
+                                                        <ShieldCheck className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
+                                                        <span className="text-[10px] font-semibold">Upload License Image / PDF</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {govId1.info?.reject_reason && (
                                                 <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-bold">
                                                     Refusal Reason: {govId1.info.reject_reason}
@@ -441,7 +490,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             )}
                                             {govId1.info?.file_path && (
                                                 <a href={govId1.info.secure_url || `/documents/${govId1.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
-                                                    <span>📄</span> View Current Document
+                                                    <FileText className="w-3.5 h-3.5" /> View Current Document
                                                 </a>
                                             )}
                                         </div>
@@ -462,8 +511,9 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             <button 
                                                 type="submit" 
                                                 disabled={uploadingType === 'gov_id_1' || !docFiles['gov_id_1']} 
-                                                className="w-full h-9 bg-[#FF3B30] hover:bg-red-700 text-white rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
+                                                className="w-full h-9 bg-[#FF3B30] hover:bg-red-700 text-white rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
                                             >
+                                                <Upload className="w-3.5 h-3.5" />
                                                 {uploadingType === 'gov_id_1' ? 'Uploading & Scanning OCR...' : (govId1.info?.status === 'resubmission_requested' ? 'Resubmit License' : govId1.info ? 'Replace License' : 'Upload License')}
                                             </button>
                                         </form>
@@ -473,15 +523,46 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                     <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 flex flex-col justify-between space-y-4 text-left transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm">
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider">
-                                                    Secondary Official Photo ID
-                                                </span>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider truncate">
+                                                        Secondary Official Photo ID
+                                                    </span>
+                                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                                                        <User className="w-3 h-3 text-[#FF3B30] shrink-0" />
+                                                        {auth.user.name}
+                                                    </span>
+                                                </div>
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0 ${govId2.textClass}`}>
                                                     <span className={`h-1.5 w-1.5 rounded-full ${govId2.dotClass}`} />
                                                     {govId2.label}
                                                 </span>
                                             </div>
                                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Passport, UMID, Postal, PhilHealth, or National ID.</p>
+
+                                            {/* Dedicated ID Image Preview Surface */}
+                                            <div className="w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center justify-center my-2 shadow-inner group">
+                                                {govId2.info?.file_path ? (
+                                                    (govId2.info.mime_type === 'application/pdf' || govId2.info.file_path.toLowerCase().endsWith('.pdf')) ? (
+                                                        <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-1">
+                                                            <FileText className="w-8 h-8 text-[#FF3B30]" />
+                                                            <span className="text-[11px] font-bold">PDF ID Document</span>
+                                                        </div>
+                                                    ) : (
+                                                        <img 
+                                                            src={govId2.info.secure_url || `/documents/${govId2.info.id}/file`} 
+                                                            alt={`${auth.user.name} - Secondary ID`} 
+                                                            className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                                                        />
+                                                    )
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 gap-1">
+                                                        <ShieldCheck className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
+                                                        <span className="text-[10px] font-semibold">Upload Secondary ID Image / PDF</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {govId2.info?.reject_reason && (
                                                 <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-bold">
                                                     Refusal Reason: {govId2.info.reject_reason}
@@ -495,7 +576,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             )}
                                             {govId2.info?.file_path && (
                                                 <a href={govId2.info.secure_url || `/documents/${govId2.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
-                                                    <span>📄</span> View Current Document
+                                                    <FileText className="w-3.5 h-3.5" /> View Current Document
                                                 </a>
                                             )}
                                         </div>
@@ -516,8 +597,9 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             <button 
                                                 type="submit" 
                                                 disabled={uploadingType === 'gov_id_2' || !docFiles['gov_id_2']} 
-                                                className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
+                                                className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
                                             >
+                                                <Upload className="w-3.5 h-3.5" />
                                                 {uploadingType === 'gov_id_2' ? 'Uploading & Scanning OCR...' : (govId2.info?.status === 'resubmission_requested' ? 'Resubmit Secondary ID' : govId2.info ? 'Replace Secondary ID' : 'Upload Secondary ID')}
                                             </button>
                                         </form>
@@ -527,15 +609,46 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                     <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 flex flex-col justify-between space-y-4 text-left transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm">
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider">
-                                                    Proof of Billing Address
-                                                </span>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-xs font-black uppercase text-zinc-900 dark:text-white tracking-wider truncate">
+                                                        Proof of Billing Address
+                                                    </span>
+                                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                                                        <User className="w-3 h-3 text-[#FF3B30] shrink-0" />
+                                                        {auth.user.name}
+                                                    </span>
+                                                </div>
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0 ${billingProof.textClass}`}>
                                                     <span className={`h-1.5 w-1.5 rounded-full ${billingProof.dotClass}`} />
                                                     {billingProof.label}
                                                 </span>
                                             </div>
                                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Meralco, Water utility, Internet or Bank statement.</p>
+
+                                            {/* Dedicated Billing Document Preview Surface */}
+                                            <div className="w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center justify-center my-2 shadow-inner group">
+                                                {billingProof.info?.file_path ? (
+                                                    (billingProof.info.mime_type === 'application/pdf' || billingProof.info.file_path.toLowerCase().endsWith('.pdf')) ? (
+                                                        <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-1">
+                                                            <FileText className="w-8 h-8 text-[#FF3B30]" />
+                                                            <span className="text-[11px] font-bold">PDF Statement Document</span>
+                                                        </div>
+                                                    ) : (
+                                                        <img 
+                                                            src={billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`} 
+                                                            alt={`${auth.user.name} - Billing Proof`} 
+                                                            className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                                                        />
+                                                    )
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 gap-1">
+                                                        <Receipt className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
+                                                        <span className="text-[10px] font-semibold">Upload Utility / Statement File</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {billingProof.info?.reject_reason && (
                                                 <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-bold">
                                                     Refusal Reason: {billingProof.info.reject_reason}
@@ -549,7 +662,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             )}
                                             {billingProof.info?.file_path && (
                                                 <a href={billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
-                                                    <span>📄</span> View Current Document
+                                                    <FileText className="w-3.5 h-3.5" /> View Current Document
                                                 </a>
                                             )}
                                         </div>
@@ -584,8 +697,9 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             <button 
                                                 type="submit" 
                                                 disabled={uploadingType === 'proof_of_billing' || !docFiles['proof_of_billing']} 
-                                                className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
+                                                className="w-full h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-150 rounded-lg font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
                                             >
+                                                <Upload className="w-3.5 h-3.5" />
                                                 {uploadingType === 'proof_of_billing' ? 'Uploading...' : (billingProof.info ? 'Replace Billing Proof' : 'Upload Billing Proof')}
                                             </button>
                                         </form>

@@ -13,7 +13,8 @@ import BookingPriceBreakdownModal from '@/Components/BookingPriceBreakdownModal'
 import DailyOperationsWidget from '@/Components/DailyOperationsWidget';
 import LegacyImportModal from '@/Components/LegacyImportModal';
 import DocumentVerificationModal from '@/Components/DocumentVerificationModal';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles } from 'lucide-react';
+import FleetGpsMonitor from '@/Components/FleetGpsMonitor';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink } from 'lucide-react';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
@@ -33,6 +34,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     // Dialog Modal States
     const [modalType, setModalType] = useState(null); // 'add_vehicle' | 'edit_vehicle' | 'add_promo' | 'edit_promo' | 'reject_doc' | 'confirm_action'
     const [editingItem, setEditingItem] = useState(null);
+    const [editingVehicleRecord, setEditingVehicleRecord] = useState(null);
+    const [gpsLinkCopied, setGpsLinkCopied] = useState(false);
     const [rejectingDoc, setRejectingDoc] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [featureInput, setFeatureInput] = useState('');
@@ -202,6 +205,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         name: '', plate_number: '', type: 'Sedan', seats: 5, transmission: 'Auto',
         fuel_type: 'Gasoline', price_per_day: '', meetup_location: '', description: '',
         features: [], image_file: null, status: 'available',
+        gps_enabled: true, gps_device_id: '',
     });
 
     const promoForm = useForm({
@@ -314,13 +318,22 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     // Modal Helpers
     const openAddVehicle = () => {
         vehicleForm.reset();
+        vehicleForm.setData({
+            name: '', plate_number: '', type: 'Sedan', seats: 5, transmission: 'Auto',
+            fuel_type: 'Gasoline', price_per_day: '', meetup_location: '', description: '',
+            features: [], image_file: null, status: 'available',
+            gps_enabled: true, gps_device_id: '',
+        });
         setFeaturesList([]);
         setEditingItem(null);
+        setEditingVehicleRecord(null);
+        setGpsLinkCopied(false);
         setModalType('add_vehicle');
     };
 
     const openEditVehicle = (vehicle) => {
         setEditingItem(vehicle.id);
+        setEditingVehicleRecord(vehicle);
         setFeaturesList(vehicle.features || []);
         vehicleForm.setData({
             name: vehicle.name || '', plate_number: vehicle.plate_number || '',
@@ -328,7 +341,10 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             transmission: vehicle.transmission || 'Auto', fuel_type: vehicle.fuel_type || 'Gasoline',
             price_per_day: vehicle.price_per_day || '', meetup_location: vehicle.meetup_location || '',
             description: vehicle.description || '', features: vehicle.features || [], status: vehicle.status || 'available',
+            gps_enabled: vehicle.gps_enabled !== undefined ? Boolean(vehicle.gps_enabled) : true,
+            gps_device_id: vehicle.gps_device_id || '',
         });
+        setGpsLinkCopied(false);
         setModalType('edit_vehicle');
     };
 
@@ -430,6 +446,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     // Sidebar Config
     const tabsConfig = [
         { id: 'analytics', label: 'Dashboard' },
+        { id: 'gps_fleet', label: 'Fleet Live GPS Tracking' },
         { id: 'daily_schedule', label: 'Daily Rental Schedule' },
         { id: 'calendar', label: 'Availability Calendar' },
         { id: 'bookings', label: 'Bookings Log' },
@@ -619,7 +636,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 )}
 
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
-                {!['analytics', 'settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
+                {!['analytics', 'gps_fleet', 'settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
                     {/* Header Action Section */}
                     <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
@@ -800,7 +817,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 {activeTab === 'bookings' && paginatedBookings.map((booking) => (
                                     <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                         <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
-                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
+                                            <GripVertical className="w-3.5 h-3.5" />
                                         </td>
                                         <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
                                         <td className="py-3.5 px-4">
@@ -895,7 +912,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     return (
                                         <tr key={doc.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
-                                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
+                                                <GripVertical className="w-3.5 h-3.5" />
                                             </td>
                                             <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
                                             
@@ -1025,7 +1042,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 {activeTab === 'vehicles' && filteredVehicles.map((vehicle) => (
                                     <tr key={vehicle.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                         <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
-                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" /></svg>
+                                            <GripVertical className="w-3.5 h-3.5" />
                                         </td>
                                         <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
                                         <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-bold block">{vehicle.name}</td>
@@ -1048,7 +1065,19 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 {vehicle.status}
                                             </span>
                                         </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1">
+                                        <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+                                            {vehicle.gps_tracker_key ? (
+                                                <a 
+                                                    href={`/tracker/${vehicle.gps_tracker_key}`} 
+                                                    target="_blank" 
+                                                    rel="noreferrer" 
+                                                    className="px-2 py-1 bg-red-500/10 text-[#FF3B30] border border-red-500/20 text-[10px] font-black uppercase rounded cursor-pointer inline-flex items-center gap-1 hover:bg-red-500/20"
+                                                    title="Open in-car mobile phone transmitter"
+                                                >
+                                                    <Smartphone className="w-3 h-3" />
+                                                    GPS Phone
+                                                </a>
+                                            ) : null}
                                             <button onClick={() => openEditVehicle(vehicle)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
                                             <button onClick={() => deleteVehicle(vehicle.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors animate-pulse-once">Delete</button>
                                         </td>
@@ -1115,7 +1144,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             )}
                                             {u.status === 'locked' && (
                                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
-                                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                    <Lock className="w-3 h-3" />
                                                     Locked
                                                 </span>
                                             )}
@@ -1216,6 +1245,10 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 <VehicleCalendar vehicles={vehicles} isAdmin={isAdmin} />
             )}
 
+            {activeTab === 'gps_fleet' && (
+                <FleetGpsMonitor isAdmin={isAdmin} vehicles={vehicles} />
+            )}
+
             {activeTab === 'daily_schedule' && (
                 <DailyRentalSchedule vehicles={vehicles} bookings={bookings} />
             )}
@@ -1290,7 +1323,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             <div className="space-y-4">
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo / Brand Text (Fallback)</label>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo / Brand Text</label>
                                                         <Input 
                                                             value={settingsForm.data.site_logo} 
                                                             onChange={e => settingsForm.setData('site_logo', e.target.value)} 
@@ -1300,29 +1333,30 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
                                                     <div>
                                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo Image</label>
-                                                        {settings?.site_logo_image && !settingsForm.data.clear_logo_image ? (
-                                                            <div className="flex items-center gap-3 p-1.5 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                                                                <img src={settings.site_logo_image} className="h-6 max-w-[120px] object-contain rounded" alt="Current logo" />
-                                                                <button 
-                                                                    type="button" 
-                                                                    onClick={() => {
-                                                                        settingsForm.setData({ ...settingsForm.data, clear_logo_image: true, site_logo_image_file: null });
-                                                                    }}
-                                                                    className="text-[10px] font-black text-red-500 uppercase tracking-wide hover:underline cursor-pointer"
-                                                                >
-                                                                    Clear Logo
-                                                                </button>
-                                                            </div>
-                                                        ) : (
+                                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                                            {settings?.site_logo_image && !settingsForm.data.clear_logo_image && (
+                                                                <div className="flex items-center gap-2 p-1.5 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
+                                                                    <img src={settings.site_logo_image} className="h-7 max-w-[120px] object-contain rounded" alt={settings?.site_logo || "Current logo"} />
+                                                                    <button 
+                                                                        type="button" 
+                                                                        onClick={() => {
+                                                                            settingsForm.setData({ ...settingsForm.data, clear_logo_image: true, site_logo_image_file: null });
+                                                                        }}
+                                                                        className="text-[10px] font-black text-red-500 uppercase tracking-wide hover:underline cursor-pointer"
+                                                                    >
+                                                                        Clear
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                             <Input 
                                                                 type="file"
                                                                 onChange={e => {
                                                                     settingsForm.setData({ ...settingsForm.data, site_logo_image_file: e.target.files[0] ? e.target.files[0] : null, clear_logo_image: false });
                                                                 }}
                                                                 accept="image/*"
-                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 py-1.5 focus:border-[#FF3B30] text-xs"
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 py-1.5 focus:border-[#FF3B30] text-xs flex-1"
                                                             />
-                                                        )}
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -1900,6 +1934,89 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     </select>
                                 </div>
                             )}
+
+                            {/* GPS Telemetry & Phone Tracking Configuration Card */}
+                            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/70 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Radio className="w-4 h-4 text-[#FF3B30] animate-pulse" />
+                                        <div>
+                                            <span className="text-xs font-black uppercase text-zinc-900 dark:text-white block">GPS Live Tracking</span>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Use phone as in-car GPS tracker</span>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={vehicleForm.data.gps_enabled} 
+                                            onChange={e => vehicleForm.setData('gps_enabled', e.target.checked)} 
+                                            className="sr-only peer" 
+                                        />
+                                        <div className="w-9 h-5 bg-zinc-300 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF3B30]"></div>
+                                    </label>
+                                </div>
+
+                                {vehicleForm.data.gps_enabled && (
+                                    <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-zinc-850">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                                                GPS Device Identifier (or Traccar ID)
+                                            </label>
+                                            <Input 
+                                                value={vehicleForm.data.gps_device_id || ''} 
+                                                placeholder="e.g., ELFAA-GPS-001" 
+                                                onChange={e => vehicleForm.setData('gps_device_id', e.target.value)} 
+                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-mono text-xs" 
+                                            />
+                                        </div>
+
+                                        {modalType === 'edit_vehicle' && editingVehicleRecord?.gps_tracker_key && (
+                                            <div className="p-3 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                                        Smartphone Transmitter URL
+                                                    </span>
+                                                    <span className="text-[9px] font-mono text-[#FF3B30] bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
+                                                        Ready
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        readOnly 
+                                                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/tracker/${editingVehicleRecord.gps_tracker_key}`} 
+                                                        className="flex-1 text-[11px] font-mono bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2.5 py-1.5 text-zinc-700 dark:text-zinc-300 select-all" 
+                                                    />
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => {
+                                                            const url = `${window.location.origin}/tracker/${editingVehicleRecord.gps_tracker_key}`;
+                                                            navigator.clipboard.writeText(url);
+                                                            setGpsLinkCopied(true);
+                                                            setTimeout(() => setGpsLinkCopied(false), 2000);
+                                                        }} 
+                                                        className="px-2.5 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                                                        title="Copy URL"
+                                                    >
+                                                        {gpsLinkCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                                    </button>
+                                                    <a 
+                                                        href={`/tracker/${editingVehicleRecord.gps_tracker_key}`} 
+                                                        target="_blank" 
+                                                        rel="noreferrer" 
+                                                        className="px-2.5 py-1.5 bg-[#FF3B30] hover:bg-red-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1"
+                                                        title="Launch Phone Transmitter"
+                                                    >
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </a>
+                                                </div>
+                                                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                                                    Mount your phone inside the car, open this URL in any mobile browser, and tap "Start GPS Transmission".
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-850">
                                 <Button type="button" variant="ghost" onClick={() => setModalType(null)}>Cancel</Button>
                                 <Button type="submit" disabled={vehicleForm.processing} className="bg-[#FF3B30] hover:bg-red-750 text-white">Save Vehicle</Button>
@@ -2012,9 +2129,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     <div className="z-10 w-full max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200">
                         {/* Icon */}
                         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-4 mx-auto">
-                            <svg className="w-6 h-6 text-zinc-600 dark:text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <HelpCircle className="w-6 h-6 text-zinc-600 dark:text-zinc-300" />
                         </div>
                         <h3 className="text-base font-extrabold text-center mb-2">{confirmDialog.title}</h3>
                         <p className="text-xs text-zinc-600 dark:text-zinc-400 text-center leading-relaxed mb-6">{confirmDialog.message}</p>

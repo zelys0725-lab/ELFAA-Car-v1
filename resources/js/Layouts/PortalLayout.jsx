@@ -21,7 +21,11 @@ import {
     Menu, 
     X,
     LogOut,
-    SlidersHorizontal
+    SlidersHorizontal,
+    User,
+    ChevronDown,
+    ChevronsUpDown,
+    Radio
 } from 'lucide-react';
 
 export default function PortalLayout({ role, header, children, sidebarTabs = [], activeTab = '', setActiveTab = null }) {
@@ -71,6 +75,8 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
         switch (tabId) {
             case 'analytics':
                 return <LayoutDashboard className={svgClasses} />;
+            case 'gps_fleet':
+                return <Radio className={svgClasses} />;
             case 'daily_schedule':
                 return <CalendarDays className={svgClasses} />;
             case 'calendar':
@@ -116,9 +122,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                 </span>
                             </div>
                         )}
-                        <svg className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                        </svg>
+                        <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer" />
                     </div>
 
                     {/* Navigation Body */}
@@ -159,9 +163,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                         {/* Sidebar toggle graphic placeholder / columns icon */}
                         {isAdminOrStaff && (
                             <div className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer select-none">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                                </svg>
+                                <SlidersHorizontal className="w-4 h-4" />
                             </div>
                         )}
                         <h1 className="text-sm font-bold text-zinc-900 dark:text-white tracking-wide uppercase">
@@ -177,13 +179,9 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                             title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
                         >
                             {theme === 'light' ? (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                </svg>
+                                <Moon className="w-4 h-4 text-zinc-600" />
                             ) : (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
+                                <Sun className="w-4 h-4 text-amber-400" />
                             )}
                         </button>
 
@@ -213,17 +211,11 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                             <Dropdown>
                                 <Dropdown.Trigger>
                                     <button className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold rounded-xl text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-sm">
-                                        <div className="h-6 w-6 rounded-full bg-zinc-300 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
-                                            <img 
-                                                src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.name}`} 
-                                                alt={user.name} 
-                                                className="h-full w-full object-cover"
-                                            />
+                                        <div className="h-6 w-6 rounded-full bg-red-500/10 dark:bg-red-500/20 text-[#FF3B30] flex items-center justify-center flex-shrink-0">
+                                            <User className="w-3.5 h-3.5" />
                                         </div>
                                         <span className="font-bold text-xs truncate max-w-[120px]">{user.name}</span>
-                                        <svg className="h-4 w-4 text-zinc-400 dark:text-zinc-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
-                                        </svg>
+                                        <ChevronDown className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
                                     </button>
                                 </Dropdown.Trigger>
                                 <Dropdown.Content contentClasses="py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-xl min-w-[200px]">
@@ -246,10 +238,11 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                     onClick={() => setShowingMobileMenu(!showingMobileMenu)}
                                     className="p-1 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white focus:outline-none"
                                 >
-                                    <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                        <path className={!showingMobileMenu ? 'inline-flex' : 'hidden'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                                        <path className={showingMobileMenu ? 'inline-flex' : 'hidden'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    {showingMobileMenu ? (
+                                        <X className="h-6 w-6" />
+                                    ) : (
+                                        <Menu className="h-6 w-6" />
+                                    )}
                                 </button>
                             </div>
                         )}

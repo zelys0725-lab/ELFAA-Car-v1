@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { MessageSquare, X, Send, Bot } from 'lucide-react';
 
 // ─────────────────────────────────────────────
 //  Helpers
@@ -330,15 +331,9 @@ export default function ElfaaChatbot({ vehicles = [], promos = [], addOns = [], 
                 style={{ boxShadow: '0 0 0 0 rgba(255,59,48,0.7)' }}
             >
                 {open ? (
-                    /* Close X */
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <X className="w-6 h-6" />
                 ) : (
-                    /* Chat icon */
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
+                    <MessageSquare className="w-6 h-6" />
                 )}
                 {/* Ping animation when closed */}
                 {!open && (
@@ -354,8 +349,8 @@ export default function ElfaaChatbot({ vehicles = [], promos = [], addOns = [], 
                 >
                     {/* Header */}
                     <div className="bg-[#FF3B30] px-4 py-3 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-black text-sm shrink-0">
-                            EI
+                        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0">
+                            <Bot className="w-5 h-5" />
                         </div>
                         <div>
                             <div className="text-white font-bold text-sm leading-none">ELFA</div>
@@ -374,7 +369,9 @@ export default function ElfaaChatbot({ vehicles = [], promos = [], addOns = [], 
                         ))}
                         {thinking && (
                             <div className="flex justify-start mb-3">
-                                <div className="w-7 h-7 rounded-full bg-[#FF3B30] flex items-center justify-center text-white text-[10px] font-black mr-2 mt-1 shrink-0">EI</div>
+                                <div className="w-7 h-7 rounded-full bg-[#FF3B30] flex items-center justify-center text-white mr-2 mt-1 shrink-0">
+                                    <Bot className="w-4 h-4" />
+                                </div>
                                 <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
                                     <TypingDots />
                                 </div>
@@ -415,9 +412,7 @@ export default function ElfaaChatbot({ vehicles = [], promos = [], addOns = [], 
                             className="w-9 h-9 rounded-full bg-[#FF3B30] text-white flex items-center justify-center shrink-0 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             aria-label="Send message"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-7 7m7-7l7 7" />
-                            </svg>
+                            <Send className="w-4 h-4" />
                         </button>
                     </div>
 

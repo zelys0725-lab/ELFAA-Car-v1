@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ELFAA Car Rental — GPS Tracker Setup, Configuration & Map Guide</title>
+    <meta name="description" content="Technical guide for ELFAA Car Rental GPS tracking system. Learn how the smartphone transmitter works, map integration with Leaflet & OpenStreetMap, and step-by-step configuration." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --brand: #FF3B30;
+            --brand-glow: rgba(255, 59, 48, 0.18);
+            --brand-dim:  rgba(255, 59, 48, 0.08);
+            --teal:       #14b8a6;
+            --teal-glow:  rgba(20, 184, 166, 0.18);
+            --teal-dim:   rgba(20, 184, 166, 0.08);
+            --bg:         #0a0a0b;
+            --bg-2:       #111114;
+            --bg-3:       #18181c;
+            --bg-card:    #1a1a1f;
+            --border:     rgba(255,255,255,0.07);
+            --border-2:   rgba(255,255,255,0.12);
+            --text:       #f4f4f5;
+            --text-2:     #a1a1aa;
+            --text-3:     #71717a;
+            --shadow:     rgba(0,0,0,0.6);
+        }
+        [data-theme="light"] {
+            --bg:         #f9fafb;
+            --bg-2:       #f3f4f6;
+            --bg-3:       #e5e7eb;
+            --bg-card:    #ffffff;
+            --border:     rgba(0,0,0,0.07);
+            --border-2:   rgba(0,0,0,0.12);
+            --text:       #111827;
+            --text-2:     #374151;
+            --text-3:     #6b7280;
+            --shadow:     rgba(0,0,0,0.08);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--brand); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--bg-3); padding: 0.1em 0.35em; border-radius: 4px; }
+
+        .wrapper { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* Topbar */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,10,11,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+        }
+        [data-theme="light"] .topbar { background: rgba(249,250,251,0.92); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar-logo { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text); }
+        .logo-badge { width: 32px; height: 32px; background: var(--brand); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: 900; box-shadow: 0 0 12px var(--brand-glow); }
+        .topbar-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(20,184,166,0.25); padding: 0.2rem 0.6rem; border-radius: 6px; }
+        .topbar-right { display: flex; align-items: center; gap: 0.6rem; }
+        .btn-link { font-size: 0.75rem; font-weight: 700; color: var(--text-2); padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--border); transition: all 0.2s; }
+        .btn-link:hover { color: var(--text); border-color: var(--brand); text-decoration: none; }
+        .btn-theme { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 999px; font-size: 0.75rem; font-weight: 700; color: var(--text-2); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
+        .btn-theme:hover { color: var(--text); border-color: var(--brand); }
+
+        /* Hero */
+        .hero { padding: 4.5rem 0 2.5rem; text-align: center; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -140px; left: 50%; transform: translateX(-50%); width: 750px; height: 750px; background: radial-gradient(ellipse, rgba(20,184,166,0.12) 0%, rgba(255,59,48,0.06) 45%, transparent 70%); pointer-events: none; }
+        .hero-eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); background: var(--teal-dim); border: 1px solid rgba(20,184,166,0.25); padding: 0.35rem 1rem; border-radius: 999px; margin-bottom: 1.25rem; }
+        .hero-eyebrow span { width: 7px; height: 7px; background: var(--teal); border-radius: 50%; box-shadow: 0 0 8px var(--teal); animation: blink 1.5s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .hero h1 { font-size: clamp(2rem, 4.5vw, 3.4rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.18; margin-bottom: 1rem; }
+        .hero h1 .accent { color: var(--teal); }
+        .hero h1 .red { color: var(--brand); }
+        .hero p { font-size: 1.05rem; color: var(--text-2); max-width: 680px; margin: 0 auto 2rem; }
+        .toc-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+        .toc-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.45rem 0.9rem; border-radius: 999px; border: 1px solid var(--border-2); background: var(--bg-card); color: var(--text-2); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .toc-chip:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); text-decoration: none; }
+
+        /* Section */
+        .section { padding: 4rem 0; border-top: 1px solid var(--border); }
+        .section-label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); margin-bottom: 0.75rem; }
+        .section-label::before { content: ''; display: block; width: 16px; height: 2px; background: var(--teal); border-radius: 99px; }
+        .section h2 { font-size: clamp(1.4rem, 2.8vw, 2.1rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+        .section-intro { font-size: 0.95rem; color: var(--text-2); max-width: 720px; margin-bottom: 2rem; }
+
+        /* Grids & Cards */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; transition: border-color 0.2s, box-shadow 0.2s; }
+        .card:hover { border-color: var(--border-2); box-shadow: 0 4px 30px var(--shadow); }
+        .card.teal-card { border-color: rgba(20,184,166,0.25); background: linear-gradient(135deg, rgba(20,184,166,0.06), var(--bg-card)); }
+        .card.brand-card { border-color: rgba(255,59,48,0.25); background: linear-gradient(135deg, rgba(255,59,48,0.06), var(--bg-card)); }
+        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; font-size: 1.3rem; }
+        .card-icon.teal   { background: rgba(20,184,166,0.12); color: #2dd4bf; }
+        .card-icon.red    { background: rgba(255,59,48,0.12); color: #ff6b6b; }
+        .card-icon.blue   { background: rgba(59,130,246,0.12); color: #60a5fa; }
+        .card-icon.green  { background: rgba(16,185,129,0.12); color: #34d399; }
+        .card-icon.amber  { background: rgba(245,158,11,0.12); color: #fbbf24; }
+        .card-icon.purple { background: rgba(139,92,246,0.12); color: #a78bfa; }
+        .card h3 { font-size: 1rem; font-weight: 800; letter-spacing: 0.01em; margin-bottom: 0.45rem; }
+        .card p { font-size: 0.85rem; color: var(--text-2); line-height: 1.65; }
+
+        /* Pipeline */
+        .pipeline { display: flex; flex-direction: column; gap: 0; }
+        .pipeline-step { display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.5rem 0; }
+        .step-num-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+        .step-num { width: 42px; height: 42px; border-radius: 50%; background: var(--teal); color: #000; font-size: 0.85rem; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 16px var(--teal-glow); z-index: 2; }
+        .step-line { flex: 1; width: 2px; background: linear-gradient(to bottom, var(--teal), transparent); margin-top: 4px; min-height: 50px; }
+        .step-content { flex: 1; padding-top: 0.2rem; }
+        .step-content h4 { font-size: 1rem; font-weight: 800; letter-spacing: 0.01em; margin-bottom: 0.35rem; }
+        .step-content p { font-size: 0.875rem; color: var(--text-2); line-height: 1.65; }
+        .step-tag { display: inline-block; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 4px; margin-top: 0.6rem; }
+        .step-tag.phone  { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .step-tag.api    { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+        .step-tag.db     { background: rgba(139,92,246,0.15); color: #a78bfa; }
+        .step-tag.map    { background: rgba(255,59,48,0.15); color: #ff6b6b; }
+        .step-tag.admin  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+        /* Diagrams */
+        .gps-architecture { display: flex; align-items: stretch; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; margin: 1.5rem 0; }
+        .gps-arch-node { flex: 1; padding: 1.5rem 1rem; text-align: center; background: var(--bg-card); position: relative; }
+        .gps-arch-node:not(:last-child)::after { content: '➔'; position: absolute; right: -12px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; color: var(--teal); z-index: 2; font-weight: 900; }
+        .gps-arch-node:not(:last-child) { border-right: 1px solid var(--border); }
+        .arch-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .gps-arch-node h5 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+        .gps-arch-node p { font-size: 0.75rem; color: var(--text-3); line-height: 1.5; }
+        .gps-arch-node .sub-badge { display: inline-block; margin-top: 0.5rem; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace; padding: 0.15rem 0.45rem; border-radius: 4px; background: var(--bg-3); color: var(--teal); }
+
+        /* Note boxes */
+        .note-box { display: flex; gap: 0.85rem; padding: 1.1rem 1.35rem; border-radius: 12px; border: 1px solid; font-size: 0.875rem; line-height: 1.65; margin: 1.25rem 0; }
+        .note-box.info   { background: rgba(59,130,246,0.07); border-color: rgba(59,130,246,0.25); color: #93c5fd; }
+        .note-box.warn   { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.25); color: #fcd34d; }
+        .note-box.danger { background: rgba(239,68,68,0.07); border-color: rgba(239,68,68,0.25); color: #fca5a5; }
+        .note-box.green  { background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.25); color: #6ee7b7; }
+        .note-box.teal   { background: rgba(20,184,166,0.07); border-color: rgba(20,184,166,0.25); color: #5eead4; }
+        .note-icon { font-size: 1.15rem; flex-shrink: 0; margin-top: 2px; }
+        .note-text strong { display: block; margin-bottom: 0.2rem; color: inherit; font-weight: 800; }
+
+        /* Code block */
+        .code-block { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.3rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #34d399; overflow-x: auto; white-space: pre; margin: 0.85rem 0; line-height: 1.7; }
+        .code-block .dim    { color: var(--text-3); }
+        .code-block .yellow { color: #fbbf24; }
+        .code-block .blue   { color: #93c5fd; }
+        .code-block .teal   { color: #2dd4bf; }
+        .code-block .red    { color: #ff6b6b; }
+
+        /* Check list */
+        .check-list { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+        .check-list li { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.875rem; color: var(--text-2); line-height: 1.6; }
+        .check-list li::before { content: '✓'; color: #34d399; font-weight: 900; font-size: 0.8rem; width: 20px; height: 20px; background: rgba(16,185,129,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+        .check-list li.warn::before { content: '!'; color: #fbbf24; background: rgba(245,158,11,0.12); }
+        .check-list li.deny::before { content: '✕'; color: #f87171; background: rgba(239,68,68,0.12); }
+        .check-list li.info::before { content: 'ℹ'; color: #60a5fa; background: rgba(59,130,246,0.12); }
+
+        /* Tables */
+        .table-responsive { overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 12px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .data-table th { text-align: left; padding: 0.85rem 1rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); background: var(--bg-2); border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 0.85rem 1rem; color: var(--text-2); border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: var(--bg-2); }
+        .data-table td strong { color: var(--text); font-weight: 700; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.65rem; border-radius: 999px; border: 1px solid; }
+        .badge.teal   { background: rgba(20,184,166,0.1); border-color: rgba(20,184,166,0.25); color: #2dd4bf; }
+        .badge.green  { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.25); color: #34d399; }
+        .badge.amber  { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fbbf24; }
+        .badge.red    { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
+        .badge.blue   { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25); color: #93c5fd; }
+        .badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+        /* Accordion FAQ */
+        .faq-item { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.85rem; background: var(--bg-card); overflow: hidden; }
+        .faq-question { padding: 1.15rem 1.35rem; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+        .faq-question:hover { color: var(--teal); }
+        .faq-chevron { font-size: 0.8rem; transition: transform 0.2s; color: var(--text-3); }
+        details[open] .faq-chevron { transform: rotate(180deg); }
+        .faq-answer { padding: 0 1.35rem 1.25rem; font-size: 0.875rem; color: var(--text-2); line-height: 1.65; border-top: 1px solid var(--border); padding-top: 1rem; }
+
+        /* Footer */
+        .footer { padding: 3rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-3); font-size: 0.82rem; }
+        .footer strong { color: var(--brand); }
+        .footer .subtext { margin-top: 0.5rem; font-size: 0.75rem; }
+
+        /* Scroll top */
+        #scrollTop { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 42px; height: 42px; background: var(--teal); color: #000; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; font-weight: 900; box-shadow: 0 4px 20px rgba(20,184,166,0.4); opacity: 0; transition: opacity 0.3s, transform 0.2s; z-index: 200; transform: translateY(8px); }
+        #scrollTop.visible { opacity: 1; transform: translateY(0); }
+
+        @media (max-width: 768px) {
+            .gps-architecture { flex-direction: column; }
+            .gps-arch-node:not(:last-child)::after { content: '⬇'; right: auto; top: auto; bottom: -12px; left: 50%; transform: translateX(-50%); }
+            .gps-arch-node:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+            .hero { padding: 3rem 0 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar Navigation -->
+<nav class="topbar">
+    <div class="wrapper topbar-inner">
+        <div class="topbar-left">
+            <div class="topbar-logo">
+                <div class="logo-badge">E</div>
+                ELFAA Car Rental
+            </div>
+            <span class="topbar-tag">🛰️ GPS Documentation</span>
+        </div>
+        <div class="topbar-right">
+            <a href="/guidelines.html" class="btn-link">📋 Full Guidelines</a>
+            <button class="btn-theme" onclick="toggleTheme()" id="themeBtn">☀️ Light Mode</button>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="hero">
+    <div class="wrapper">
+        <div class="hero-eyebrow"><span></span> Live Telemetry &amp; Fleet Tracking</div>
+        <h1>How the <span class="accent">GPS Tracker</span> Works —<br><span class="red">Zero-Cost</span> Setup &amp; Configuration</h1>
+        <p>A complete technical guide explaining how your smartphone acts as an in-car GPS transmitter, how the interactive Leaflet map works with zero installations, and how to configure live tracking per vehicle.</p>
+        <div class="toc-chips">
+            <a href="#how-it-works"    class="toc-chip">⚙️ How It Works</a>
+            <a href="#prerequisites"   class="toc-chip">📦 What to Install?</a>
+            <a href="#map-integration" class="toc-chip">🗺️ Is There a Map?</a>
+            <a href="#step-by-step"    class="toc-chip">🔧 How to Configure</a>
+            <a href="#phone-guide"     class="toc-chip">📱 Phone Transmitter</a>
+            <a href="#network-thesis"  class="toc-chip">🌐 Local WiFi vs Public</a>
+            <a href="#api-schema"      class="toc-chip">💾 Database &amp; APIs</a>
+            <a href="#troubleshoot"    class="toc-chip">❓ Troubleshooting</a>
+        </div>
+    </div>
+</header>
+
+<main class="wrapper">
+
+    <!-- Section 1: How It Works -->
+    <section class="section" id="how-it-works">
+        <div class="section-label">System Architecture</div>
+        <h2>How the GPS Tracking System Works</h2>
+        <p class="section-intro">For your thesis and real-world rental operations, you do not need expensive OBD-II hardware or dedicated satellite blackboxes. ELFAA turns any Android or iPhone smartphone into an accurate real-time GPS telemetry beacon.</p>
+
+        <!-- Architecture Flowchart -->
+        <div class="gps-architecture">
+            <div class="gps-arch-node">
+                <div class="arch-icon">📱</div>
+                <h5>1. Mobile Phone</h5>
+                <p>Mounted inside the vehicle dashboard. HTML5 Geolocation reads GPS coordinates every 3 seconds.</p>
+                <span class="sub-badge">navigator.geolocation</span>
+            </div>
+            <div class="gps-arch-node">
+                <div class="arch-icon">📡</div>
+                <h5>2. Transmitter Ping</h5>
+                <p>Sends JSON payload containing coordinates, speed, and heading to the ELFAA backend.</p>
+                <span class="sub-badge">POST /api/gps/ping</span>
+            </div>
+            <div class="gps-arch-node">
+                <div class="arch-icon">🗄️</div>
+                <h5>3. Laravel Database</h5>
+                <p>Validates 32-char security key, updates vehicle live status, and stores trail in history log.</p>
+                <span class="sub-badge">vehicles + vehicle_gps_logs</span>
+            </div>
+            <div class="gps-arch-node">
+                <div class="arch-icon">🗺️</div>
+                <h5>4. Admin Leaflet Map</h5>
+                <p>Admin dashboard automatically polls latest coordinates every 8 seconds and moves car pins smoothly.</p>
+                <span class="sub-badge">Leaflet + OpenStreetMap</span>
+            </div>
+        </div>
+
+        <div class="grid-3" style="margin-top: 1.5rem;">
+            <div class="card teal-card">
+                <div class="card-icon teal">⚡</div>
+                <h3>Real-Time Speed &amp; Heading</h3>
+                <p>The transmitter calculates instantaneous speed in km/h directly from satellite Doppler shift and compass heading in degrees, rendering moving rotation angles on the map.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon red">🔒</div>
+                <h3>Cryptographic Security Key</h3>
+                <p>Every vehicle receives an unguessable 32-character tracker token (e.g., <code>k8Fa9...</code>). Only requests presenting this key can update telemetry, preventing spoofing.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon purple">🔋</div>
+                <h3>Screen Wake Lock API</h3>
+                <p>The mobile transmitter uses the modern Web Screen Wake Lock API to prevent the phone display from sleeping while driving, ensuring uninterrupted telemetry pings.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: What Need to Install? -->
+    <section class="section" id="prerequisites">
+        <div class="section-label">Prerequisites &amp; Setup</div>
+        <h2>What Need to Install? (Zero Hidden Installs)</h2>
+        <p class="section-intro">One of the greatest advantages of this implementation is simplicity. You do <strong>not</strong> need complex third-party software, paid Google Maps accounts, or heavy hardware.</p>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-icon green">✅</div>
+                <h3>What You DO Need (Already in the App)</h3>
+                <ul class="check-list" style="margin-top: 0.75rem;">
+                    <li><strong>Laravel Backend:</strong> Running on your computer (<code>php artisan serve</code>).</li>
+                    <li><strong>MySQL Database:</strong> Tables <code>vehicles</code> and <code>vehicle_gps_logs</code> (already migrated).</li>
+                    <li><strong>Smartphone with GPS:</strong> Any modern Android or iOS phone with location services toggled on.</li>
+                    <li><strong>Modern Mobile Web Browser:</strong> Google Chrome, Safari, or Microsoft Edge.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <div class="card-icon red">🚫</div>
+                <h3>What You DO NOT Need</h3>
+                <ul class="check-list" style="margin-top: 0.75rem;">
+                    <li class="deny"><strong>NO Google Maps API Key:</strong> We use free, open-source OpenStreetMap with zero billing or credit cards.</li>
+                    <li class="deny"><strong>NO npm/composer map package:</strong> Leaflet 1.9.4 is loaded dynamically from CDN in the browser.</li>
+                    <li class="deny"><strong>NO App Store downloads required:</strong> The primary transmitter is a lightweight web application that runs directly in the browser.</li>
+                    <li class="deny"><strong>Tesseract OCR is NOT for GPS:</strong> Tesseract is only used for Driver's License verification. GPS requires zero OCR binaries!</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note-box teal">
+            <div class="note-icon">💡</div>
+            <div class="note-text">
+                <strong>Why Leaflet + OpenStreetMap instead of Google Maps?</strong>
+                OpenStreetMap tiles are completely free, have no usage quotas or surprise monthly invoices, and load instantly via CDN without configuring Google Cloud Console credentials or restrictive API domain keys.
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Is There a Map? -->
+    <section class="section" id="map-integration">
+        <div class="section-label">Interactive UI</div>
+        <h2>Is There a Map? Yes, Fully Integrated!</h2>
+        <p class="section-intro">Yes! An enterprise-grade live fleet monitoring map is built directly into the ELFAA Admin Portal under the <strong>"Fleet Live GPS Tracking"</strong> tab.</p>
+
+        <div class="grid-3">
+            <div class="card">
+                <div class="card-icon blue">📍</div>
+                <h3>Live Pulsing Vehicle Markers</h3>
+                <p>Each GPS-enabled car appears as a dynamic SVG marker with color-coded status badges: <strong>Moving</strong> (green pulse), <strong>Idle</strong> (amber), or <strong>Offline</strong> (gray).</p>
+            </div>
+            <div class="card">
+                <div class="card-icon teal">🧭</div>
+                <h3>Interactive Telemetry Popups</h3>
+                <p>Clicking any marker opens an interactive card displaying the vehicle's model, license plate, live speed in km/h, precise latitude/longitude, and exact last ping time.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon red">📈</div>
+                <h3>Route History Breadcrumbs</h3>
+                <p>Click the <strong>"Route"</strong> button on any vehicle row to fetch up to 300 chronological GPS logs and draw an animated polyline route trail across the map.</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Map Feature</th>
+                        <th>Technology Used</th>
+                        <th>Default Setting</th>
+                        <th>Refresh Mechanism</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Map Engine</strong></td>
+                        <td>Leaflet 1.9.4 (CDN)</td>
+                        <td>OpenStreetMap standard tile layer</td>
+                        <td>Auto-cached by browser</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Default Centerpoint</strong></td>
+                        <td>Manila, Philippines (<code>14.5995, 120.9842</code>)</td>
+                        <td>Zoom Level 12 (Metro Manila view)</td>
+                        <td>Auto-fits to fleet bounds if cars exist</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fleet Telemetry Polling</strong></td>
+                        <td>Axios <code>GET /admin/gps/live-fleet</code></td>
+                        <td>Every 8 seconds (customizable)</td>
+                        <td>Background polling with React cleanup</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Historical Breadcrumb Trail</strong></td>
+                        <td>Leaflet Polyline with `#FF3B30` brand stroke</td>
+                        <td>Last 300 GPS log entries</td>
+                        <td>On-demand via <code>/admin/gps/route-history/{id}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Section 4: Step-by-Step Configuration -->
+    <section class="section" id="step-by-step">
+        <div class="section-label">Admin Guide</div>
+        <h2>How Can I Configure GPS for a Car?</h2>
+        <p class="section-intro">Follow these simple steps in the ELFAA Admin Portal to activate GPS tracking on any vehicle in your inventory.</p>
+
+        <div class="pipeline">
+            <div class="pipeline-step">
+                <div class="step-num-wrap">
+                    <div class="step-num">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Navigate to Admin Dashboard &gt; Fleet Inventory</h4>
+                    <p>Log in with an administrator account (<code>admin@elfaa.com</code>). In the main dashboard tabs, click on <strong>Fleet Inventory</strong> to view all registered rental cars.</p>
+                    <span class="step-tag admin">Admin Portal</span>
+                </div>
+            </div>
+
+            <div class="pipeline-step">
+                <div class="step-num-wrap">
+                    <div class="step-num">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click "Edit" on Target Vehicle</h4>
+                    <p>Locate the car you want to track (e.g., <em>Toyota Vios 2023</em>) and click the pencil <strong>Edit</strong> button. The vehicle modal will open.</p>
+                    <span class="step-tag admin">Fleet Management</span>
+                </div>
+            </div>
+
+            <div class="pipeline-step">
+                <div class="step-num-wrap">
+                    <div class="step-num">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Scroll to "GPS Live Tracking" Section</h4>
+                    <p>Inside the edit modal, find the dedicated GPS configuration panel with the satellite dish icon.</p>
+                    <ul class="check-list" style="margin-top: 0.5rem;">
+                        <li><strong>Enable GPS:</strong> Click the toggle switch to turn it <strong>ON</strong>.</li>
+                        <li><strong>GPS Device ID:</strong> Enter a friendly identifier (e.g., <code>ELFAA-GPS-001</code>).</li>
+                    </ul>
+                    <span class="step-tag api">Configuration</span>
+                </div>
+            </div>
+
+            <div class="pipeline-step">
+                <div class="step-num-wrap">
+                    <div class="step-num">4</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Copy the "Smartphone Transmitter URL"</h4>
+                    <p>As soon as GPS is enabled, the system automatically assigns a secure 32-character <code>gps_tracker_key</code>. A read-only URL box will display:</p>
+                    <div class="code-block"><span class="teal">http://YOUR_SERVER_IP:8000/tracker/d4e9b81f349a7c20...</span></div>
+                    <p>Click the <strong>Copy URL</strong> button or click <strong>Open Transmitter</strong> to test directly.</p>
+                    <span class="step-tag phone">Link Generation</span>
+                </div>
+            </div>
+
+            <div class="pipeline-step">
+                <div class="step-num-wrap">
+                    <div class="step-num">5</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Save Vehicle</h4>
+                    <p>Click <strong>"Save Vehicle"</strong> at the bottom of the modal. The vehicle is now live and waiting for satellite pings from the phone!</p>
+                    <span class="step-tag db">Database Commit</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: Using Phone as GPS -->
+    <section class="section" id="phone-guide">
+        <div class="section-label">Mobile Telemetry</div>
+        <h2>Using the Smartphone as In-Car GPS Transmitter</h2>
+        <p class="section-intro">Here is how to set up the phone inside the rental vehicle on the day of the test or rental trip.</p>
+
+        <div class="grid-2">
+            <div class="card teal-card">
+                <div class="card-icon teal">🌐</div>
+                <h3>Option A: Web Transmitter (Recommended)</h3>
+                <p>No downloads or apps needed. Uses modern web APIs inside Chrome or Safari.</p>
+                <ol style="margin: 0.85rem 0 0 1.2rem; font-size: 0.85rem; color: var(--text-2); line-height: 1.7;">
+                    <li>Send the copied <code>/tracker/{key}</code> link to the phone (via SMS, QR code, or chat).</li>
+                    <li>Open the link in <strong>Chrome</strong> (Android) or <strong>Safari</strong> (iPhone).</li>
+                    <li>When prompted: tap <strong>"Allow"</strong> for Location Permissions.</li>
+                    <li>Choose your Ping Interval: <strong>3 seconds</strong> is recommended for fluid tracking.</li>
+                    <li>Tap the big green button: <strong>"Start GPS Transmission"</strong>.</li>
+                    <li>Mount the phone in the car holder. The screen will stay awake automatically!</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <div class="card-icon blue">📲</div>
+                <h3>Option B: Traccar Client App (Optional Alternative)</h3>
+                <p>If you prefer a standalone background native app, ELFAA fully supports the industry-standard <strong>Traccar Client</strong> protocol.</p>
+                <ol style="margin: 0.85rem 0 0 1.2rem; font-size: 0.85rem; color: var(--text-2); line-height: 1.7;">
+                    <li>Download <strong>Traccar Client</strong> for free on Google Play or iOS App Store.</li>
+                    <li>Set <strong>Server URL</strong> to: <code>http://YOUR_IP:8000/api/gps/traccar</code></li>
+                    <li>Set <strong>Device Identifier</strong> to: your car's <code>GPS Device ID</code> (e.g., <code>ELFAA-GPS-001</code>).</li>
+                    <li>Set Frequency to: <strong>5 to 10 seconds</strong>.</li>
+                    <li>Turn the <strong>Service Status</strong> switch to <strong>ON</strong>.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="note-box warn" style="margin-top: 1.5rem;">
+            <div class="note-icon">⚠️</div>
+            <div class="note-text">
+                <strong>Important Battery Tip for Road Testing:</strong>
+                High-frequency GPS tracking (every 1 to 3 seconds) with screen awake uses significant phone battery. Always plug the smartphone into the vehicle's 12V USB charger during long driving tests.
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Network Setup for Thesis -->
+    <section class="section" id="network-thesis">
+        <div class="section-label">Networking Guide</div>
+        <h2>Local WiFi vs. Public Access (Crucial for Thesis Defense)</h2>
+        <p class="section-intro">When testing on your phone, you must understand how your mobile device connects to your development computer.</p>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-icon amber">🏠</div>
+                <h3>Method 1: Local WiFi (Same Router)</h3>
+                <p>Best for testing in your room or classroom where both laptop and phone share the same WiFi network.</p>
+                <div class="code-block"><span class="dim"># 1. Find your computer's local IP (Windows)</span>
+ipconfig
+<span class="dim"># Look for IPv4 Address: e.g. 192.168.1.15</span>
+
+<span class="dim"># 2. Start Laravel binding to all network interfaces</span>
+php artisan serve --host=0.0.0.0 --port=8000</div>
+                <p style="margin-top: 0.6rem; font-size: 0.82rem; color: var(--text-2);">
+                    On your phone browser, open: <code>http://192.168.1.15:8000/tracker/YOUR_KEY</code><br>
+                    <span style="color: #f87171;">⚠️ Never use <code>localhost:8000</code> on your phone</span> — "localhost" on a phone refers to the phone itself!
+                </p>
+            </div>
+
+            <div class="card teal-card">
+                <div class="card-icon teal">🌍</div>
+                <h3>Method 2: Ngrok HTTPS Tunnel (Best for Road Test)</h3>
+                <p>Required when driving outside away from home WiFi, using phone cellular data (4G/5G).</p>
+                <div class="code-block"><span class="dim"># 1. Download &amp; run free ngrok tunnel</span>
+ngrok http 8000
+
+<span class="dim"># 2. Copy the public HTTPS forwarding URL:</span>
+<span class="teal">https://xyz123.ngrok-free.app</span></div>
+                <p style="margin-top: 0.6rem; font-size: 0.82rem; color: var(--text-2);">
+                    Open: <code>https://xyz123.ngrok-free.app/tracker/YOUR_KEY</code> on your phone anywhere in the city. The GPS coordinates will instantly stream back to your laptop!
+                </p>
+                <div class="note-box green" style="margin-top: 0.75rem; padding: 0.65rem 0.9rem;">
+                    <div class="note-icon">✨</div>
+                    <div class="note-text" style="font-size: 0.8rem;">
+                        <strong>HTTPS Bonus:</strong> Mobile browsers grant HTML5 Geolocation and WakeLock permissions much smoother over secure <code>https://</code> tunnels!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 7: Database & API Reference -->
+    <section class="section" id="api-schema">
+        <div class="section-label">Developer Reference</div>
+        <h2>Database Schema &amp; REST Endpoints</h2>
+        <p class="section-intro">Here is the technical breakdown of the database columns and API routes powering ELFAA GPS tracking.</p>
+
+        <h3 style="font-size: 1rem; margin-bottom: 0.6rem;">1. Added Columns in <code>vehicles</code> Table</h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Field Name</th>
+                        <th>Data Type</th>
+                        <th>Default</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>gps_enabled</code></td>
+                        <td><code>BOOLEAN</code></td>
+                        <td><code>false</code></td>
+                        <td>Master toggle indicating if live tracking is active</td>
+                    </tr>
+                    <tr>
+                        <td><code>gps_device_id</code></td>
+                        <td><code>VARCHAR(64)</code></td>
+                        <td><code>null</code></td>
+                        <td>Human-readable device code (e.g., <code>ELFAA-GPS-001</code>)</td>
+                    </tr>
+                    <tr>
+                        <td><code>gps_tracker_key</code></td>
+                        <td><code>VARCHAR(64)</code></td>
+                        <td><code>null</code> (indexed)</td>
+                        <td>Random 32-character secret token for web transmitter auth</td>
+                    </tr>
+                    <tr>
+                        <td><code>last_latitude</code></td>
+                        <td><code>DECIMAL(10, 7)</code></td>
+                        <td><code>null</code></td>
+                        <td>Most recently recorded vehicle latitude</td>
+                    </tr>
+                    <tr>
+                        <td><code>last_longitude</code></td>
+                        <td><code>DECIMAL(10, 7)</code></td>
+                        <td><code>null</code></td>
+                        <td>Most recently recorded vehicle longitude</td>
+                    </tr>
+                    <tr>
+                        <td><code>current_speed</code></td>
+                        <td><code>DECIMAL(6, 2)</code></td>
+                        <td><code>0.00</code></td>
+                        <td>Current speed in kilometers per hour (km/h)</td>
+                    </tr>
+                    <tr>
+                        <td><code>last_gps_updated_at</code></td>
+                        <td><code>TIMESTAMP</code></td>
+                        <td><code>null</code></td>
+                        <td>Timestamp of latest ping used to detect offline cars</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="font-size: 1rem; margin-top: 2rem; margin-bottom: 0.6rem;">2. Historical Breadcrumb Table (<code>vehicle_gps_logs</code>)</h3>
+        <div class="code-block"><span class="blue">Schema::create</span>('vehicle_gps_logs', <span class="teal">function</span> (Blueprint $table) {
+    $table-&gt;id();
+    $table-&gt;foreignId('vehicle_id')-&gt;constrained('vehicles')-&gt;cascadeOnDelete();
+    $table-&gt;decimal('latitude', 10, 7);
+    $table-&gt;decimal('longitude', 10, 7);
+    $table-&gt;decimal('speed', 6, 2)-&gt;default(0);      <span class="dim">// in km/h</span>
+    $table-&gt;decimal('heading', 6, 2)-&gt;nullable();    <span class="dim">// 0 to 360 degrees</span>
+    $table-&gt;timestamp('recorded_at')-&gt;useCurrent();  <span class="dim">// precise moment of ping</span>
+    $table-&gt;timestamps();
+    $table-&gt;index(['vehicle_id', 'recorded_at']);    <span class="dim">// fast route querying</span>
+});</div>
+
+        <h3 style="font-size: 1rem; margin-top: 2rem; margin-bottom: 0.6rem;">3. Registered GPS Endpoints</h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>HTTP Method &amp; Route</th>
+                        <th>Controller Action</th>
+                        <th>Access Level</th>
+                        <th>Payload / Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>POST /api/gps/ping</code></td>
+                        <td><code>GpsTrackerController@recordPing</code></td>
+                        <td>Public (Token auth)</td>
+                        <td><code>{ tracker_key, latitude, longitude, speed, heading }</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET|POST /api/gps/traccar</code></td>
+                        <td><code>GpsTrackerController@recordTraccar</code></td>
+                        <td>Public (Traccar ID)</td>
+                        <td><code>?id=ELFAA-GPS-001&amp;lat=14.59&amp;lon=120.98&amp;speed=42</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /tracker/{key}</code></td>
+                        <td><code>GpsTrackerController@renderTransmitter</code></td>
+                        <td>Public Mobile View</td>
+                        <td>Renders mobile transmitter Inertia page</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /admin/gps/live-fleet</code></td>
+                        <td><code>GpsTrackerController@liveFleet</code></td>
+                        <td>Admin Authenticated</td>
+                        <td>Returns JSON array of all active vehicle pins</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /admin/gps/route-history/{id}</code></td>
+                        <td><code>GpsTrackerController@routeHistory</code></td>
+                        <td>Admin Authenticated</td>
+                        <td>Returns up to 300 coordinate points for polyline</td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /admin/vehicles/{id}/gps-config</code></td>
+                        <td><code>GpsTrackerController@updateConfig</code></td>
+                        <td>Admin Authenticated</td>
+                        <td>Updates <code>gps_enabled</code> and <code>gps_device_id</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Section 8: Troubleshooting & Thesis Tips -->
+    <section class="section" id="troubleshoot">
+        <div class="section-label">Troubleshooting &amp; FAQ</div>
+        <h2>Troubleshooting &amp; Thesis Defense Q&amp;A</h2>
+        <p class="section-intro">Here are solutions to the most common setup questions and answers you can give to your thesis panel.</p>
+
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">
+                    <span>1. The phone says "Location Permission Denied" or fails to acquire coordinates.</span>
+                    <span class="faq-chevron">▼</span>
+                </summary>
+                <div class="faq-answer">
+                    Check the following:
+                    <ol style="margin: 0.5rem 0 0 1.2rem; line-height: 1.7;">
+                        <li>Ensure Device Location / GPS is turned ON in the phone's Android/iOS top drawer.</li>
+                        <li>In your mobile browser (Chrome/Safari), tap the lock or tune icon in the address bar &gt; <strong>Permissions &gt; Location &gt; Allow</strong>.</li>
+                        <li>If testing indoors, move closer to a window. Concrete buildings can block GPS satellite reception, causing the browser to timeout.</li>
+                    </ol>
+                </div>
+            </details>
+        </div>
+
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">
+                    <span>2. The car appears as "Offline" on the Admin Map.</span>
+                    <span class="faq-chevron">▼</span>
+                </summary>
+                <div class="faq-answer">
+                    A car is marked <strong>"Offline"</strong> if the system has not received a ping in the last 2 minutes. Tap <em>"Start GPS Transmission"</em> on the phone and check the <em>Pings Sent</em> counter. As soon as the next ping arrives, the status badge will immediately turn into an active green <strong>"Moving"</strong> or amber <strong>"Idle"</strong> pill.
+                </div>
+            </details>
+        </div>
+
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">
+                    <span>3. How can I simulate GPS movement inside the classroom for my thesis demo?</span>
+                    <span class="faq-chevron">▼</span>
+                </summary>
+                <div class="faq-answer">
+                    You can simulate realistic car movement without actually driving!
+                    <ul style="margin: 0.5rem 0 0 1.2rem; line-height: 1.7;">
+                        <li><strong>In Google Chrome (Desktop):</strong> Open <code>/tracker/{key}</code> &gt; Press <code>F12</code> &gt; Click the 3 dots menu &gt; <em>More tools &gt; Sensors</em> &gt; Choose a preset location (e.g. San Francisco or Manila) or enter custom lat/long. Tap "Start GPS Transmission" and change coordinates slightly to see the car move on the admin map!</li>
+                        <li><strong>On Android Phone:</strong> Download any free "Fake GPS location" app from Google Play &gt; Enable Developer Options &gt; Set Mock Location App. You can simulate driving along any road in real-time.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">
+                    <span>4. Thesis Defense: "Why did you build web-based phone tracking instead of buying hardware trackers?"</span>
+                    <span class="faq-chevron">▼</span>
+                </summary>
+                <div class="faq-answer">
+                    <strong>Recommended Panel Response:</strong>
+                    <em>"Hardware trackers (OBD-II dongles or 4G GPS modules) cost ₱2,500 to ₱5,000 per unit, plus monthly cellular SIM subscriptions. By designing a progressive web telemetry transmitter using the HTML5 Geolocation API, ELFAA achieves zero hardware acquisition cost. Fleet owners can repurpose any existing budget smartphone or tablet already placed in the vehicle, while maintaining cryptographic security and sub-3-second latency."</em>
+                </div>
+            </details>
+        </div>
+
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">
+                    <span>5. Is my GPS ping blocked by CSRF protection?</span>
+                    <span class="faq-chevron">▼</span>
+                </summary>
+                <div class="faq-answer">
+                    No. In <code>bootstrap/app.php</code>, the ELFAA application explicitly configures <code>$middleware-&gt;validateCsrfTokens(except: ['api/*', ...])</code>. The endpoints <code>/api/gps/ping</code> and <code>/api/gps/traccar</code> are exempted from session cookies and authenticated via the vehicle's unique 32-character tracker token.
+                </div>
+            </details>
+        </div>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="wrapper">
+        <p><strong>ELFAA Car Rental</strong> — Intelligent Fleet Management System</p>
+        <p class="subtext">GPS Telemetry Engine powered by Leaflet.js, OpenStreetMap, HTML5 Geolocation &amp; Laravel 11</p>
+        <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center;">
+            <a href="/guidelines.html" style="font-weight: 700;">📋 View General Platform Guidelines</a>
+            <span>•</span>
+            <a href="/admin/dashboard" style="font-weight: 700;">🚗 Open Admin Portal</a>
+        </div>
+    </div>
+</footer>
+
+<button id="scrollTop" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="Back to top">↑</button>
+
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('elfaa-theme', next);
+        document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+
+    const savedTheme = localStorage.getItem('elfaa-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const tb = document.getElementById('themeBtn');
+    if (tb) tb.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+    window.addEventListener('scroll', () => {
+        const btn = document.getElementById('scrollTop');
+        if (btn) {
+            btn.classList.toggle('visible', window.scrollY > 300);
+        }
+    });
+</script>
+
+</body>
+</html>

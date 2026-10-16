@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Link } from '@inertiajs/react';
+import { ArrowRight, CheckCircle2, MapPin } from 'lucide-react';
 
 export default function ModernHero({ settings, setLightboxImage }) {
     return (
@@ -59,9 +60,7 @@ export default function ModernHero({ settings, setLightboxImage }) {
                                 className="px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest bg-[#FF3B30] hover:bg-red-700 text-white shadow-xl shadow-[#FF3B30]/30 transition-all flex items-center gap-2 group"
                             >
                                 <span>Browse Fleet Catalog</span>
-                                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                </svg>
+                                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                             </motion.button>
                         </a>
 
@@ -84,16 +83,11 @@ export default function ModernHero({ settings, setLightboxImage }) {
                         className="pt-4 flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-500 dark:text-zinc-400"
                     >
                         <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                             <span>Instant Dispatch Verification</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-[#FF3B30]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                            <MapPin className="w-4 h-4 text-[#FF3B30]" />
                             <span>Premium Self-Drive Car Rentals • Doorstep Delivery</span>
                         </div>
                     </motion.div>

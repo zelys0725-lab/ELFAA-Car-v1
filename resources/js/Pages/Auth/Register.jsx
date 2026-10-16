@@ -5,6 +5,7 @@ import Checkbox from '@/Components/Checkbox';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { Sun, Moon, Eye, EyeOff, CheckCircle2, Circle, X } from 'lucide-react';
 
 export default function Register() {
     const { settings } = usePage().props;
@@ -61,13 +62,23 @@ export default function Register() {
                         <button
                             type="button"
                             onClick={() => setIsDarkMode(!isDarkMode)}
-                            className={`p-2 rounded-lg border transition-colors text-xs font-semibold flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-full border transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
                                 isDarkMode
                                     ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700'
                                     : 'bg-slate-100 border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-200'
                             }`}
                         >
-                            {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+                            {isDarkMode ? (
+                                <>
+                                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>Light</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Dark</span>
+                                </>
+                            )}
                         </button>
                     </div>
 
@@ -185,11 +196,12 @@ export default function Register() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className={`absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold ${
+                                        className={`absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold cursor-pointer ${
                                             isDarkMode ? 'text-zinc-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
                                         }`}
+                                        title={showPassword ? "Hide password" : "Show password"}
                                     >
-                                        {showPassword ? "Hide" : "Show"}
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
                                 </div>
                                 <InputError message={errors.password} className="mt-1 text-xs text-[#FF3B30]" />
@@ -214,11 +226,12 @@ export default function Register() {
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className={`absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold ${
+                                        className={`absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold cursor-pointer ${
                                             isDarkMode ? 'text-zinc-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
                                         }`}
+                                        title={showConfirmPassword ? "Hide password" : "Show password"}
                                     >
-                                        {showConfirmPassword ? "Hide" : "Show"}
+                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
                                 </div>
                                 <InputError message={errors.password_confirmation} className="mt-1 text-xs text-[#FF3B30]" />
@@ -228,23 +241,23 @@ export default function Register() {
                             <div className={`p-3 rounded-lg border text-xs space-y-1.5 ${isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-slate-100 border-slate-200'}`}>
                                 <div className="font-bold mb-1 text-zinc-400">Password Requirements:</div>
                                 <div className={`flex items-center gap-1.5 ${isMinLength ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
-                                    <span>{isMinLength ? '✓' : '○'}</span>
+                                    {isMinLength ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
                                     <span>At least 8 characters long</span>
                                 </div>
                                 <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
-                                    <span>{hasUpper ? '✓' : '○'}</span>
+                                    {hasUpper ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
                                     <span>At least 1 uppercase letter</span>
                                 </div>
                                 <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
-                                    <span>{hasLower ? '✓' : '○'}</span>
+                                    {hasLower ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
                                     <span>At least 1 lowercase letter</span>
                                 </div>
                                 <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
-                                    <span>{hasNumber ? '✓' : '○'}</span>
+                                    {hasNumber ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
                                     <span>At least 1 number</span>
                                 </div>
                                 <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-400 font-semibold' : 'text-zinc-500'}`}>
-                                    <span>{hasSpecial ? '✓' : '○'}</span>
+                                    {hasSpecial ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
                                     <span>At least 1 special character</span>
                                 </div>
                             </div>
@@ -336,9 +349,10 @@ export default function Register() {
                             <button
                                 type="button"
                                 onClick={() => setShowTermsModal(false)}
-                                className="text-zinc-400 hover:text-white font-bold"
+                                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                                aria-label="Close modal"
                             >
-                                ✕
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="max-h-64 overflow-y-auto space-y-3 text-xs leading-relaxed text-zinc-300 pr-2">

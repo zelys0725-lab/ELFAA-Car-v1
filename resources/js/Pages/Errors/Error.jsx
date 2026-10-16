@@ -1,5 +1,6 @@
 import React from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { LayoutDashboard, Home } from 'lucide-react';
 
 export default function Error({ status = 404, message = null }) {
     const { auth } = usePage().props || {};
@@ -199,16 +200,18 @@ export default function Error({ status = 404, message = null }) {
                 <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center">
                     <Link
                         href={dashboardRoute}
-                        className="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all cursor-pointer text-center"
+                        className="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all cursor-pointer text-center inline-flex items-center justify-center gap-2"
                     >
-                        {is403 ? 'Go to Authorized Dashboard' : 'Return to My Workspace'}
+                        <LayoutDashboard className="w-4 h-4" />
+                        <span>{is403 ? 'Go to Authorized Dashboard' : 'Return to My Workspace'}</span>
                     </Link>
 
                     <Link
                         href="/"
-                        className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition-colors cursor-pointer text-center"
+                        className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-2"
                     >
-                        Back to Main Site
+                        <Home className="w-4 h-4" />
+                        <span>Back to Main Site</span>
                     </Link>
                 </div>
             </div>

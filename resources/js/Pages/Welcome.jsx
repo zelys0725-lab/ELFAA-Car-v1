@@ -6,6 +6,7 @@ import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker'
 import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
 import ModernHero from '@/Components/ModernHero';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] }) {
     const { settings } = usePage().props;
@@ -90,9 +91,9 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                         {settings?.site_logo_image ? (
                             <img src={settings.site_logo_image} className="h-10 max-w-[150px] object-contain rounded" alt={settings?.site_logo || 'Logo'} />
                         ) : (
-                            <Link href="/" className="flex items-center gap-2">
-                                <div className="h-10 w-10 rounded-lg bg-[#FF3B30] flex items-center justify-center text-white font-black text-xl tracking-tighter shadow-md">
-                                    {settings?.site_logo ? settings.site_logo.charAt(0) : 'E'}
+                            <Link href="/" className="flex items-center gap-2.5 group">
+                                <div className="h-10 w-10 rounded-lg bg-[#FF3B30] flex items-center justify-center p-2 shadow-md group-hover:scale-105 transition-transform">
+                                    <ApplicationLogo className="w-full h-full fill-white" />
                                 </div>
                                 <div>
                                     <span className="font-black text-lg tracking-tight text-gray-900 dark:text-white uppercase leading-none block">
@@ -345,8 +346,8 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                             <img src={settings.site_logo_image} className="h-8 max-w-[120px] object-contain rounded" alt={settings?.site_logo || 'Logo'} />
                         ) : (
                             <>
-                                <div className="h-8 w-8 rounded bg-[#FF3B30] flex items-center justify-center text-white font-black text-lg shadow">
-                                    {settings?.site_logo ? settings.site_logo.charAt(0) : 'E'}
+                                <div className="h-8 w-8 rounded-lg bg-[#FF3B30] flex items-center justify-center p-1.5 shadow">
+                                    <ApplicationLogo className="w-full h-full fill-white" />
                                 </div>
                                 <div className="text-left">
                                     <span className="font-black text-white uppercase tracking-tight text-sm block">
