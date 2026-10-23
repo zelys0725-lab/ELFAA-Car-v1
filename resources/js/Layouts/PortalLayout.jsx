@@ -25,7 +25,8 @@ import {
     User,
     ChevronDown,
     ChevronsUpDown,
-    Radio
+    Radio,
+    CheckSquare
 } from 'lucide-react';
 
 export default function PortalLayout({ role, header, children, sidebarTabs = [], activeTab = '', setActiveTab = null }) {
@@ -81,6 +82,8 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                 return <CalendarDays className={svgClasses} />;
             case 'calendar':
                 return <CalendarCheck className={svgClasses} />;
+            case 'booking_requests':
+                return <CheckSquare className={svgClasses} />;
             case 'bookings':
                 return <FileText className={svgClasses} />;
             case 'verifications':

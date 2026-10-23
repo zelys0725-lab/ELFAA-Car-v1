@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, 
 import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
 import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
-import AlertModal from '@/Components/AlertModal';
+import AlertModal, { showSwal } from '@/Components/AlertModal';
 import { 
     CheckCircle2, 
     AlertTriangle, 
@@ -233,8 +233,18 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         });
     };
 
-    const handleCancelBooking = (bookingId) => {
-        if (confirm('Cancel this booking request?')) {
+    const [availabilityFleetVehicle, setAvailabilityFleetVehicle] = useState(null);
+
+    const handleCancelBooking = async (bookingId) => {
+        const confirmed = await showSwal({
+            type: 'warning',
+            title: 'Cancel Booking?',
+            message: 'Are you sure you want to cancel this booking request? This action cannot be undone.',
+            showCancel: true,
+            confirmText: 'Yes, Cancel It',
+            cancelText: 'Keep Booking',
+        });
+        if (confirmed) {
             router.post(route('client.bookings.cancel', bookingId), {}, {
                 onSuccess: () => {
                     setAlert({ type: 'success', title: 'Booking Cancelled', message: 'Your booking request has been cancelled.' });
@@ -975,6 +985,32 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                 <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 pt-0.5">
                                                                     Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-600 font-extrabold">{booking.payment_method}</span>
                                                                 </div>
+                                                                {booking.inspections && booking.inspections.length > 0 && (
+                                                                    <div className="flex items-center gap-2 pt-1 flex-wrap">
+                                                                        {booking.inspections.find(i => i.type === 'pickup')?.photos?.[0] && (
+                                                                            <a
+                                                                                href={`/storage/${booking.inspections.find(i => i.type === 'pickup').photos[0]}`}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                                                                                title="View vehicle pickup condition photo"
+                                                                            >
+                                                                                📷 Pickup Photo
+                                                                            </a>
+                                                                        )}
+                                                                        {booking.inspections.find(i => i.type === 'return')?.photos?.[0] && (
+                                                                            <a
+                                                                                href={`/storage/${booking.inspections.find(i => i.type === 'return').photos[0]}`}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                                                                                title="View vehicle return condition photo"
+                                                                            >
+                                                                                📷 Return Photo
+                                                                            </a>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-2">
@@ -1017,87 +1053,194 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                     </>
                 )}
 
-                {/* BROWSE FLEET TAB */}
+                {/* BROWSE FLEET TAB – Landing Page Style */}
                 {activeTab === 'fleet' && (
-                    <div className="space-y-6">
-                        <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors">
-                            <CardHeader className="px-6 pt-5 pb-3">
-                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white text-left">Available Fleet Catalog</CardTitle>
-                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs text-left">
-                                    Displaying vehicles matching: <strong className="text-zinc-900 dark:text-white">Type: {selectedType} | Seats: {selectedSeats}</strong>
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-6 pb-6">
-                                {filteredVehicles.length === 0 ? (
-                                    <p className="text-center py-12 text-zinc-500 dark:text-zinc-400 text-xs font-medium">No vehicles matching selected vehicle filters.</p>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        {filteredVehicles.map((car) => (
-                                            <Card key={car.id} className="overflow-hidden bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between text-zinc-900 dark:text-white text-left transition-colors">
-                                                <div>
-                                                    <div className="h-44 overflow-hidden relative bg-zinc-100 dark:bg-zinc-900">
-                                                        <img 
-                                                            src={car.images?.[0] || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800'} 
-                                                            alt={car.name} 
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                        <Badge className="absolute top-3 right-3 bg-[#FF3B30] uppercase font-bold tracking-wider">
-                                                            {car.type}
-                                                        </Badge>
-                                                    </div>
+                    <div className="space-y-0">
+                        {/* Fleet Hero Banner */}
+                        <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-950 border border-zinc-800 shadow-2xl">
+                            {/* Decorative gradient orbs */}
+                            <div className="absolute top-0 left-0 w-72 h-72 bg-[#FF3B30]/20 rounded-full blur-3xl -translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+                            <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#FF3B30]/10 rounded-full blur-3xl translate-x-1/4 translate-y-1/4 pointer-events-none" />
 
-                                                    <CardHeader className="pb-2">
-                                                        <CardTitle className="text-md font-bold">{car.name}</CardTitle>
-                                                        <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">{car.meetup_location || 'ELFAA Hub'}</CardDescription>
-                                                    </CardHeader>
+                            <div className="relative z-10 px-8 py-12 text-center">
+                                <span className="inline-block px-3 py-1 rounded-full bg-[#FF3B30]/20 border border-[#FF3B30]/40 text-[#FF3B30] text-[10px] font-black uppercase tracking-widest mb-4">
+                                    ✦ Fleet Catalog
+                                </span>
+                                <h2 className="text-3xl md:text-4xl font-black text-white leading-tight mb-3">
+                                    Choose Your Perfect Ride
+                                </h2>
+                                <p className="text-zinc-400 text-sm max-w-lg mx-auto">
+                                    Browse our curated fleet of clean, safe, and fully-equipped vehicles. Pick your match and book instantly.
+                                </p>
+                                <div className="flex items-center justify-center gap-6 mt-6 text-zinc-400 text-xs font-semibold">
+                                    <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-green-400"></span> {vehicles.filter(v => v.status === 'available').length} Available Now</span>
+                                    <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-[#FF3B30]"></span> {vehicles.length} Total Vehicles</span>
+                                    <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-amber-400"></span> PHP {Math.min(...vehicles.map(v => parseFloat(v.price_per_day))).toLocaleString()}/day from</span>
+                                </div>
+                            </div>
+                        </div>
 
-                                                    <CardContent className="space-y-4">
-                                                        <div className="grid grid-cols-3 gap-2 py-2 text-center text-[10px] uppercase font-bold bg-zinc-100 dark:bg-zinc-900/50 rounded-lg text-zinc-600 dark:text-zinc-400">
-                                                            <div>
-                                                                <span className="block font-black text-zinc-900 dark:text-zinc-200">{car.seats}</span>
-                                                                Seats
-                                                            </div>
-                                                            <div>
-                                                                <span className="block font-black text-zinc-900 dark:text-zinc-200">{car.transmission}</span>
-                                                                Gear
-                                                            </div>
-                                                            <div>
-                                                                <span className="block font-black text-zinc-900 dark:text-zinc-200">{car.fuel_type}</span>
-                                                                Fuel
-                                                            </div>
-                                                        </div>
+                        {/* Results count */}
+                        <div className="flex items-center justify-between mb-5">
+                            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                                Showing <span className="text-zinc-900 dark:text-white font-black">{filteredVehicles.length}</span> vehicle{filteredVehicles.length !== 1 ? 's' : ''}
+                                {selectedType !== 'All' && <span> · Type: <span className="text-[#FF3B30]">{selectedType}</span></span>}
+                                {selectedSeats !== 'All' && <span> · Seats: <span className="text-[#FF3B30]">{selectedSeats}</span></span>}
+                            </p>
+                        </div>
 
-                                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{car.description}</p>
-                                                    </CardContent>
+                        {/* Vehicle Grid */}
+                        {filteredVehicles.length === 0 ? (
+                            <div className="text-center py-20 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                                <div className="text-5xl mb-4">🚗</div>
+                                <p className="text-zinc-500 dark:text-zinc-400 text-sm font-semibold">No vehicles match your current filters.</p>
+                                <p className="text-zinc-400 text-xs mt-1">Try adjusting the type or seat filter above.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {filteredVehicles.map((car) => (
+                                    <div
+                                        key={car.id}
+                                        className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-[#FF3B30]/30 dark:hover:border-[#FF3B30]/30 transition-all duration-300 flex flex-col"
+                                    >
+                                        {/* Image */}
+                                        <div className="relative h-52 overflow-hidden bg-zinc-100 dark:bg-zinc-950">
+                                            <img
+                                                src={car.images?.[0] || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800'}
+                                                alt={car.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                            {/* Gradient overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                                            {/* Status + type badges */}
+                                            <div className="absolute top-3 left-3 flex gap-1.5">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FF3B30] text-white shadow">
+                                                    {car.type}
+                                                </span>
+                                                {car.status === 'available' && (
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500 text-white shadow">
+                                                        Available
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Price on image */}
+                                            <div className="absolute bottom-3 left-3">
+                                                <div className="text-[10px] text-white/70 font-bold uppercase tracking-wider">from</div>
+                                                <div className="text-xl font-black text-white leading-tight">
+                                                    PHP {parseFloat(car.price_per_day).toLocaleString()}
+                                                    <span className="text-xs font-semibold text-white/60">/day</span>
                                                 </div>
+                                            </div>
+                                        </div>
 
-                                                <CardFooter className="flex items-center justify-between pt-4 bg-zinc-100/50 dark:bg-zinc-900/40 border-t border-zinc-200 dark:border-zinc-800">
-                                                    <div>
-                                                        <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Rate/day</div>
-                                                        <div className="text-sm font-black text-[#FF3B30]">
-                                                            PHP {parseFloat(car.price_per_day).toLocaleString()}
-                                                        </div>
+                                        {/* Content */}
+                                        <div className="p-5 flex flex-col flex-1 gap-4">
+                                            <div>
+                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                    <h3 className="text-sm font-black text-zinc-900 dark:text-white leading-tight">{car.name}</h3>
+                                                </div>
+                                                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                                                    <span>📍</span> {car.meetup_location || 'ELFAA Hub'}
+                                                </p>
+                                            </div>
+
+                                            {/* Specs Grid */}
+                                            <div className="grid grid-cols-3 gap-1.5 text-center">
+                                                {[
+                                                    { label: 'Seats', value: car.seats },
+                                                    { label: 'Gear', value: car.transmission },
+                                                    { label: 'Fuel', value: car.fuel_type },
+                                                ].map(spec => (
+                                                    <div key={spec.label} className="bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 rounded-xl py-2 px-1">
+                                                        <span className="block text-xs font-black text-zinc-900 dark:text-white">{spec.value}</span>
+                                                        <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider mt-0.5">{spec.label}</span>
                                                     </div>
-                                                    <button 
-                                                        onClick={() => {
+                                                ))}
+                                            </div>
+
+                                            {/* Features */}
+                                            {car.features && car.features.length > 0 && (
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {car.features.slice(0, 4).map((feat, i) => (
+                                                        <span key={i} className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-[10px] font-semibold rounded-full border border-zinc-200 dark:border-zinc-700">
+                                                            {feat}
+                                                        </span>
+                                                    ))}
+                                                    {car.features.length > 4 && (
+                                                        <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] font-semibold rounded-full border border-zinc-200 dark:border-zinc-700">
+                                                            +{car.features.length - 4} more
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {car.description && (
+                                                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">{car.description}</p>
+                                            )}
+
+                                            {/* CTA Row */}
+                                            <div className="flex gap-2 mt-auto pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                                <button
+                                                    onClick={() => setAvailabilityFleetVehicle(car)}
+                                                    className="flex-1 h-9 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[11px] font-bold text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors bg-white dark:bg-zinc-950 cursor-pointer"
+                                                >
+                                                    📅 Availability
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        const confirmed = await showSwal({
+                                                            type: 'info',
+                                                            title: `Book ${car.name}?`,
+                                                            message: `PHP ${parseFloat(car.price_per_day).toLocaleString()}/day · ${car.transmission} · ${car.seats} seats. You will be taken to the Reservation Hub to complete your booking.`,
+                                                            showCancel: true,
+                                                            confirmText: 'Yes, Select This Car',
+                                                            cancelText: 'Browse More',
+                                                        });
+                                                        if (confirmed) {
                                                             setData('vehicle_id', car.id.toString());
                                                             setActiveTab('dashboard');
                                                             setTimeout(() => {
                                                                 const formEl = document.getElementById('booking-request-form');
                                                                 if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
-                                                            }, 100);
-                                                        }}
-                                                        className="px-4 py-2 bg-[#FF3B30] hover:bg-red-700 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-colors cursor-pointer"
-                                                    >
-                                                        Book Selection
-                                                    </button>
-                                                </CardFooter>
-                                            </Card>
-                                        ))}
+                                                            }, 150);
+                                                        }
+                                                    }}
+                                                    className="flex-1 h-9 bg-[#FF3B30] hover:bg-red-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                                                >
+                                                    Book Now
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Fleet Availability Modal */}
+                        {availabilityFleetVehicle && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAvailabilityFleetVehicle(null)} />
+                                <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+                                    <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
+                                        <div>
+                                            <h3 className="text-sm font-black text-zinc-900 dark:text-white">Availability Schedule</h3>
+                                            <p className="text-xs text-zinc-500 mt-0.5">{availabilityFleetVehicle.name}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setAvailabilityFleetVehicle(null)}
+                                            className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white text-sm font-black transition-colors cursor-pointer"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <div className="p-5">
+                                        <CustomerAvailabilityPicker vehicle={availabilityFleetVehicle} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

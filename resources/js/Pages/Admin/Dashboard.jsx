@@ -14,7 +14,7 @@ import DailyOperationsWidget from '@/Components/DailyOperationsWidget';
 import LegacyImportModal from '@/Components/LegacyImportModal';
 import DocumentVerificationModal from '@/Components/DocumentVerificationModal';
 import FleetGpsMonitor from '@/Components/FleetGpsMonitor';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink } from 'lucide-react';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X } from 'lucide-react';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
@@ -46,6 +46,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const [inspectionType, setInspectionType] = useState('pickup');
     const [comparisonBooking, setComparisonBooking] = useState(null);
     const [breakdownBooking, setBreakdownBooking] = useState(null);
+    const [previewPhoto, setPreviewPhoto] = useState(null);
+    const [requestSearch, setRequestSearch] = useState('');
     const [showImportModal, setShowImportModal] = useState(false);
 
     // Styled Confirmation Dialog States
@@ -283,12 +285,12 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         if (!isAdmin) return;
         const isActive = currentStatus === 'active';
         showConfirm({
-            title: isActive ? 'Block User Account' : 'Activate User Account',
+            title: isActive ? 'Deactivate User Account' : 'Activate User Account',
             message: isActive
                 ? 'This will deactivate the user account and prevent them from signing in.'
                 : 'This will re-activate the user account and restore access.',
-            actionLabel: isActive ? 'Block User' : 'Activate User',
-            actionClass: isActive ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white',
+            actionLabel: isActive ? 'Deactivate User' : 'Activate User',
+            actionClass: isActive ? 'bg-zinc-700 hover:bg-zinc-800 text-white' : 'bg-green-600 hover:bg-green-700 text-white',
             onConfirm: () => router.post(route('admin.users.toggle', userId)),
         });
     };
@@ -443,13 +445,28 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         });
     };
 
+    // Pending booking requests (Accept / Reject) separation
+    const pendingBookingsList = bookings.filter(b => b.status === 'pending');
+    const pendingRequestsCount = pendingBookingsList.length;
+
+    const filteredRequests = pendingBookingsList.filter(b => {
+        const q = requestSearch.toLowerCase().trim();
+        return !q || (
+            (b.user?.name && b.user.name.toLowerCase().includes(q)) ||
+            (b.user?.email && b.user.email.toLowerCase().includes(q)) ||
+            (b.vehicle?.name && b.vehicle.name.toLowerCase().includes(q)) ||
+            (b.pickup_location && b.pickup_location.toLowerCase().includes(q))
+        );
+    });
+
     // Sidebar Config
     const tabsConfig = [
         { id: 'analytics', label: 'Dashboard' },
+        { id: 'booking_requests', label: `Booking Requests${pendingRequestsCount > 0 ? ` (${pendingRequestsCount})` : ''}` },
+        { id: 'bookings', label: 'Bookings Log' },
         { id: 'gps_fleet', label: 'Fleet Live GPS Tracking' },
         { id: 'daily_schedule', label: 'Daily Rental Schedule' },
         { id: 'calendar', label: 'Availability Calendar' },
-        { id: 'bookings', label: 'Bookings Log' },
         { id: 'verifications', label: 'Identity Verifications' },
         { id: 'bill_records', label: 'Utility & Bill Records' },
         { id: 'vehicles', label: 'Fleet Inventory' },
@@ -641,6 +658,24 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     {/* Header Action Section */}
                     <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
                         {/* Sub filters pill tags */}
+                        {activeTab === 'booking_requests' && (
+                            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                        Pending Booking Requests ({pendingRequestsCount})
+                                    </span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setActiveTab('bookings'); setSubFilter('all'); }}
+                                        className="px-3 py-1 rounded-lg text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                        <span>View Bookings Log</span>
+                                        <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {activeTab === 'bookings' && (
                             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                                 {/* Active vs Archived tab toggle */}
@@ -695,7 +730,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 ))}
                             </div>
                         )}
-                        {!['bookings', 'vehicles'].includes(activeTab) && (
+                        {!['bookings', 'booking_requests', 'vehicles'].includes(activeTab) && (
                             <div>
                                 <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-wider">{tabsConfig.find(t => t.id === activeTab)?.label}</h3>
                             </div>
@@ -703,6 +738,15 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
                         {/* Search & Actions */}
                         <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto">
+                            {activeTab === 'booking_requests' && (
+                                <Input 
+                                    type="text" 
+                                    placeholder="Search pending requests..." 
+                                    value={requestSearch} 
+                                    onChange={(e) => setRequestSearch(e.target.value)}
+                                    className="h-8 text-xs w-56 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                />
+                            )}
                             {activeTab === 'bookings' && (
                                 <Input 
                                     type="text" 
@@ -747,6 +791,16 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     <th className="py-3 px-4 w-4">
                                         <input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" disabled />
                                     </th>
+                                    {activeTab === 'booking_requests' && (
+                                        <>
+                                            <th className="py-3 px-4 text-zinc-400">Renter Details</th>
+                                            <th className="py-3 px-4 text-zinc-400">Reserved Vehicle</th>
+                                            <th className="py-3 px-4 text-zinc-400">Total Price & Method</th>
+                                            <th className="py-3 px-4 text-zinc-400">Rental Period</th>
+                                            <th className="py-3 px-4 text-zinc-400">Pickup Location</th>
+                                            <th className="py-3 px-4 text-zinc-400 text-right">Accept / Reject</th>
+                                        </>
+                                    )}
                                     {activeTab === 'bookings' && (
                                         <>
                                             <th className="py-3 px-4 text-zinc-400">Renter Details</th>
@@ -754,6 +808,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             <th className="py-3 px-4 text-zinc-400">Total Price</th>
                                             <th className="py-3 px-4 text-zinc-400">Rental Period</th>
                                             <th className="py-3 px-4 text-zinc-400">Status</th>
+                                            <th className="py-3 px-4 text-zinc-400 text-center">Pickup Photo</th>
+                                            <th className="py-3 px-4 text-zinc-400 text-center">Return Photo</th>
                                             <th className="py-3 px-4 text-zinc-400 text-right">Verification Action</th>
                                         </>
                                     )}
@@ -806,7 +862,96 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors">
-                                {/* A. BOOKINGS DATA BODY */}
+                                {/* A1. PENDING BOOKING REQUESTS (Accept & Reject) BODY */}
+                                {activeTab === 'booking_requests' && filteredRequests.length === 0 && (
+                                    <tr>
+                                        <td colSpan="8" className="py-12 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                                    <CheckCircle className="w-5 h-5" />
+                                                </div>
+                                                <div className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">No Pending Booking Requests</div>
+                                                <p className="text-xs text-zinc-400 max-w-sm">All customer reservations have been reviewed and decided.</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('bookings')}
+                                                    className="mt-2 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                                                >
+                                                    View All Booking Logs
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                {activeTab === 'booking_requests' && filteredRequests.map((booking) => (
+                                    <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
+                                            <GripVertical className="w-3.5 h-3.5" />
+                                        </td>
+                                        <td className="py-3.5 px-4">
+                                            <input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" />
+                                        </td>
+                                        <td className="py-3.5 px-4">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
+                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase">
+                                                    Pending Review
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email || '—'}</span>
+                                            {booking.user?.phone && (
+                                                <span className="text-[10px] text-zinc-400 block font-mono">{booking.user.phone}</span>
+                                            )}
+                                        </td>
+                                        <td className="py-3.5 px-4">
+                                            <span className="font-extrabold text-zinc-800 dark:text-zinc-200 block">{booking.vehicle?.name || 'Vehicle'}</span>
+                                            <span className="text-[10px] font-mono text-zinc-400">{booking.vehicle?.plate_number || 'N/A'} • {booking.vehicle?.type}</span>
+                                        </td>
+                                        <td className="py-3.5 px-4">
+                                            <span className="font-black text-zinc-900 dark:text-white block">PHP {parseFloat(booking.total_price).toLocaleString()}</span>
+                                            <span className="text-[10px] font-bold uppercase text-zinc-500">{booking.payment_method || 'Cash / Meetup'}</span>
+                                        </td>
+                                        <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">
+                                            <div className="font-bold text-zinc-700 dark:text-zinc-300">{booking.start_date} to {booking.end_date}</div>
+                                            <span className="text-[10px] text-zinc-400 block font-mono">
+                                                {Math.max(1, Math.ceil((new Date(booking.end_date) - new Date(booking.start_date)) / (1000 * 60 * 60 * 24)))} Days
+                                            </span>
+                                        </td>
+                                        <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 text-xs">
+                                            {booking.pickup_location || 'Standard Meetup'}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleVerifyBooking(booking.id, 'confirm')}
+                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded shadow-sm transition-all cursor-pointer inline-flex items-center gap-1"
+                                                title="Accept and approve this booking request"
+                                            >
+                                                <Check className="w-3 h-3" />
+                                                <span>Accept</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleVerifyBooking(booking.id, 'reject')}
+                                                className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase rounded shadow-sm transition-all cursor-pointer inline-flex items-center gap-1"
+                                                title="Reject this booking request"
+                                            >
+                                                <X className="w-3 h-3" />
+                                                <span>Reject</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBreakdownBooking(booking)}
+                                                className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold uppercase rounded transition-colors cursor-pointer"
+                                                title="Review full price breakdown"
+                                            >
+                                                Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+
+                                {/* A2. BOOKINGS LOG DATA BODY */}
                                 {activeTab === 'bookings' && paginatedBookings.length === 0 && (
                                     <tr>
                                         <td colSpan="8" className="py-8 text-center text-zinc-400 text-xs font-medium">
@@ -814,91 +959,147 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         </td>
                                     </tr>
                                 )}
-                                {activeTab === 'bookings' && paginatedBookings.map((booking) => (
-                                    <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
-                                            <GripVertical className="w-3.5 h-3.5" />
-                                        </td>
-                                        <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
-                                        <td className="py-3.5 px-4">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
-                                                {booking.is_legacy && (
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-black uppercase">
-                                                        Legacy Import
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email}</span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">{booking.vehicle?.name || 'Vehicle'}</td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(booking.total_price).toLocaleString()}</td>
-                                        <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{booking.start_date} to {booking.end_date}</td>
-                                        <td className="py-3.5 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                booking.status === 'confirmed' ? 'text-green-600 dark:text-green-500' :
-                                                booking.status === 'completed' ? 'text-sky-600 dark:text-sky-400' :
-                                                booking.status === 'rejected' ? 'text-rose-600 dark:text-rose-500' : 'text-amber-600 dark:text-amber-500'
-                                            }`}>
-                                                <span className={`h-1.5 w-1.5 rounded-full ${
-                                                    booking.status === 'confirmed' ? 'bg-green-600 dark:bg-green-500' :
-                                                    booking.status === 'completed' ? 'bg-sky-600 dark:bg-sky-400' :
-                                                    booking.status === 'rejected' ? 'bg-rose-600 dark:bg-rose-500' : 'bg-amber-600 dark:bg-amber-500'
-                                                }`}></span>
-                                                {booking.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1">
-                                            {bookingLogTab === 'active' ? (
-                                                <>
-                                                    {booking.status === 'pending' && (
-                                                        <>
-                                                            <button onClick={() => handleVerifyBooking(booking.id, 'confirm')} className="px-2 py-0.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Confirm</button>
-                                                            <button onClick={() => handleVerifyBooking(booking.id, 'reject')} className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Reject</button>
-                                                        </>
-                                                    )}
-                                                    {booking.status === 'confirmed' && (
-                                                        <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2 py-0.5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
-                                                    )}
-                                                    
-                                                    {/* Inspection Buttons */}
-                                                    <button
-                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('pickup'); }}
-                                                        title="Record Vehicle Pickup Inspection"
-                                                        className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                    >
-                                                        +Pickup
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('return'); }}
-                                                        title="Record Vehicle Return Inspection"
-                                                        className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                    >
-                                                        +Return
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setComparisonBooking(booking)}
-                                                        title="View Inspection Comparison & Surcharges"
-                                                        className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                    >
-                                                        Inspections {booking.inspections?.length > 0 ? `(${booking.inspections.length})` : ''}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setBreakdownBooking(booking)}
-                                                        title="Review Complete Price Breakdown & Statement"
-                                                        className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                    >
-                                                        Review Breakdown
-                                                    </button>
+                                {activeTab === 'bookings' && paginatedBookings.map((booking) => {
+                                    const pickup = booking.inspections?.find(i => i.type === 'pickup');
+                                    const returnInsp = booking.inspections?.find(i => i.type === 'return');
+                                    const pickupPhoto = pickup?.photos?.[0];
+                                    const returnPhoto = returnInsp?.photos?.[0];
 
-                                                    <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
-                                                </>
-                                            ) : (
-                                                <button onClick={() => handleRestoreBooking(booking.id)} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Restore Record</button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                    return (
+                                        <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                            <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
+                                                <GripVertical className="w-3.5 h-3.5" />
+                                            </td>
+                                            <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
+                                            <td className="py-3.5 px-4">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
+                                                    {booking.is_legacy && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-black uppercase">
+                                                            Legacy Import
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email}</span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">
+                                                <div>{booking.vehicle?.name || 'Vehicle'}</div>
+                                                <div className="text-[10px] text-zinc-400 font-mono">{booking.vehicle?.plate_number || 'N/A'}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(booking.total_price).toLocaleString()}</td>
+                                            <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{booking.start_date} to {booking.end_date}</td>
+                                            <td className="py-3.5 px-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
+                                                    booking.status === 'confirmed' ? 'text-green-600 dark:text-green-500' :
+                                                    booking.status === 'completed' ? 'text-sky-600 dark:text-sky-400' :
+                                                    booking.status === 'rejected' ? 'text-rose-600 dark:text-rose-500' : 'text-amber-600 dark:text-amber-500'
+                                                }`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${
+                                                        booking.status === 'confirmed' ? 'bg-green-600 dark:bg-green-500' :
+                                                        booking.status === 'completed' ? 'bg-sky-600 dark:bg-sky-400' :
+                                                        booking.status === 'rejected' ? 'bg-rose-600 dark:bg-rose-500' : 'bg-amber-600 dark:bg-amber-500'
+                                                    }`}></span>
+                                                    {booking.status}
+                                                </span>
+                                            </td>
+
+                                            {/* Picture of Pickup */}
+                                            <td className="py-3.5 px-4 text-center">
+                                                {pickupPhoto ? (
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPreviewPhoto({ url: `/storage/${pickupPhoto}`, title: `Pickup Photo — ${booking.vehicle?.name}`, inspection: pickup, booking })}
+                                                            className="w-12 h-9 rounded-lg border border-blue-500/40 overflow-hidden relative group shadow-sm cursor-pointer mx-auto block"
+                                                            title="Click to view full pickup photo"
+                                                        >
+                                                            <img src={`/storage/${pickupPhoto}`} alt="Pickup photo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                            <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                                                                <Eye className="w-3.5 h-3.5 text-white opacity-90" />
+                                                            </div>
+                                                        </button>
+                                                        <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400">
+                                                            ✓ Pickup ({pickup.photos.length})
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('pickup'); }}
+                                                        className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
+                                                        title="Take or upload vehicle pickup photo"
+                                                    >
+                                                        <Camera className="w-3 h-3" />
+                                                        <span>+ Photo</span>
+                                                    </button>
+                                                )}
+                                            </td>
+
+                                            {/* Picture of Return */}
+                                            <td className="py-3.5 px-4 text-center">
+                                                {returnPhoto ? (
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPreviewPhoto({ url: `/storage/${returnPhoto}`, title: `Return Photo — ${booking.vehicle?.name}`, inspection: returnInsp, booking })}
+                                                            className="w-12 h-9 rounded-lg border border-emerald-500/40 overflow-hidden relative group shadow-sm cursor-pointer mx-auto block"
+                                                            title="Click to view full return photo"
+                                                        >
+                                                            <img src={`/storage/${returnPhoto}`} alt="Return photo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                            <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                                                                <Eye className="w-3.5 h-3.5 text-white opacity-90" />
+                                                            </div>
+                                                        </button>
+                                                        <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400">
+                                                            ✓ Return ({returnInsp.photos.length})
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('return'); }}
+                                                        className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
+                                                        title="Take or upload vehicle return photo"
+                                                    >
+                                                        <Camera className="w-3 h-3" />
+                                                        <span>+ Photo</span>
+                                                    </button>
+                                                )}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+                                                {bookingLogTab === 'active' ? (
+                                                    <>
+                                                        {booking.status === 'confirmed' && (
+                                                            <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2 py-0.5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
+                                                        )}
+                                                        
+                                                        {/* Comparison Drawer */}
+                                                        <button
+                                                            onClick={() => setComparisonBooking(booking)}
+                                                            title="View Inspection Comparison & Surcharges"
+                                                            className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Inspections {booking.inspections?.length > 0 ? `(${booking.inspections.length})` : ''}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setBreakdownBooking(booking)}
+                                                            title="Review Complete Price Breakdown & Statement"
+                                                            className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Breakdown
+                                                        </button>
+
+                                                        <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
+                                                    </>
+                                                ) : (
+                                                    <button onClick={() => handleRestoreBooking(booking.id)} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Restore Record</button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
 
                                 {/* B. ID VERIFICATION DATA BODY */}
                                 {activeTab === 'verifications' && documents.map((doc) => {
@@ -2183,6 +2384,151 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 <LegacyImportModal
                     onClose={() => setShowImportModal(false)}
                 />
+            )}
+
+            {/* Pickup / Return Photo Lightbox & Inspection Details Modal */}
+            {previewPhoto && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setPreviewPhoto(null)} />
+                    <div className="z-10 w-full max-w-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                        previewPhoto.inspection?.type === 'return'
+                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                    }`}>
+                                        {previewPhoto.inspection?.type ? `${previewPhoto.inspection.type} Inspection` : 'Inspection Photo'}
+                                    </span>
+                                    <h2 className="font-extrabold text-base">{previewPhoto.title}</h2>
+                                </div>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                    Renter: <span className="font-semibold text-zinc-700 dark:text-zinc-200">{previewPhoto.booking?.user?.name || 'Customer'}</span>
+                                    {previewPhoto.booking?.vehicle?.plate_number && (
+                                        <span className="font-mono ml-2">({previewPhoto.booking.vehicle.plate_number})</span>
+                                    )}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewPhoto(null)}
+                                className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Image Display */}
+                        <div className="my-4 rounded-xl overflow-hidden bg-zinc-950 flex items-center justify-center border border-zinc-200 dark:border-zinc-800">
+                            <img
+                                src={previewPhoto.url}
+                                alt={previewPhoto.title}
+                                className="w-full max-h-[50vh] object-contain"
+                            />
+                        </div>
+
+                        {/* Inspection Details Metadata */}
+                        {previewPhoto.inspection && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 text-xs mb-4">
+                                <div>
+                                    <span className="text-[10px] uppercase font-black text-zinc-400 block tracking-wider">Odometer</span>
+                                    <span className="font-extrabold text-zinc-800 dark:text-zinc-200 font-mono">
+                                        {previewPhoto.inspection.odometer_reading ? `${Number(previewPhoto.inspection.odometer_reading).toLocaleString()} km` : 'N/A'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-black text-zinc-400 block tracking-wider">Fuel Level</span>
+                                    <span className="font-extrabold text-zinc-800 dark:text-zinc-200 font-mono">
+                                        {previewPhoto.inspection.fuel_level_bars !== undefined && previewPhoto.inspection.fuel_level_bars !== null ? `${previewPhoto.inspection.fuel_level_bars}/8 bars` : 'N/A'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-black text-zinc-400 block tracking-wider">Inspector</span>
+                                    <span className="font-extrabold text-zinc-800 dark:text-zinc-200 truncate block">
+                                        {previewPhoto.inspection.inspector?.name || 'Staff'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-black text-zinc-400 block tracking-wider">Recorded At</span>
+                                    <span className="font-semibold text-zinc-600 dark:text-zinc-400 text-[11px] block">
+                                        {previewPhoto.inspection.created_at ? new Date(previewPhoto.inspection.created_at).toLocaleDateString() : '—'}
+                                    </span>
+                                </div>
+                                {previewPhoto.inspection.notes && (
+                                    <div className="col-span-2 sm:col-span-4 pt-2 border-t border-zinc-200 dark:border-zinc-800/80">
+                                        <span className="text-[10px] uppercase font-black text-zinc-400 block tracking-wider">Notes & Condition</span>
+                                        <p className="text-zinc-700 dark:text-zinc-300 text-xs mt-0.5">{previewPhoto.inspection.notes}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Additional Photos in this inspection */}
+                        {previewPhoto.inspection?.photos && previewPhoto.inspection.photos.length > 1 && (
+                            <div className="mb-4">
+                                <span className="text-[10px] uppercase font-black text-zinc-400 block tracking-wider mb-2">
+                                    All Photos ({previewPhoto.inspection.photos.length})
+                                </span>
+                                <div className="flex gap-2 overflow-x-auto pb-1">
+                                    {previewPhoto.inspection.photos.map((p, pIdx) => {
+                                        const pUrl = `/storage/${p}`;
+                                        const isSelected = previewPhoto.url === pUrl;
+                                        return (
+                                            <button
+                                                key={pIdx}
+                                                type="button"
+                                                onClick={() => setPreviewPhoto(prev => ({ ...prev, url: pUrl }))}
+                                                className={`w-16 h-12 rounded-lg border-2 overflow-hidden shrink-0 transition-all cursor-pointer ${
+                                                    isSelected ? 'border-[#FF3B30] scale-105' : 'border-transparent opacity-70 hover:opacity-100'
+                                                }`}
+                                            >
+                                                <img src={pUrl} alt={`Photo ${pIdx + 1}`} className="w-full h-full object-cover" />
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Footer Controls */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                            <a
+                                href={previewPhoto.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-red-500 transition-colors"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Open Full Resolution</span>
+                            </a>
+
+                            <div className="flex items-center gap-2">
+                                {previewPhoto.booking && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const b = previewPhoto.booking;
+                                            setPreviewPhoto(null);
+                                            setComparisonBooking(b);
+                                        }}
+                                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                                    >
+                                        Compare Pickup vs Return
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewPhoto(null)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 transition-colors cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Test Email Modal Dialog */}

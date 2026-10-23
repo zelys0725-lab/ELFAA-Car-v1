@@ -7,6 +7,7 @@ import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
 import ModernHero from '@/Components/ModernHero';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import { showSwal } from '@/Components/AlertModal';
 
 export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] }) {
     const { settings } = usePage().props;
@@ -54,10 +55,31 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const handleBookClick = (vehicle) => {
+    const handleBookClick = async (vehicle) => {
         if (!auth.user) {
-            setSelectedVehicle(vehicle);
-            setShowAuthModal(true);
+            // Use SweetAlert2 for a premium auth prompt
+            const loginUrl = route('login');
+            const registerUrl = route('register');
+            const result = await import('sweetalert2').then(({ default: Swal }) => {
+                const isDark = document.documentElement.classList.contains('dark');
+                return Swal.fire({
+                    icon: 'info',
+                    title: `Book <strong>${vehicle.name}</strong>?`,
+                    html: `
+                        <p style="font-size:13px;color:${isDark ? '#a1a1aa' : '#52525b'};margin-bottom:16px">
+                            To reserve the <strong style="color:${isDark ? '#fff' : '#18181b'}">${vehicle.name}</strong>, you need an ELFAA customer account.
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:10px">
+                            <a href="${loginUrl}" style="display:block;padding:10px 0;background:#FF3B30;color:#fff;border-radius:10px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.08em;text-decoration:none">Login to Account</a>
+                            <a href="${registerUrl}" style="display:block;padding:10px 0;background:${isDark ? '#27272a' : '#f4f4f5'};color:${isDark ? '#fff' : '#18181b'};border:1px solid ${isDark ? '#3f3f46' : '#e4e4e7'};border-radius:10px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.08em;text-decoration:none">Create New Account</a>
+                        </div>`,
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    background: isDark ? '#18181b' : '#ffffff',
+                    color: isDark ? '#f4f4f5' : '#18181b',
+                    customClass: { popup: 'elfaa-swal-popup' },
+                });
+            });
         } else {
             // Logged in, redirect to renter dashboard booking modal
             window.location.href = '/client/dashboard?select_vehicle=' + vehicle.id;

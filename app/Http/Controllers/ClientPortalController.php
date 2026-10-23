@@ -28,7 +28,7 @@ class ClientPortalController extends Controller
 
         // Feed data to renter workspace
         $bookings = Booking::where('user_id', $user->id)
-            ->with(['vehicle', 'rating'])
+            ->with(['vehicle', 'rating', 'inspections.inspector'])
             ->orderBy('created_at', 'desc')
             ->get();
 

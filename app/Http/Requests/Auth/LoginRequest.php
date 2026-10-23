@@ -43,10 +43,22 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), 900); // Lock for 15 minutes (900 seconds)
+
+            if (RateLimiter::attempts($this->throttleKey()) >= 3) {
+                event(new Lockout($this));
+                $seconds = RateLimiter::availableIn($this->throttleKey());
+                $minutes = max(1, ceil($seconds / 60));
+
+                throw ValidationException::withMessages([
+                    'email' => "Brute-force protection triggered: 3 failed login attempts reached. Your account has been temporarily locked for {$minutes} minutes for security.|seconds:{$seconds}",
+                ]);
+            }
+
+            $attemptsLeft = RateLimiter::retriesLeft($this->throttleKey(), 3);
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => "Invalid email or password. Warning: {$attemptsLeft} attempt" . ($attemptsLeft === 1 ? '' : 's') . " remaining before temporary account lockout.",
             ]);
         }
 
@@ -60,19 +72,17 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 3)) {
             return;
         }
 
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        $minutes = max(1, ceil($seconds / 60));
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]) . '|seconds:' . $seconds,
+            'email' => "Brute-force protection triggered: 3 failed login attempts reached. Your account has been temporarily locked for {$minutes} minutes for security.|seconds:{$seconds}",
         ]);
     }
 

@@ -147,7 +147,7 @@ export default function CustomerAvailabilityPicker({ vehicle, startDate, endDate
                     <span>Reserved</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
                     <span>Rented</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -185,7 +185,7 @@ export default function CustomerAvailabilityPicker({ vehicle, startDate, endDate
 
                         let bgClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
                         if (status === 'reserved') bgClass = "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30";
-                        if (status === 'rented') bgClass = "bg-sky-500/20 text-sky-700 dark:text-sky-400 border-sky-500/30";
+                        if (status === 'rented') bgClass = "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30";
                         if (status === 'maintenance') bgClass = "bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30";
                         if (status === 'unavailable') bgClass = "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 opacity-60";
 

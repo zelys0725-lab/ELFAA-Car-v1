@@ -5,7 +5,7 @@ import TextInput from '@/Components/TextInput';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2, ShieldAlert, Clock } from 'lucide-react';
 
 const CAROUSEL_IMAGES = [
     {
@@ -37,6 +37,14 @@ export default function Login({ status, canResetPassword }) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [countdown, setCountdown] = useState(0);
+    const [showBruteForceModal, setShowBruteForceModal] = useState(false);
+
+    // Format seconds into MM:SS
+    const formatTimeRemaining = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    };
 
     // Parse seconds remaining from throttle error message (appended as '|seconds:N')
     const rawEmailError = errors.email || '';
@@ -45,11 +53,12 @@ export default function Login({ status, canResetPassword }) {
     const isDeactivated = rawEmailError === 'Your account has been deactivated. Please contact support.';
     const displayEmailError = isThrottled ? rawEmailError.split('|seconds:')[0].trim() : rawEmailError;
 
-    // Start countdown when throttle error is received
+    // Start countdown and trigger modal when throttle error is received
     useEffect(() => {
         if (isThrottled) {
-            const secs = parseInt(rawEmailError.split('|seconds:')[1] || '60', 10);
+            const secs = parseInt(rawEmailError.split('|seconds:')[1] || '900', 10);
             setCountdown(secs);
+            setShowBruteForceModal(true);
         }
     }, [rawEmailError]);
 
@@ -158,28 +167,84 @@ export default function Login({ status, canResetPassword }) {
                         </div>
                     )}
 
+                    {/* Brute-Force Protection Security Pop-Up Modal */}
+                    {showBruteForceModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+                            <div className="bg-white dark:bg-zinc-900 border-2 border-red-500/60 rounded-2xl max-w-md w-full p-6 text-zinc-900 dark:text-white shadow-2xl relative space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-[#FF3B30] shrink-0">
+                                        <ShieldAlert className="w-6 h-6 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/15 text-[#FF3B30] border border-red-500/30">
+                                            Brute-Force Protection
+                                        </span>
+                                        <h3 className="text-base font-black uppercase tracking-wide text-zinc-900 dark:text-white mt-1">
+                                            Account Temporarily Locked
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                                    You have exceeded <strong>3 failed login attempts</strong>. To protect your account against unauthorized brute-force attacks, signing in has been temporarily suspended for <strong>15 minutes</strong>.
+                                </p>
+
+                                {/* Countdown visualizer inside modal */}
+                                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                                        <Clock className="w-4 h-4 text-[#FF3B30]" />
+                                        <span>Unlock In:</span>
+                                    </div>
+                                    <div className="text-xl font-black font-mono text-[#FF3B30] tabular-nums">
+                                        {formatTimeRemaining(countdown)}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBruteForceModal(false)}
+                                        className="w-full py-2.5 px-4 bg-[#FF3B30] hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-red-500/20 cursor-pointer"
+                                    >
+                                        I Understand
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Rate-limit lockout banner with live countdown */}
                     {isThrottled && (
-                        <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-bold text-[#FF3B30]">
-                            <div className="flex items-center gap-2 mb-2">
-                                <AlertCircle className="w-4 h-4 shrink-0" />
-                                <span>Too many failed attempts. Please wait before trying again.</span>
+                        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-bold text-[#FF3B30]">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                    <span>3 failed attempts reached. Account temporarily locked.</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBruteForceModal(true)}
+                                    className="text-[10px] underline font-bold uppercase hover:text-red-700 dark:hover:text-red-300 cursor-pointer"
+                                >
+                                    Details
+                                </button>
                             </div>
                             {countdown > 0 && (
-                                <div className="flex items-center gap-2 mt-1">
-                                    <div className="flex-1 h-1.5 bg-rose-500/20 rounded-full overflow-hidden">
+                                <div className="space-y-1.5 mt-2">
+                                    <div className="flex items-center justify-between text-[11px] font-mono">
+                                        <span className="text-zinc-500 dark:text-zinc-400 font-bold">Lockout remaining:</span>
+                                        <span className="font-black text-[#FF3B30]">{formatTimeRemaining(countdown)}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-rose-500/20 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-[#FF3B30] rounded-full transition-all duration-1000"
-                                            style={{ width: `${(countdown / 60) * 100}%` }}
+                                            style={{ width: `${Math.min(100, (countdown / 900) * 100)}%` }}
                                         />
                                     </div>
-                                    <span className="text-[11px] font-black tabular-nums shrink-0">
-                                        {countdown}s remaining
-                                    </span>
                                 </div>
                             )}
                             {countdown === 0 && (
-                                <span className="text-emerald-500 text-[11px] font-black">✓ You may try again now.</span>
+                                <span className="text-emerald-500 text-[11px] font-black">✓ Lockout ended. You may try logging in again.</span>
                             )}
                         </div>
                     )}

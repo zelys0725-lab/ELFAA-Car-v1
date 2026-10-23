@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ELFAA Car Rental — Hostinger Production Deployment & Costing Guide</title>
+    <meta name="description" content="Complete step-by-step production deployment guide for ELFAA Car Rental on Hostinger VPS, including Tesseract OCR installation, Nginx, SSL, and full cost breakdown." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --brand: #FF3B30;
+            --brand-glow: rgba(255, 59, 48, 0.18);
+            --brand-dim:  rgba(255, 59, 48, 0.08);
+            --teal:       #14b8a6;
+            --teal-glow:  rgba(20, 184, 166, 0.18);
+            --teal-dim:   rgba(20, 184, 166, 0.08);
+            --purple:     #8b5cf6;
+            --bg:         #0a0a0b;
+            --bg-2:       #111114;
+            --bg-3:       #18181c;
+            --bg-card:    #1a1a1f;
+            --border:     rgba(255,255,255,0.07);
+            --border-2:   rgba(255,255,255,0.12);
+            --text:       #f4f4f5;
+            --text-2:     #a1a1aa;
+            --text-3:     #71717a;
+            --shadow:     rgba(0,0,0,0.6);
+        }
+        [data-theme="light"] {
+            --bg:         #f9fafb;
+            --bg-2:       #f3f4f6;
+            --bg-3:       #e5e7eb;
+            --bg-card:    #ffffff;
+            --border:     rgba(0,0,0,0.07);
+            --border-2:   rgba(0,0,0,0.12);
+            --text:       #111827;
+            --text-2:     #374151;
+            --text-3:     #6b7280;
+            --shadow:     rgba(0,0,0,0.08);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--brand); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--bg-3); padding: 0.1em 0.35em; border-radius: 4px; }
+
+        .wrapper { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* Topbar */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,10,11,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+        }
+        [data-theme="light"] .topbar { background: rgba(249,250,251,0.92); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .topbar-logo { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text); }
+        .logo-badge { width: 32px; height: 32px; background: var(--brand); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: 900; box-shadow: 0 0 12px var(--brand-glow); }
+        .btn-theme { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 999px; font-size: 0.75rem; font-weight: 700; color: var(--text-2); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
+        .btn-theme:hover { color: var(--text); border-color: var(--brand); }
+
+        /* Hero */
+        .hero { padding: 4.5rem 0 3rem; text-align: center; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(ellipse, rgba(20,184,166,0.12) 0%, transparent 65%); pointer-events: none; }
+        .hero-eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); background: var(--teal-dim); border: 1px solid rgba(20,184,166,0.2); padding: 0.3rem 0.9rem; border-radius: 999px; margin-bottom: 1.5rem; }
+        .hero-eyebrow span { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1rem; }
+        .hero h1 .accent { color: var(--teal); }
+        .hero p { font-size: 1.05rem; color: var(--text-2); max-width: 680px; margin: 0 auto 2rem; }
+        .toc-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+        .toc-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.45rem 0.9rem; border-radius: 999px; border: 1px solid var(--border-2); background: var(--bg-card); color: var(--text-2); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .toc-chip:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); text-decoration: none; }
+
+        /* Section */
+        .section { padding: 4rem 0; border-top: 1px solid var(--border); }
+        .section-label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); margin-bottom: 0.75rem; }
+        .section-label::before { content: ''; display: block; width: 16px; height: 2px; background: var(--teal); border-radius: 99px; }
+        .section h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+        .section-intro { font-size: 0.975rem; color: var(--text-2); max-width: 720px; margin-bottom: 2.5rem; }
+
+        /* Cards & Grid */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; transition: border-color 0.2s, box-shadow 0.2s; }
+        .card:hover { border-color: var(--border-2); box-shadow: 0 4px 30px var(--shadow); }
+        .card.featured { border-color: rgba(20,184,166,0.3); background: linear-gradient(135deg, rgba(20,184,166,0.06), var(--bg-card)); }
+        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; font-size: 1.35rem; }
+        .card-icon.teal  { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+        .card-icon.red   { background: rgba(255,59,48,0.15); color: #ff6b6b; }
+        .card-icon.green { background: rgba(16,185,129,0.15); color: #34d399; }
+        .card-icon.blue  { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .card-icon.purple{ background: rgba(139,92,246,0.15); color: #a78bfa; }
+        .card h3 { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.01em; margin-bottom: 0.5rem; }
+        .card p { font-size: 0.88rem; color: var(--text-2); line-height: 1.65; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-top: 1rem; }
+        .data-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 0.85rem 1rem; color: var(--text-2); border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: var(--bg-2); }
+        .data-table td strong { color: var(--text); font-weight: 700; }
+        .price-tag { font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #34d399; }
+
+        /* Pipeline Steps */
+        .pipeline { display: flex; flex-direction: column; gap: 0; }
+        .pipeline-step { display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.75rem 0; }
+        .step-num-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+        .step-num { width: 42px; height: 42px; border-radius: 50%; background: var(--teal); color: #000; font-size: 0.85rem; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 16px var(--teal-glow); z-index: 2; }
+        .step-line { flex: 1; width: 2px; background: linear-gradient(to bottom, var(--teal), transparent); margin-top: 6px; min-height: 50px; }
+        .step-content { flex: 1; padding-top: 0.2rem; }
+        .step-content h4 { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.01em; margin-bottom: 0.4rem; color: var(--text); }
+        .step-content p { font-size: 0.88rem; color: var(--text-2); line-height: 1.65; margin-bottom: 0.75rem; }
+
+        /* Code block */
+        .code-block {
+            background: #0d0d10;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.1rem 1.4rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #34d399;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 0.85rem 0;
+            line-height: 1.75;
+            position: relative;
+        }
+        .code-block .dim    { color: #6b7280; }
+        .code-block .yellow { color: #fbbf24; }
+        .code-block .blue   { color: #93c5fd; }
+        .code-block .purple { color: #c4b5fd; }
+
+        /* Note box */
+        .note-box { display: flex; gap: 0.85rem; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid; font-size: 0.85rem; line-height: 1.65; margin-top: 1.5rem; }
+        .note-box.info   { background: rgba(20,184,166,0.07); border-color: rgba(20,184,166,0.2); color: #5eead4; }
+        .note-box.warn   { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.2); color: #fcd34d; }
+        .note-box.green  { background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.2); color: #6ee7b7; }
+        .note-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* Badge */
+        .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.25rem 0.65rem; border-radius: 999px; border: 1px solid; }
+        .badge.green  { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.25); color: #34d399; }
+        .badge.teal   { background: rgba(20,184,166,0.1); border-color: rgba(20,184,166,0.25); color: #2dd4bf; }
+        .badge.amber  { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fbbf24; }
+
+        /* Footer */
+        .footer { padding: 3rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-3); font-size: 0.85rem; }
+        .footer strong { color: var(--teal); }
+    </style>
+</head>
+<body>
+
+<nav class="topbar">
+    <div class="wrapper topbar-inner">
+        <div class="topbar-logo">
+            <div class="logo-badge">E</div>
+            ELFAA Production Deployment
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <a href="/guidelines.html" style="font-size: 0.75rem; font-weight: 700; color: var(--text-2); padding: 0.35rem 0.8rem; text-decoration: none;">📖 Guidelines</a>
+            <a href="/gps-guide.html" style="font-size: 0.75rem; font-weight: 700; color: #14b8a6; background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); padding: 0.35rem 0.8rem; border-radius: 999px; text-decoration: none;">🛰️ GPS Guide</a>
+            <button class="btn-theme" onclick="toggleTheme()" id="themeBtn">☀️ Light Mode</button>
+        </div>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="wrapper">
+        <div class="hero-eyebrow"><span></span> Live Production &amp; Hosting Architecture</div>
+        <h1>Deploying <span class="accent">ELFAA</span> on Hostinger</h1>
+        <p>Complete deployment blueprint: full hosting &amp; API cost estimates (PHP / USD), server provisioning, Tesseract OCR setup on Linux, Nginx reverse proxy, and free SSL.</p>
+        <div class="toc-chips">
+            <a href="#costing"       class="toc-chip">💰 Complete Costing</a>
+            <a href="#vps-vs-shared" class="toc-chip">⚖️ VPS vs Shared</a>
+            <a href="#prerequisites" class="toc-chip">📦 Server Prerequisites</a>
+            <a href="#steps"         class="toc-chip">🚀 Step-by-Step Deployment</a>
+            <a href="#nginx"         class="toc-chip">🌐 Nginx &amp; SSL Config</a>
+            <a href="#maintenance"   class="toc-chip">🛡️ Maintenance &amp; Updates</a>
+        </div>
+    </div>
+</header>
+
+<!-- COSTING -->
+<section class="section" id="costing">
+    <div class="wrapper">
+        <div class="section-label">Financial Breakdown</div>
+        <h2>Complete Live Costing (PHP / USD)</h2>
+        <p class="section-intro">Because ELFAA is engineered with open-source technologies (Tesseract OCR, Leaflet, OpenStreetMap, and SQLite/MySQL), <strong>there are zero recurring AI or map API bills</strong>. Your only ongoing expense is the web server and your domain.</p>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Recommended Provider</th>
+                    <th>Specifications</th>
+                    <th>Estimated Cost (USD)</th>
+                    <th>Estimated Cost (PHP)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Hosting Server (VPS)</strong></td>
+                    <td><strong>Hostinger KVM 1 or KVM 2</strong></td>
+                    <td>1–2 vCPU, 4–8 GB RAM, 50–100 GB NVMe, Ubuntu 24.04</td>
+                    <td class="price-tag">$5.49 – $6.99 / mo</td>
+                    <td class="price-tag">₱320 – ₱410 / mo</td>
+                </tr>
+                <tr>
+                    <td><strong>Domain Name (.com)</strong></td>
+                    <td>Hostinger / Namecheap</td>
+                    <td>e.g. <code>elfaacarrental.com</code> (Free 1st yr on Hostinger)</td>
+                    <td class="price-tag">$9.99 / yr</td>
+                    <td class="price-tag">₱580 / yr (~₱48/mo)</td>
+                </tr>
+                <tr>
+                    <td><strong>Domain Name (.ph)</strong> <em>(Optional)</em></td>
+                    <td>DotPH / Hostinger</td>
+                    <td>Philippine country code top-level domain</td>
+                    <td class="price-tag">$35.00 / yr</td>
+                    <td class="price-tag">₱2,050 / yr (~₱170/mo)</td>
+                </tr>
+                <tr>
+                    <td><strong>AI Document OCR Engine</strong></td>
+                    <td><strong>Tesseract OCR</strong> (Local Binary)</td>
+                    <td>Runs natively on server CPU. Unlimited document scans.</td>
+                    <td class="price-tag" style="color:#34d399;">$0.00 (FREE)</td>
+                    <td class="price-tag" style="color:#34d399;">₱0.00 (FREE)</td>
+                </tr>
+                <tr>
+                    <td><strong>GPS Fleet Map &amp; Tracking</strong></td>
+                    <td><strong>Leaflet + OpenStreetMap</strong></td>
+                    <td>Self-hosted telemetry, no Google Maps API keys required</td>
+                    <td class="price-tag" style="color:#34d399;">$0.00 (FREE)</td>
+                    <td class="price-tag" style="color:#34d399;">₱0.00 (FREE)</td>
+                </tr>
+                <tr>
+                    <td><strong>SSL Certificate (HTTPS)</strong></td>
+                    <td><strong>Let's Encrypt / Certbot</strong></td>
+                    <td>Automated SSL renewal, A+ security rating</td>
+                    <td class="price-tag" style="color:#34d399;">$0.00 (FREE)</td>
+                    <td class="price-tag" style="color:#34d399;">₱0.00 (FREE)</td>
+                </tr>
+                <tr>
+                    <td><strong>Database</strong></td>
+                    <td><strong>MySQL 8.0 or SQLite</strong></td>
+                    <td>Included inside VPS container</td>
+                    <td class="price-tag" style="color:#34d399;">$0.00 (FREE)</td>
+                    <td class="price-tag" style="color:#34d399;">₱0.00 (FREE)</td>
+                </tr>
+                <tr>
+                    <td><strong>Email Notification (SMTP)</strong></td>
+                    <td>Google Workspace / Resend / Brevo</td>
+                    <td>Transaction receipts &amp; booking updates (Free tiers: 300/day)</td>
+                    <td class="price-tag" style="color:#34d399;">$0.00 (FREE)</td>
+                    <td class="price-tag" style="color:#34d399;">₱0.00 (FREE)</td>
+                </tr>
+                <tr>
+                    <td><strong>SMS Notifications</strong> <em>(Optional)</em></td>
+                    <td>Semaphore Philippines API</td>
+                    <td>Automated SMS confirmations for Philippine mobile numbers</td>
+                    <td class="price-tag">Pay per SMS</td>
+                    <td class="price-tag">~₱0.50 per SMS</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note-box green">
+            <div class="note-icon">💡</div>
+            <div>
+                <strong>Total Estimated Monthly Run Rate:</strong> Only <strong>~$6.00 / month (approx. ₱350 PHP / month)</strong> to run the entire ELFAA ecosystem including live GPS telematics, AI document scanning, automated reviews, and high-performance React frontends.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- VPS VS SHARED -->
+<section class="section" id="vps-vs-shared">
+    <div class="wrapper">
+        <div class="section-label">Architecture Selection</div>
+        <h2>Why Hostinger VPS is Required for ELFAA</h2>
+        <p class="section-intro">When ordering your hosting on Hostinger, choose <strong>KVM VPS Hosting</strong> rather than Shared Web Hosting. Here is why:</p>
+
+        <div class="grid-2">
+            <div class="card featured">
+                <div class="card-icon teal">⚡</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                    <h3>Hostinger KVM VPS</h3>
+                    <span class="badge green">Recommended</span>
+                </div>
+                <p>A private virtual machine running Ubuntu Linux with full <code>root</code> administrative privileges.</p>
+                <ul style="margin-top:1rem;list-style:none;display:flex;flex-direction:column;gap:0.5rem;font-size:0.85rem;color:var(--text-2);">
+                    <li>✅ <strong>Native Tesseract OCR:</strong> Install in seconds via <code>apt install tesseract-ocr</code>.</li>
+                    <li>✅ <strong>Background Workers:</strong> Run Laravel Queue &amp; Schedule runners continuously.</li>
+                    <li>✅ <strong>Real-time Telemetry:</strong> High-frequency GPS ping ingestion without timeout limitations.</li>
+                    <li>✅ <strong>Inertia/Vite Build:</strong> Run Node.js and NPM directly on the server.</li>
+                    <li>✅ <strong>Full Isolation:</strong> Dedicated RAM &amp; CPU ensure rapid OCR image analysis.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-icon red">⚠️</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                    <h3>Hostinger Shared Hosting (cPanel)</h3>
+                    <span class="badge amber">Not Recommended</span>
+                </div>
+                <p>Standard web hosting where server resources are shared among hundreds of websites.</p>
+                <ul style="margin-top:1rem;list-style:none;display:flex;flex-direction:column;gap:0.5rem;font-size:0.85rem;color:var(--text-2);">
+                    <li>❌ <strong>No Root / Sudo Access:</strong> Cannot install system packages like Tesseract.</li>
+                    <li>❌ <strong>Restricted Shell:</strong> <code>proc_open</code> and <code>exec</code> are frequently blocked.</li>
+                    <li>❌ <strong>No Daemon Processes:</strong> Cannot keep persistent GPS websockets or workers alive.</li>
+                    <li>❌ <strong>Strict Execution Timeouts:</strong> Large document OCR analysis will hit 30s gateway timeouts.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STEP BY STEP -->
+<section class="section" id="steps">
+    <div class="wrapper">
+        <div class="section-label">Deployment Roadmap</div>
+        <h2>Step-by-Step Hostinger VPS Deployment</h2>
+        <p class="section-intro">Follow this exact sequence to deploy your production ELFAA instance from your GitHub repository onto a fresh Hostinger Ubuntu VPS.</p>
+
+        <div class="pipeline">
+
+            <!-- STEP 1 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">1</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Connect to Your Hostinger VPS via SSH</h4>
+                    <p>Open your local terminal (PowerShell, Command Prompt, or macOS Terminal) and connect using the IP address and password provided in your Hostinger dashboard:</p>
+                    <div class="code-block"><span class="dim"># Replace with your Hostinger VPS IP address</span>
+ssh root@YOUR_SERVER_IP</div>
+                </div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">2</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Update Packages &amp; Install System Stack</h4>
+                    <p>Install Nginx, PHP 8.2 (with all required Laravel extensions), Git, Composer, and Node.js:</p>
+                    <div class="code-block"><span class="dim"># Update apt package index</span>
+sudo apt update &amp;&amp; sudo apt upgrade -y
+
+<span class="dim"># Install Nginx, Git, Unzip, and Curl</span>
+sudo apt install -y nginx git unzip curl software-properties-common
+
+<span class="dim"># Install PHP 8.2 and extensions</span>
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt update
+sudo apt install -y php8.2-fpm php8.2-cli php8.2-mbstring php8.2-xml \
+php8.2-curl php8.2-sqlite3 php8.2-mysql php8.2-zip php8.2-gd php8.2-intl
+
+<span class="dim"># Install Composer globally</span>
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+
+<span class="dim"># Install Node.js 20.x &amp; NPM for React/Vite compilation</span>
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs</div>
+                </div>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">3</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Install Tesseract OCR Engine on Linux</h4>
+                    <p>This is where the magic happens! On Ubuntu Linux, Tesseract and the English training data are installed in one command:</p>
+                    <div class="code-block"><span class="dim"># Install Tesseract OCR &amp; language data</span>
+sudo apt install -y tesseract-ocr tesseract-ocr-eng
+
+<span class="dim"># Verify installation</span>
+tesseract --version
+which tesseract
+<span class="blue"># Expected output: /usr/bin/tesseract</span></div>
+                    <div class="note-box info">
+                        <div class="note-icon">ℹ️</div>
+                        <div>
+                            <strong>Automatic Detection:</strong> ELFAA's <code>TesseractOcrService.php</code> already includes <code>/usr/bin/tesseract</code> in its search candidate list. You do not need to rewrite any OCR code!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">4</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Clone Your ELFAA Repository</h4>
+                    <p>Clone the project into <code>/var/www/elfaa</code> and set up proper permissions:</p>
+                    <div class="code-block"><span class="dim"># Navigate to web root</span>
+cd /var/www
+
+<span class="dim"># Clone from your GitHub repository</span>
+git clone https://github.com/zelys0725-lab/ELFAA-Car-v1.git elfaa
+cd /var/www/elfaa
+
+<span class="dim"># Install PHP dependencies without dev packages</span>
+composer install --no-dev --optimize-autoloader
+
+<span class="dim"># Install frontend packages and build React production assets</span>
+npm install
+npm run build</div>
+                </div>
+            </div>
+
+            <!-- STEP 5 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">5</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Configure Production Environment (.env)</h4>
+                    <p>Create your production environment file and configure database and Tesseract paths:</p>
+                    <div class="code-block"><span class="dim"># Copy example environment</span>
+cp .env.example .env
+
+<span class="dim"># Generate application encryption key</span>
+php artisan key:generate
+
+<span class="dim"># Edit your .env with nano or vim</span>
+nano .env</div>
+                    <p>Ensure these specific values are set inside <code>/var/www/elfaa/.env</code>:</p>
+                    <div class="code-block"><span class="yellow">APP_ENV</span>=production
+<span class="yellow">APP_DEBUG</span>=false
+<span class="yellow">APP_URL</span>=https://yourdomain.com
+
+<span class="yellow">TESSERACT_PATH</span>="/usr/bin/tesseract"
+<span class="yellow">TESSERACT_TIMEOUT</span>=60
+
+<span class="dim"># Database (SQLite is fastest for single-server, or use MySQL)</span>
+<span class="yellow">DB_CONNECTION</span>=sqlite</div>
+                </div>
+            </div>
+
+            <!-- STEP 6 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">6</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Database Migrations &amp; Permissions</h4>
+                    <p>Create the database, run migrations, create storage symlinks, and grant Nginx permissions:</p>
+                    <div class="code-block"><span class="dim"># For SQLite: create empty database file if not present</span>
+touch database/database.sqlite
+
+<span class="dim"># Run production migrations</span>
+php artisan migrate --force
+
+<span class="dim"># Create storage symlink for uploaded images/documents</span>
+php artisan storage:link
+
+<span class="dim"># Clear and optimize configuration cache</span>
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+<span class="dim"># Set web server permissions</span>
+sudo chown -R www-data:www-data /var/www/elfaa/storage /var/www/elfaa/bootstrap/cache /var/www/elfaa/database
+sudo chmod -R 775 /var/www/elfaa/storage /var/www/elfaa/bootstrap/cache</div>
+                </div>
+            </div>
+
+            <!-- STEP 7 -->
+            <div class="pipeline-step">
+                <div class="step-num-wrap"><div class="step-num">7</div><div class="step-line"></div></div>
+                <div class="step-content">
+                    <h4>Verify OCR with Diagnostic Command</h4>
+                    <p>Test that the production server detects Tesseract and can process documents:</p>
+                    <div class="code-block">php artisan tesseract:check</div>
+                    <p>You should see:</p>
+                    <div class="code-block"><span class="blue">=== Tesseract OCR Diagnostic Check ===</span>
+1. Configured path (.env / config): /usr/bin/tesseract
+   <span class="yellow">[OK]</span> Detected binary: /usr/bin/tesseract
+   <span class="yellow">[OK]</span> Binary file exists.
+   <span class="yellow">[OK]</span> Version: tesseract 5.3.x / 5.4.x
+   <span class="yellow">[OK]</span> Installed Languages: eng, osd
+<span class="blue">=== Diagnostic Complete: Tesseract OCR is working properly! ===</span></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- NGINX & SSL -->
+<section class="section" id="nginx">
+    <div class="wrapper">
+        <div class="section-label">Web Server &amp; Security</div>
+        <h2>Nginx Virtual Host &amp; Free Let's Encrypt SSL</h2>
+        <p class="section-intro">Configure Nginx to serve your application securely over HTTPS with HTTP/2 and modern caching headers.</p>
+
+        <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:0.75rem;">1. Create Nginx Configuration</h3>
+        <p style="font-size:0.88rem;color:var(--text-2);margin-bottom:0.5rem;">Create a configuration file at <code>/etc/nginx/sites-available/elfaa</code>:</p>
+        <div class="code-block"><span class="dim"># Open file in nano</span>
+sudo nano /etc/nginx/sites-available/elfaa</div>
+        <p style="font-size:0.88rem;color:var(--text-2);margin-top:0.75rem;margin-bottom:0.5rem;">Paste the following optimized configuration (replace <code>yourdomain.com</code> with your domain):</p>
+        <div class="code-block">server {
+    listen 80;
+    server_name <span class="yellow">yourdomain.com www.yourdomain.com</span>;
+    root <span class="blue">/var/www/elfaa/public</span>;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+    charset utf-8;
+
+    client_max_body_size 25M;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}</div>
+
+        <h3 style="font-size:0.95rem;font-weight:800;margin-top:2rem;margin-bottom:0.75rem;">2. Enable Site &amp; Issue Free SSL Certificate</h3>
+        <div class="code-block"><span class="dim"># Enable site configuration</span>
+sudo ln -s /etc/nginx/sites-available/elfaa /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+
+<span class="dim"># Test Nginx syntax</span>
+sudo nginx -t
+
+<span class="dim"># Reload Nginx</span>
+sudo systemctl reload nginx
+
+<span class="dim"># Install Certbot and obtain free SSL certificate</span>
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com</div>
+        <div class="note-box green">
+            <div class="note-icon">🔒</div>
+            <div>
+                <strong>Automatic HTTPS:</strong> Certbot will automatically configure the SSL certificate, rewrite your Nginx configuration, and install a cronjob to renew the SSL certificate every 90 days completely free of charge.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MAINTENANCE -->
+<section class="section" id="maintenance">
+    <div class="wrapper">
+        <div class="section-label">Day-to-Day Operations</div>
+        <h2>How to Push Updates from Local to Production</h2>
+        <p class="section-intro">Once your application is live, updating it with new code from your local machine takes less than 30 seconds:</p>
+
+        <div class="code-block"><span class="dim"># 1. On your local machine: commit &amp; push changes</span>
+git add .
+git commit -m "Enhance ID verification and fleet features"
+git push origin main
+
+<span class="dim"># 2. SSH into your Hostinger VPS</span>
+ssh root@YOUR_SERVER_IP
+
+<span class="dim"># 3. Pull updates and optimize</span>
+cd /var/www/elfaa
+git pull origin main
+npm install &amp;&amp; npm run build
+php artisan migrate --force
+php artisan optimize:clear
+php artisan optimize</div>
+
+        <div class="note-box info" style="margin-top:2rem;">
+            <div class="note-icon">🚀</div>
+            <div>
+                <strong>Go-Live Readiness:</strong> With Tesseract OCR running directly on the Hostinger VPS, your users can upload Philippine Driver's Licenses, Passports, and Billing Proofs from any phone or computer worldwide, and your server will instantly process them with 0 reliance on third-party cloud AI vendors!
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="wrapper">
+        <p>© 2026 <strong>ELFAA Car Rental</strong>. Production Deployment &amp; Telematics Documentation.</p>
+    </div>
+</footer>
+
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+</script>
+
+</body>
+</html>
