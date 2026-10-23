@@ -218,6 +218,30 @@ class AdminPortalController extends Controller
         return redirect()->route('admin.dashboard')->with('success', "User account \"{$user->name}\" has been unlocked and restored to active.");
     }
 
+    /**
+     * Change a user's system role (Admin Only).
+     * Prevents admin from changing their own role.
+     */
+    public function updateUserRole(Request $request, User $user)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action. Only admins can change user roles.');
+        }
+
+        if ($user->id === Auth::id()) {
+            return back()->withErrors(['role' => 'You cannot change your own system role.']);
+        }
+
+        $request->validate([
+            'role' => 'required|in:client,staff,admin',
+        ]);
+
+        $oldRole = $user->role;
+        $user->update(['role' => $request->role]);
+
+        return redirect()->route('admin.dashboard')->with('success', "User \"{$user->name}\" role changed from {$oldRole} to {$request->role}.");
+    }
+
 
     /**
      * Approve, reject, or request resubmission for identity verifications with audit logging.

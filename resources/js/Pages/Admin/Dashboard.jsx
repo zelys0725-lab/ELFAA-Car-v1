@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
@@ -23,8 +23,27 @@ import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Se
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
     const { settings } = usePage().props;
-    const [activeTab, setActiveTab] = useState('analytics');
+    const { url } = usePage();
+
+    const validTabs = [
+        'analytics', 'gps_fleet', 'bookings', 'daily_schedule', 'calendar',
+        'verifications', 'bill_records', 'vehicles', 'promos', 'reports',
+        'profit_analytics', 'users', 'payment_settings', 'settings'
+    ];
+    const validSubTabs = ['branding', 'smtp', 'sms', 'mfa', 'payment', 'account'];
+
+    const getInitialParam = (param, validList, fallback) => {
+        if (typeof window === 'undefined') return fallback;
+        const val = new URLSearchParams(window.location.search).get(param);
+        return validList.includes(val) ? val : fallback;
+    };
+
+    const [activeTab, setActiveTab] = useState(() => getInitialParam('tab', validTabs, 'analytics'));
     const [subFilter, setSubFilter] = useState('all');
+
+    // User Role Editing State
+    const [roleEditingUser, setRoleEditingUser] = useState(null); // user id being edited
+    const [roleDraft, setRoleDraft] = useState('');
 
     // Payment History Modal State
     const [paymentHistoryBooking, setPaymentHistoryBooking] = useState(null);
@@ -74,9 +93,23 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
     // Site & Provider Settings Form State
-    const [settingsSubTab, setSettingsSubTab] = useState('branding'); // 'branding' | 'smtp' | 'sms'
+    const [settingsSubTab, setSettingsSubTab] = useState(() => getInitialParam('sub', validSubTabs, 'branding')); // 'branding' | 'smtp' | 'sms' | 'mfa' | 'payment' | 'account'
     const [showMailPassword, setShowMailPassword] = useState(false);
     const [showSmsApiKey, setShowSmsApiKey] = useState(false);
+
+    // Synchronize active tab and settings subtab when URL changes
+    useEffect(() => {
+        const search = url && url.includes('?') ? url.split('?')[1] : '';
+        const params = new URLSearchParams(search);
+        const tab = params.get('tab');
+        const sub = params.get('sub');
+        if (tab && validTabs.includes(tab)) {
+            setActiveTab(tab);
+        }
+        if (sub && validSubTabs.includes(sub)) {
+            setSettingsSubTab(sub);
+        }
+    }, [url]);
 
     // Test Email Modal State
     const [testEmailOpen, setTestEmailOpen] = useState(false);
@@ -321,6 +354,26 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             actionLabel: 'Unlock Account',
             actionClass: 'bg-green-600 hover:bg-green-700 text-white',
             onConfirm: () => router.post(route('admin.users.unlock', userId)),
+        });
+    };
+
+    const handleChangeRole = (userId, currentRole) => {
+        setRoleEditingUser(userId);
+        setRoleDraft(currentRole);
+    };
+
+    const submitRoleChange = (userId, userName) => {
+        if (!roleDraft) return;
+        showConfirm({
+            title: 'Change System Role',
+            message: `Change "${userName}"'s role to "${roleDraft}"? This affects their dashboard access and permissions immediately.`,
+            actionLabel: `Set as ${roleDraft}`,
+            actionClass: 'bg-[#FF3B30] hover:bg-red-700 text-white',
+            onConfirm: () => {
+                router.post(route('admin.users.update_role', userId), { role: roleDraft }, {
+                    onSuccess: () => setRoleEditingUser(null),
+                });
+            },
         });
     };
 
@@ -1399,6 +1452,40 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         <td className="py-3.5 px-4 text-right">
                                             {isAdmin && u.id !== auth.user.id && (
                                                 <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
+                                                    {/* Inline Role Editor */}
+                                                    {roleEditingUser === u.id ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <select
+                                                                value={roleDraft}
+                                                                onChange={e => setRoleDraft(e.target.value)}
+                                                                className="h-7 px-2 text-[10px] font-black uppercase rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:outline-none cursor-pointer"
+                                                            >
+                                                                <option value="client">Client</option>
+                                                                <option value="staff">Staff</option>
+                                                                <option value="admin">Admin</option>
+                                                            </select>
+                                                            <button
+                                                                onClick={() => submitRoleChange(u.id, u.name)}
+                                                                className="px-2 py-1 rounded text-[10px] font-black uppercase border bg-[#FF3B30]/10 border-[#FF3B30]/30 hover:bg-[#FF3B30]/20 text-[#FF3B30] transition-colors cursor-pointer"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setRoleEditingUser(null)}
+                                                                className="px-2 py-1 rounded text-[10px] font-black uppercase border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 transition-colors cursor-pointer"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleChangeRole(u.id, u.role)}
+                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer"
+                                                            title="Change system role"
+                                                        >
+                                                            ✏️ Role
+                                                        </button>
+                                                    )}
                                                     {/* Emergency Reset MFA */}
                                                     {u.mfa_enabled && (
                                                         <button
@@ -1582,9 +1669,87 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 <Zap className="w-4 h-4 text-[#FF3B30]" />
                                 Payment Gateways
                             </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setSettingsSubTab('account')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    settingsSubTab === 'account'
+                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                            >
+                                <Lock className="w-4 h-4 text-amber-500" />
+                                My Account
+                            </button>
                         </div>
 
-                        {settingsSubTab === 'mfa' ? (
+                        {settingsSubTab === 'account' ? (
+                            <div className="space-y-6">
+                                {/* My Account: Password Change */}
+                                <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left">
+                                    <CardHeader className="px-6 pt-5 pb-3">
+                                        <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                            <Lock className="w-4 h-4 text-amber-500" />
+                                            Change Password
+                                        </CardTitle>
+                                        <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                            Update your administrative login credentials to maintain secure system access.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <form onSubmit={submitPasswordChange}>
+                                        <CardContent className="space-y-4 px-6">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Current Password</label>
+                                                <Input
+                                                    type="password"
+                                                    value={passwordForm.data.current_password}
+                                                    onChange={e => passwordForm.setData('current_password', e.target.value)}
+                                                    required
+                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                />
+                                                {passwordForm.errors.current_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.current_password}</p>}
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">New Password</label>
+                                                    <Input
+                                                        type="password"
+                                                        value={passwordForm.data.new_password}
+                                                        onChange={e => passwordForm.setData('new_password', e.target.value)}
+                                                        required
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                    />
+                                                    {passwordForm.errors.new_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Confirm New Password</label>
+                                                    <Input
+                                                        type="password"
+                                                        value={passwordForm.data.new_password_confirmation}
+                                                        onChange={e => passwordForm.setData('new_password_confirmation', e.target.value)}
+                                                        required
+                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                    />
+                                                    {passwordForm.errors.new_password_confirmation && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password_confirmation}</p>}
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                        <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                            <Button
+                                                type="submit"
+                                                disabled={passwordForm.processing}
+                                                className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer"
+                                            >
+                                                {passwordForm.processing ? 'Updating...' : 'Update Password'}
+                                            </Button>
+                                        </CardFooter>
+                                    </form>
+                                </Card>
+                                {/* My Account: 2FA / MFA Management */}
+                                <MfaManagementCard authUser={auth.user} />
+                            </div>
+                        ) : settingsSubTab === 'mfa' ? (
                             <div className="space-y-6">
                                 <MfaSettingsSection settings={settings} />
                                 <MfaManagementCard authUser={auth.user} />

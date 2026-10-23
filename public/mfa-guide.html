@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ELFAA — Multi-Factor Authentication (MFA / 2FA) Guide</title>
+    <meta name="description" content="Complete step-by-step administrator and user setup guide for Multi-Factor Authentication (MFA / 2FA) on the ELFAA Car Rental platform." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --brand:       #FF3B30;
+            --brand-glow:  rgba(255,59,48,0.22);
+            --brand-dim:   rgba(255,59,48,0.08);
+            --sky:         #0ea5e9;
+            --sky-dim:     rgba(14,165,233,0.08);
+            --sky-glow:    rgba(14,165,233,0.2);
+            --violet:      #8b5cf6;
+            --violet-dim:  rgba(139,92,246,0.08);
+            --violet-glow: rgba(139,92,246,0.2);
+            --emerald:     #10b981;
+            --emerald-dim: rgba(16,185,129,0.08);
+            --emerald-glow:rgba(16,185,129,0.2);
+            --amber:       #f59e0b;
+            --amber-dim:   rgba(245,158,11,0.08);
+            --bg:          #0a0a0b;
+            --bg-2:        #111114;
+            --bg-3:        #18181c;
+            --bg-card:     #1a1a1f;
+            --border:      rgba(255,255,255,0.07);
+            --border-2:    rgba(255,255,255,0.12);
+            --text:        #f4f4f5;
+            --text-2:      #a1a1aa;
+            --text-3:      #71717a;
+            --shadow:      rgba(0,0,0,0.6);
+        }
+        [data-theme="light"] {
+            --bg:          #f8f9fc;
+            --bg-2:        #f1f3f6;
+            --bg-3:        #e5e7eb;
+            --bg-card:     #ffffff;
+            --border:      rgba(0,0,0,0.07);
+            --border-2:    rgba(0,0,0,0.12);
+            --text:        #111827;
+            --text-2:      #374151;
+            --text-3:      #6b7280;
+            --shadow:      rgba(0,0,0,0.07);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        a { color: var(--brand); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; background: var(--bg-3); color: var(--amber); padding: 0.12em 0.4em; border-radius: 4px; }
+        strong { color: var(--text); }
+        .wrapper { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* PROGRESS BAR */
+        #prog { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--brand), var(--emerald)); z-index: 300; width: 0; transition: width .1s; }
+
+        /* TOPBAR */
+        .topbar { position: sticky; top: 0; z-index: 200; background: rgba(10,10,11,.93); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); padding: .7rem 0; }
+        [data-theme="light"] .topbar { background: rgba(248,249,252,.93); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .logo { display: flex; align-items: center; gap: .6rem; font-size: .88rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; color: var(--text); }
+        .logo-dot { width: 30px; height: 30px; background: var(--emerald); border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: .72rem; font-weight: 900; box-shadow: 0 0 12px var(--emerald-glow); }
+        .top-links { display: flex; align-items: center; gap: .65rem; }
+        .top-links a { font-size: .73rem; font-weight: 700; color: var(--text-2); padding: .3rem .75rem; border-radius: 999px; transition: color .2s; }
+        .top-links a:hover { color: var(--text); text-decoration: none; }
+        .top-links a.hi { color: var(--emerald); background: var(--emerald-dim); border: 1px solid rgba(16,185,129,.25); }
+        .btn-th { padding: .38rem .85rem; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 999px; font-size: .73rem; font-weight: 700; color: var(--text-2); cursor: pointer; transition: all .2s; }
+        .btn-th:hover { color: var(--text); border-color: var(--emerald); }
+
+        /* HERO */
+        .hero { padding: 5rem 0 3.5rem; text-align: center; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -160px; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(ellipse, rgba(16,185,129,.12) 0%, transparent 62%); pointer-events: none; }
+        .eyebrow { display: inline-flex; align-items: center; gap: .5rem; font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--emerald); background: var(--emerald-dim); border: 1px solid rgba(16,185,129,.25); padding: .28rem .9rem; border-radius: 999px; margin-bottom: 1.4rem; }
+        .eyebrow span { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.25;} }
+        .hero h1 { font-size: clamp(2rem,5vw,3rem); font-weight: 900; letter-spacing: -.025em; line-height: 1.15; margin-bottom: .9rem; }
+        .hero p { font-size: 1rem; color: var(--text-2); max-width: 680px; margin: 0 auto 2.2rem; }
+        .chips { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: center; }
+        .chip { display: inline-flex; align-items: center; gap: .4rem; font-size: .72rem; font-weight: 700; padding: .4rem .85rem; border-radius: 999px; border: 1px solid var(--border-2); background: var(--bg-card); color: var(--text-2); transition: all .2s; white-space: nowrap; }
+        .chip:hover { text-decoration: none; }
+        .chip.em:hover { border-color:var(--emerald); color:var(--emerald); background:var(--emerald-dim); }
+        .chip.sky:hover{ border-color:var(--sky); color:var(--sky); background:var(--sky-dim); }
+        .chip.vi:hover { border-color:var(--violet); color:var(--violet); background:var(--violet-dim); }
+        .chip.am:hover { border-color:var(--amber); color:var(--amber); background:var(--amber-dim); }
+
+        /* SECTION */
+        .sec { padding: 3.5rem 0; border-top: 1px solid var(--border); }
+        .sec-badge { display: inline-flex; align-items: center; gap: .45rem; font-size: .63rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; padding: .28rem .82rem; border-radius: 999px; margin-bottom: .9rem; }
+        .sec-badge.em  { background:var(--emerald-dim); color:var(--emerald); border:1px solid rgba(16,185,129,.25); }
+        .sec-badge.sky { background:var(--sky-dim); color:var(--sky); border:1px solid rgba(14,165,233,.25); }
+        .sec-badge.vi  { background:var(--violet-dim); color:var(--violet); border:1px solid rgba(139,92,246,.25); }
+        .sec-badge.am  { background:var(--amber-dim); color:var(--amber); border:1px solid rgba(245,158,11,.25); }
+        .sec-badge.rd  { background:var(--brand-dim); color:var(--brand); border:1px solid rgba(255,59,48,.25); }
+        .sec h2 { font-size: clamp(1.45rem,3vw,2rem); font-weight: 900; letter-spacing: -.02em; margin-bottom: .55rem; }
+        .sec-sub { font-size: .94rem; color: var(--text-2); max-width: 720px; margin-bottom: 2.2rem; line-height: 1.7; }
+
+        /* GRID */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+
+        /* CARD */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.6rem; transition: border-color .2s, box-shadow .2s; }
+        .card:hover { border-color: var(--border-2); box-shadow: 0 8px 30px var(--shadow); }
+        .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 1.25rem; }
+        .card-icon.em  { background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(16,185,129,.25); }
+        .card-icon.sky { background: var(--sky-dim); color: var(--sky); border: 1px solid rgba(14,165,233,.25); }
+        .card-icon.vi  { background: var(--violet-dim); color: var(--violet); border: 1px solid rgba(139,92,246,.25); }
+        .card-icon.am  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
+        .card-icon.rd  { background: var(--brand-dim); color: var(--brand); border: 1px solid rgba(255,59,48,.25); }
+        .card h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: .35rem; }
+        .card p { font-size: .86rem; color: var(--text-2); line-height: 1.6; }
+
+        /* STEP CARDS */
+        .steps { display: flex; flex-direction: column; gap: 1.2rem; margin-top: 1.5rem; }
+        .step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.6rem; display: flex; gap: 1.4rem; transition: all .2s; }
+        .step:hover { border-color: var(--border-2); }
+        .step-num { width: 42px; height: 42px; border-radius: 12px; background: var(--bg-3); border: 1px solid var(--border-2); display: grid; place-items: center; font-weight: 900; font-size: .95rem; color: var(--text); flex-shrink: 0; }
+        .step-num.em  { background: var(--emerald-dim); color: var(--emerald); border-color: rgba(16,185,129,.3); }
+        .step-num.sky { background: var(--sky-dim); color: var(--sky); border-color: rgba(14,165,233,.3); }
+        .step-num.vi  { background: var(--violet-dim); color: var(--violet); border-color: rgba(139,92,246,.3); }
+        .step-content { flex: 1; }
+        .step-content h4 { font-size: 1rem; font-weight: 800; margin-bottom: .35rem; }
+        .step-content p { font-size: .86rem; color: var(--text-2); margin-bottom: .8rem; line-height: 1.6; }
+
+        /* UI MOCKUP BOX */
+        .ui-box { background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 12px; padding: 1.2rem; margin: 1rem 0; font-size: .84rem; }
+        .ui-box-hdr { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: .6rem; margin-bottom: .8rem; font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
+        .field-row { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .8rem; }
+        .field-label { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+        .field-input { background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; padding: .55rem .8rem; font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+        .field-input .badge { font-size: .65rem; font-weight: 800; padding: .15rem .5rem; border-radius: 4px; background: rgba(16,185,129,.15); color: var(--emerald); text-transform: uppercase; }
+
+        /* CALLOUTS */
+        .callout { border-radius: 12px; padding: 1.1rem 1.4rem; margin: 1.4rem 0; border-left: 4px solid; display: flex; gap: 1rem; align-items: flex-start; }
+        .callout.tip { background: var(--emerald-dim); border-color: var(--emerald); color: var(--text); }
+        .callout.warn{ background: var(--amber-dim); border-color: var(--amber); color: var(--text); }
+        .callout.note{ background: var(--sky-dim); border-color: var(--sky); color: var(--text); }
+        .callout-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; margin-top: .1rem; }
+        .callout-body { font-size: .86rem; line-height: 1.6; }
+        .callout-body strong { color: var(--text); }
+
+        /* TABLE */
+        .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); }
+        table { width: 100%; border-collapse: collapse; font-size: .84rem; text-align: left; }
+        th { background: var(--bg-2); padding: .85rem 1.1rem; font-size: .72rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); border-bottom: 1px solid var(--border); }
+        td { padding: .95rem 1.1rem; border-bottom: 1px solid var(--border); color: var(--text-2); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        td strong { color: var(--text); }
+
+        /* BACKUP CODE GRID */
+        .code-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .6rem; margin: 1rem 0; }
+        .code-pill { background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 8px; padding: .55rem .75rem; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: .85rem; font-weight: 700; color: var(--emerald); letter-spacing: .05em; }
+
+        /* COPY BUTTON */
+        .btn-copy { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; font-weight: 700; background: var(--bg-3); border: 1px solid var(--border-2); color: var(--text-2); padding: .35rem .75rem; border-radius: 6px; cursor: pointer; transition: all .2s; }
+        .btn-copy:hover { color: var(--text); border-color: var(--emerald); }
+
+        /* FOOTER */
+        footer { border-top: 1px solid var(--border); padding: 3rem 0; text-align: center; font-size: .82rem; color: var(--text-3); }
+        footer a { color: var(--text-2); }
+        footer a:hover { color: var(--brand); }
+
+        /* BACK TO TOP */
+        #btt { position: fixed; bottom: 2rem; right: 2rem; width: 44px; height: 44px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-2); color: var(--text); display: grid; place-items: center; cursor: pointer; opacity: 0; pointer-events: none; transition: all .2s; z-index: 100; box-shadow: 0 4px 16px var(--shadow); }
+        #btt.show { opacity: 1; pointer-events: auto; }
+        #btt:hover { border-color: var(--emerald); color: var(--emerald); }
+    </style>
+</head>
+<body>
+    <div id="prog"></div>
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="wrapper topbar-inner">
+            <div class="logo">
+                <div class="logo-dot">🛡️</div>
+                <span>ELFAA Security</span>
+            </div>
+            <nav class="top-links">
+                <a href="#overview">Overview</a>
+                <a href="#admin-policies">Admin Policies</a>
+                <a href="#authenticator">App Setup</a>
+                <a href="#email-otp">Email OTP</a>
+                <a href="#backup-codes">Backup Codes</a>
+                <a href="#emergency-reset">Emergency Reset</a>
+                <a href="payment-guide.html">Payment Guide &rarr;</a>
+                <a href="deployment-guide.html">Deployment Guide &rarr;</a>
+                <button class="btn-th" id="theme-btn" onclick="toggleTheme()">☀️ Light</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero wrapper">
+        <div class="eyebrow">
+            <span></span>
+            Enterprise Identity Protection
+        </div>
+        <h1>Multi-Factor Authentication (MFA / 2FA)<br>Complete Setup & Admin Guide</h1>
+        <p>Step-by-step instructions for administrators to enforce MFA policies, and for customers/staff to connect Authenticator Apps, manage Email OTPs, and store recovery backup codes.</p>
+        
+        <div class="chips">
+            <a href="#admin-policies" class="chip em">🛡️ 4 Policy Tiers</a>
+            <a href="#authenticator" class="chip sky">📱 TOTP Authenticator Apps</a>
+            <a href="#email-otp" class="chip vi">✉️ Email OTP Dispatch</a>
+            <a href="#backup-codes" class="chip am">🔑 Emergency Backup Codes</a>
+            <a href="#emergency-reset" class="chip em">🚨 Admin Emergency Reset</a>
+        </div>
+    </section>
+
+    <!-- SECTION 1: OVERVIEW -->
+    <section id="overview" class="sec wrapper">
+        <span class="sec-badge em">Architecture</span>
+        <h2>How Multi-Factor Authentication Works in ELFAA</h2>
+        <p class="sec-sub">Multi-Factor Authentication enhances account security by requiring two distinct identity proofs: something you know (password) and something you have (rolling 6-digit Authenticator code or Email OTP).</p>
+
+        <div class="grid-3">
+            <div class="card">
+                <div class="card-top">
+                    <div class="card-icon em">📱</div>
+                    <span style="font-size:.7rem;font-weight:900;color:var(--emerald);text-transform:uppercase;">Primary</span>
+                </div>
+                <h3>Authenticator App (TOTP)</h3>
+                <p>Standard RFC 6238 time-based tokens. Generates rolling 6-digit codes every 30 seconds on Google Authenticator, Microsoft Authenticator, Authy, or 1Password. Works 100% offline without cell reception.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-top">
+                    <div class="card-icon vi">✉️</div>
+                    <span style="font-size:.7rem;font-weight:900;color:var(--violet);text-transform:uppercase;">Zero-Setup</span>
+                </div>
+                <h3>Email One-Time Password</h3>
+                <p>Dispatches a secure 6-digit PIN to the user's verified email via the configured SMTP server. Protected with single-use invalidation, cooldown timers, and expiration windows.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-top">
+                    <div class="card-icon am">🔑</div>
+                    <span style="font-size:.7rem;font-weight:900;color:var(--amber);text-transform:uppercase;">Recovery</span>
+                </div>
+                <h3>Backup Recovery Codes</h3>
+                <p>A set of 8 single-use alphanumeric emergency codes (e.g. <code>8F3K-92A1</code>). Allows instant account recovery if a user loses access to their phone or email inbox.</p>
+            </div>
+        </div>
+
+        <!-- AUTH FLOW DIAGRAM -->
+        <div class="ui-box" style="margin-top:2rem;">
+            <div class="ui-box-hdr">
+                <span>🔐 ELFAA Authentication Lifecycle</span>
+                <span>Server-Side Enforced</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding:1rem .5rem;text-align:center;">
+                <div style="flex:1;min-width:140px;background:var(--bg-3);padding:1rem;border-radius:10px;border:1px solid var(--border);">
+                    <div style="font-size:1.3rem;">1️⃣</div>
+                    <strong style="font-size:.82rem;display:block;margin-top:.4rem;">Credentials Check</strong>
+                    <span style="font-size:.72rem;color:var(--text-3);">Email + Password</span>
+                </div>
+                <div style="color:var(--text-3);font-size:1.2rem;">&rarr;</div>
+                <div style="flex:1;min-width:140px;background:var(--bg-3);padding:1rem;border-radius:10px;border:1px solid var(--border);">
+                    <div style="font-size:1.3rem;">2️⃣</div>
+                    <strong style="font-size:.82rem;display:block;margin-top:.4rem;">Policy Evaluation</strong>
+                    <span style="font-size:.72rem;color:var(--text-3);">MFA Enforced / Active?</span>
+                </div>
+                <div style="color:var(--text-3);font-size:1.2rem;">&rarr;</div>
+                <div style="flex:1;min-width:140px;background:var(--bg-3);padding:1rem;border-radius:10px;border:1px solid var(--emerald);box-shadow:0 0 15px var(--emerald-dim);">
+                    <div style="font-size:1.3rem;">3️⃣</div>
+                    <strong style="font-size:.82rem;display:block;margin-top:.4rem;color:var(--emerald);">MFA Challenge</strong>
+                    <span style="font-size:.72rem;color:var(--text-3);">App Code / Email / Backup</span>
+                </div>
+                <div style="color:var(--text-3);font-size:1.2rem;">&rarr;</div>
+                <div style="flex:1;min-width:140px;background:var(--bg-3);padding:1rem;border-radius:10px;border:1px solid var(--border);">
+                    <div style="font-size:1.3rem;">4️⃣</div>
+                    <strong style="font-size:.82rem;display:block;margin-top:.4rem;">Portal Access</strong>
+                    <span style="font-size:.72rem;color:var(--text-3);">Session Regenerated</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: ADMIN POLICIES -->
+    <section id="admin-policies" class="sec wrapper">
+        <span class="sec-badge em">Admin Controls</span>
+        <h2>1. Global MFA Policy & Parameters</h2>
+        <p class="sec-sub">Administrators can configure organization-wide enforcement rules directly in the Admin Dashboard without editing any code.</p>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-num em">1</div>
+                <div class="step-content">
+                    <h4>Navigate to Admin Security Settings</h4>
+                    <p>Log in as an Administrator &rarr; Click <strong>Settings</strong> in the left sidebar &rarr; Select the <strong>Security & MFA</strong> sub-tab.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num em">2</div>
+                <div class="step-content">
+                    <h4>Select Enforcement Policy Tier</h4>
+                    <p>Pick the policy that best matches your security compliance requirements:</p>
+                    
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Policy Option</th>
+                                    <th>Behavior for Admins & Staff</th>
+                                    <th>Behavior for Customers</th>
+                                    <th>Use Case</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Disabled</strong></td>
+                                    <td>MFA is bypassed completely</td>
+                                    <td>MFA is bypassed completely</td>
+                                    <td>Emergency troubleshooting / dev testing only</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Optional (Opt-In)</strong></td>
+                                    <td>Can voluntarily enable in Profile</td>
+                                    <td>Can voluntarily enable in Profile</td>
+                                    <td>Standard user freedom (Default)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong style="color:var(--sky);">Admins & Staff Only</strong></td>
+                                    <td><span style="color:var(--emerald);font-weight:800;">Strictly Mandatory</span></td>
+                                    <td>Optional user opt-in</td>
+                                    <td>Recommended: Protects backend management</td>
+                                </tr>
+                                <tr>
+                                    <td><strong style="color:var(--emerald);">Enforce All Accounts</strong></td>
+                                    <td><span style="color:var(--emerald);font-weight:800;">Strictly Mandatory</span></td>
+                                    <td><span style="color:var(--emerald);font-weight:800;">Strictly Mandatory</span></td>
+                                    <td>Maximum enterprise security compliance</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num em">3</div>
+                <div class="step-content">
+                    <h4>Configure Allowed Methods & Security Parameters</h4>
+                    <p>Toggle which methods users are permitted to register, and fine-tune rate-limiting and expiration timers:</p>
+                    
+                    <div class="ui-box">
+                        <div class="ui-box-hdr">
+                            <span>Admin Settings &bull; Parameters</span>
+                            <span>Default Presets</span>
+                        </div>
+                        <div class="grid-2">
+                            <div class="field-row">
+                                <span class="field-label">Code Expiration</span>
+                                <div class="field-input">
+                                    <span>10 minutes</span>
+                                    <span class="badge">Valid Window</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <span class="field-label">Resend Cooldown</span>
+                                <div class="field-input">
+                                    <span>60 seconds</span>
+                                    <span class="badge">Anti-Spam</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <span class="field-label">Max Failed Attempts</span>
+                                <div class="field-input">
+                                    <span>5 attempts</span>
+                                    <span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444;">Lockout</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <span class="field-label">Max Resends Per Session</span>
+                                <div class="field-input">
+                                    <span>5 dispatches</span>
+                                    <span class="badge">Threshold</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: AUTHENTICATOR APP SETUP -->
+    <section id="authenticator" class="sec wrapper">
+        <span class="sec-badge sky">User Setup</span>
+        <h2>2. Connecting an Authenticator App (Google / Microsoft / Authy)</h2>
+        <p class="sec-sub">Step-by-step instructions for any user (Customer, Staff, or Admin) to connect their mobile authenticator app.</p>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-num sky">1</div>
+                <div class="step-content">
+                    <h4>Access Security & 2FA Settings</h4>
+                    <p>Click your name in the top right header menu &rarr; Select <strong>Security & Profile (2FA)</strong> (or navigate to <code>/profile</code>).</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num sky">2</div>
+                <div class="step-content">
+                    <h4>Click "Set Up Authenticator"</h4>
+                    <p>On the <strong>Two-Factor Authentication</strong> card, locate the Authenticator App panel and click <strong>Set Up Authenticator</strong>. A modal will open displaying a unique QR code and secret key.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num sky">3</div>
+                <div class="step-content">
+                    <h4>Scan the QR Code</h4>
+                    <p>Open your preferred Authenticator app on your smartphone:</p>
+                    <ul style="font-size:.86rem;color:var(--text-2);margin-left:1.5rem;line-height:1.8;margin-bottom:.8rem;">
+                        <li><strong>Google Authenticator:</strong> Tap the <strong>+</strong> button in the bottom right &rarr; <em>Scan a QR code</em>.</li>
+                        <li><strong>Microsoft Authenticator:</strong> Tap <strong>+</strong> (Add account) &rarr; <em>Other account</em> &rarr; Scan QR code.</li>
+                        <li><strong>Apple iOS Passwords:</strong> Settings &rarr; Passwords &rarr; elfaa.ph &rarr; <em>Set Up Verification Code</em>.</li>
+                    </ul>
+
+                    <div class="callout tip">
+                        <div class="callout-icon">💡</div>
+                        <div class="callout-body">
+                            <strong>Can't scan the QR code?</strong> Click the copy icon next to the manual secret key in the modal, open your authenticator app, choose <em>Enter key manually</em>, paste the key, and set Type to <em>Time-based</em>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num sky">4</div>
+                <div class="step-content">
+                    <h4>Verify & Activate</h4>
+                    <p>Enter the current 6-digit rolling code displayed in your app into Step 2 of the modal, then click <strong>Verify & Activate</strong>. Your Authenticator 2FA is now active, and emergency backup codes will be generated automatically!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: EMAIL OTP SETUP -->
+    <section id="email-otp" class="sec wrapper">
+        <span class="sec-badge vi">Zero-Setup Method</span>
+        <h2>3. Enabling Email One-Time Password (OTP)</h2>
+        <p class="sec-sub">Email OTP provides a zero-friction second factor that requires no smartphone apps. Codes are sent directly to the user's verified account email.</p>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-num vi">1</div>
+                <div class="step-content">
+                    <h4>Ensure SMTP Email Service is Active (Admins)</h4>
+                    <p>Before using Email OTP, verify that SMTP settings are configured under <strong>Admin &rarr; Settings &rarr; SMTP Email</strong>. You can use Gmail SMTP, SendGrid, Mailgun, Amazon SES, or custom SMTP servers.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num vi">2</div>
+                <div class="step-content">
+                    <h4>Click "Enable Email OTP" in Profile</h4>
+                    <p>In <strong>Security & Profile (2FA)</strong>, click <strong>Enable Email OTP</strong> on the Email One-Time Password card. A 6-digit test code will be immediately dispatched to your registered email.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num vi">3</div>
+                <div class="step-content">
+                    <h4>Confirm Test Code</h4>
+                    <p>Check your email inbox for the subject <em>"Your ELFAA Verification Code: [XXXXXX]"</em>, enter the 6-digit PIN in the confirmation modal, and click <strong>Verify & Enable</strong>.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: BACKUP RECOVERY CODES -->
+    <section id="backup-codes" class="sec wrapper">
+        <span class="sec-badge am">Account Recovery</span>
+        <h2>4. Managing Emergency Backup Recovery Codes</h2>
+        <p class="sec-sub">Backup codes are single-use recovery keys that let you log in if you lose your phone, break your device, or cannot access your email.</p>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-top">
+                <div class="card-icon am">🔑</div>
+                <span style="font-size:.7rem;font-weight:900;color:var(--amber);text-transform:uppercase;">Crucial Step</span>
+            </div>
+            <h3>How Backup Codes Protect Your Account</h3>
+            <p>Each user gets <strong>8 single-use codes</strong>. When you log in with a backup code, it is immediately invalidated and cannot be used again.</p>
+            
+            <div class="code-grid">
+                <div class="code-pill">8F3K-92A1</div>
+                <div class="code-pill">M7P2-K4W9</div>
+                <div class="code-pill">C3D8-H5N2</div>
+                <div class="code-pill">X6B1-Q9T4</div>
+                <div class="code-pill">L2E7-V8R5</div>
+                <div class="code-pill">A4Y9-G1S6</div>
+                <div class="code-pill">W5J2-P8C3</div>
+                <div class="code-pill">N9T4-Z7F1</div>
+            </div>
+
+            <div class="callout warn">
+                <div class="callout-icon">⚠️</div>
+                <div class="callout-body">
+                    <strong>Never store backup codes on the same phone as your Authenticator app.</strong> Save them in a secure password manager (1Password, Bitwarden, Apple Keychain) or print/download them as a text file.
+                </div>
+            </div>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-num am">1</div>
+                <div class="step-content">
+                    <h4>How to Generate or Regenerate Codes</h4>
+                    <p>Go to <strong>Security & Profile (2FA)</strong> &rarr; Click <strong>Manage Recovery Codes</strong> &rarr; Enter your account password to generate a fresh set. <em>Note: Generating new codes permanently invalidates all previous ones.</em></p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num am">2</div>
+                <div class="step-content">
+                    <h4>How to Log In with a Backup Code</h4>
+                    <p>On the <code>/mfa/challenge</code> login screen, click <strong>"Lost your phone or email? Use a backup recovery code"</strong> &rarr; Enter any unused 8-character code &rarr; Click <strong>Verify & Proceed</strong>.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: EMERGENCY ADMIN RESET -->
+    <section id="emergency-reset" class="sec wrapper">
+        <span class="sec-badge rd">Administrator Override</span>
+        <h2>5. Emergency Administrative MFA Reset</h2>
+        <p class="sec-sub">What happens if a customer or staff member completely loses their phone, email, and backup codes? Administrators can perform an emergency recovery reset.</p>
+
+        <div class="card">
+            <div class="card-top">
+                <div class="card-icon rd">🚨</div>
+                <span style="font-size:.7rem;font-weight:900;color:var(--brand);text-transform:uppercase;">Admin Only</span>
+            </div>
+            <h3>How to Reset MFA for a Locked User</h3>
+            <div class="steps" style="margin-top:1rem;">
+                <div class="step">
+                    <div class="step-num rd">1</div>
+                    <div class="step-content">
+                        <h4>Open Admin Users Management</h4>
+                        <p>In the Admin Dashboard, click the <strong>Users</strong> tab in the left sidebar navigation.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num rd">2</div>
+                    <div class="step-content">
+                        <h4>Locate the User & Check 2FA Status</h4>
+                        <p>Inspect the <strong>2FA / MFA</strong> column. Users with active protection display <code>App 2FA</code> or <code>Email OTP</code>.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num rd">3</div>
+                    <div class="step-content">
+                        <h4>Click "🛡️ Reset MFA"</h4>
+                        <p>Click the <strong>🛡️ Reset MFA</strong> button next to the user. A confirmation modal will appear. Confirm the prompt to immediately wipe their MFA secret, deactivate 2FA, and purge old backup codes.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num rd">4</div>
+                    <div class="step-content">
+                        <h4>User Can Now Log In Directly</h4>
+                        <p>The user can immediately log in using their primary password, and can re-enroll in 2FA from their profile settings.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7: TROUBLESHOOTING & FAQ -->
+    <section id="faq" class="sec wrapper">
+        <span class="sec-badge em">FAQ</span>
+        <h2>Frequently Asked Questions & Troubleshooting</h2>
+        <p class="sec-sub">Quick solutions for common 2FA issues encountered by users and administrators.</p>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3>Clock Drift / Code Rejection Error</h3>
+                <p>TOTP relies on accurate device time. If your authenticator app code is rejected, check that your smartphone's time is set to <strong>"Set Automatically" (Network Time)</strong> in your phone settings. Even a 60-second time drift can cause code verification to fail.</p>
+            </div>
+
+            <div class="card">
+                <h3>Email OTP Not Arriving</h3>
+                <p>1. Check your spam/junk folder for emails from ELFAA Car Rental.<br>2. Admins should verify SMTP credentials under <em>Admin &rarr; Settings &rarr; SMTP Email</em> and send a test email to ensure the mailer is functioning.</p>
+            </div>
+
+            <div class="card">
+                <h3>Locked Out from Too Many Attempts</h3>
+                <p>If you fail verification 5 times consecutively, the session is terminated for brute-force defense. Return to the login screen and sign in again with your email and password to receive a fresh verification challenge.</p>
+            </div>
+
+            <div class="card">
+                <h3>Switching Between Email & App During Login</h3>
+                <p>On the <code>/mfa/challenge</code> screen, you can toggle between <strong>Email OTP</strong>, <strong>App Code</strong>, and <strong>Backup Code</strong> using the top pill buttons at any time during login.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="wrapper">
+            <p style="margin-bottom:.5rem;">&copy; 2026 ELFAA Car Rental. All rights reserved. Self-Drive & Luxury Fleet Services.</p>
+            <p>
+                <a href="deployment-guide.html">Deployment Guide</a> &bull;
+                <a href="payment-guide.html">Payment Gateway Guide</a> &bull;
+                <a href="mfa-guide.html">MFA Setup Guide</a>
+            </p>
+        </div>
+    </footer>
+
+    <button id="btt" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr;</button>
+
+    <script>
+        // Scroll progress bar
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement.scrollHeight - window.innerHeight;
+            const p = h > 0 ? (window.scrollY / h) * 100 : 0;
+            document.getElementById('prog').style.width = p + '%';
+
+            const btt = document.getElementById('btt');
+            if (window.scrollY > 400) {
+                btt.classList.add('show');
+            } else {
+                btt.classList.remove('show');
+            }
+        });
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const btn = document.getElementById('theme-btn');
+            const current = html.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            btn.textContent = next === 'dark' ? '☀️ Light' : '🌙 Dark';
+        }
+
+        // Restore saved theme
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+                const btn = document.getElementById('theme-btn');
+                if (btn) btn.textContent = saved === 'dark' ? '☀️ Light' : '🌙 Dark';
+            }
+        })();
+    </script>
+</body>
+</html>

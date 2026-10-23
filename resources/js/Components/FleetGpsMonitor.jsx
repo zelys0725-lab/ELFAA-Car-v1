@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-    Radio, 
-    Navigation, 
-    Gauge, 
-    Smartphone, 
-    ExternalLink, 
-    Copy, 
-    Check, 
-    RefreshCw, 
-    AlertTriangle, 
-    Clock, 
-    MapPin, 
-    User, 
+import {
+    Radio,
+    Navigation,
+    Gauge,
+    Smartphone,
+    ExternalLink,
+    Copy,
+    Check,
+    RefreshCw,
+    AlertTriangle,
+    Clock,
+    MapPin,
+    User,
     Power,
     SlidersHorizontal,
     Activity,
@@ -164,7 +164,7 @@ export default function FleetGpsMonitor({ isAdmin = true, vehicles = [] }) {
 
             if (window.L && mapInstanceRef.current && data.coordinates.length > 0) {
                 const latLngs = data.coordinates.map(pt => [pt.lat, pt.lng]);
-                
+
                 if (routePolylineRef.current) {
                     routePolylineRef.current.remove();
                 }
@@ -254,11 +254,10 @@ export default function FleetGpsMonitor({ isAdmin = true, vehicles = [] }) {
                         key={tab.id}
                         type="button"
                         onClick={() => setFilterStatus(tab.id)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                            filterStatus === tab.id
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${filterStatus === tab.id
                                 ? 'bg-[#FF3B30] text-white shadow-md shadow-[#FF3B30]/30'
                                 : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                        }`}
+                            }`}
                     >
                         {tab.label}
                     </button>
@@ -267,7 +266,7 @@ export default function FleetGpsMonitor({ isAdmin = true, vehicles = [] }) {
 
             {/* Grid Layout: Map Display on Left / Vehicle Telemetry List on Right */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
+
                 {/* Interactive Map Frame */}
                 <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-lg flex flex-col relative h-[520px]">
                     <div ref={mapContainerRef} className="w-full h-full z-0" />
@@ -298,13 +297,12 @@ export default function FleetGpsMonitor({ isAdmin = true, vehicles = [] }) {
                         </div>
                     ) : (
                         filteredVehicles.map(v => (
-                            <div 
+                            <div
                                 key={v.id}
-                                className={`p-4 rounded-2xl border transition-all duration-200 ${
-                                    selectedVehicle?.id === v.id
+                                className={`p-4 rounded-2xl border transition-all duration-200 ${selectedVehicle?.id === v.id
                                         ? 'bg-zinc-50 dark:bg-zinc-850 border-[#FF3B30] shadow-md'
                                         : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-                                }`}
+                                    }`}
                             >
                                 <div className="flex justify-between items-start gap-2">
                                     <div>
@@ -317,14 +315,12 @@ export default function FleetGpsMonitor({ isAdmin = true, vehicles = [] }) {
                                     </div>
 
                                     {/* Status Pill */}
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                        v.status === 'moving'
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${v.status === 'moving'
                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
                                             : (v.status === 'idle' ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-rose-500/10 border-rose-500/30 text-rose-500')
-                                    }`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${
-                                            v.status === 'moving' ? 'bg-emerald-500 animate-ping' : (v.status === 'idle' ? 'bg-amber-500' : 'bg-rose-500')
-                                        }`} />
+                                        }`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${v.status === 'moving' ? 'bg-emerald-500 animate-ping' : (v.status === 'idle' ? 'bg-amber-500' : 'bg-rose-500')
+                                            }`} />
                                         {v.status === 'moving' ? `${Math.round(v.speed)} km/h` : v.status}
                                     </span>
                                 </div>
@@ -390,11 +386,11 @@ export default function FleetGpsMonitor({ isAdmin = true, vehicles = [] }) {
             <div className="bg-gradient-to-r from-zinc-900 to-zinc-950 border border-zinc-800 p-5 rounded-2xl text-xs text-zinc-300 space-y-2">
                 <div className="flex items-center gap-2">
                     <Smartphone className="w-4 h-4 text-[#FF3B30]" />
-                    <span className="font-black text-white uppercase tracking-wider">How to test with your smartphone for thesis:</span>
+                    <span className="font-black text-white uppercase tracking-wider">How to test with your smartphone:</span>
                 </div>
                 <p className="text-zinc-400 leading-relaxed">
-                    1. Click the phone icon <strong className="text-white">"Smartphone"</strong> on any car card above to copy its unique transmitter URL.<br/>
-                    2. Send or open that URL in Google Chrome or Safari on your phone (e.g. <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-red-300 font-mono">http://[YOUR_IP]:8000/tracker/[KEY]</code>).<br/>
+                    1. Click the phone icon <strong className="text-white">"Smartphone"</strong> on any car card above to copy its unique transmitter URL.<br />
+                    2. Send or open that URL in Google Chrome or Safari on your phone (e.g. <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-red-300 font-mono">http://[YOUR_IP]:8000/tracker/[KEY]</code>).<br />
                     3. Tap <strong className="text-white">"Start GPS Transmission"</strong> on the phone. Mount the phone inside the car, and its live coordinates will automatically pin and move on the map above!
                 </p>
             </div>

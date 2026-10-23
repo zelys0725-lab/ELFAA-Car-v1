@@ -68,6 +68,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::post('/users/{user}/toggle', [App\Http\Controllers\AdminPortalController::class, 'toggleUserStatus'])->name('users.toggle');
     Route::post('/users/{user}/lock', [App\Http\Controllers\AdminPortalController::class, 'lockUser'])->name('users.lock');
     Route::post('/users/{user}/unlock', [App\Http\Controllers\AdminPortalController::class, 'unlockUser'])->name('users.unlock');
+    Route::post('/users/{user}/role', [App\Http\Controllers\AdminPortalController::class, 'updateUserRole'])->name('users.update_role');
     
     // Document Verification, OCR & Decisions
     Route::post('/documents/{document}/verify', [App\Http\Controllers\AdminPortalController::class, 'verifyDocument'])->name('documents.verify');

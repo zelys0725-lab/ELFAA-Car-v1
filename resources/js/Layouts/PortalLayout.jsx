@@ -98,10 +98,16 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                 return <Package className={svgClasses} />;
             case 'reports':
                 return <BarChart3 className={svgClasses} />;
+            case 'profit_analytics':
+                return <BarChart3 className={svgClasses} />;
             case 'users':
                 return <Users className={svgClasses} />;
+            case 'payment_settings':
+                return <Receipt className={svgClasses} />;
             case 'settings':
                 return <Settings className={svgClasses} />;
+            case 'profile':
+                return <User className={svgClasses} />;
             default:
                 return <SlidersHorizontal className={svgClasses} />;
         }
@@ -227,7 +233,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                         <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
                                         <p className="text-[9px] font-black uppercase text-red-500 mt-0.5">{user.role}</p>
                                     </div>
-                                    <Link href={route('profile.edit')} className="flex items-center gap-2 w-full px-4 py-2 text-left text-xs font-bold leading-5 hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border-b border-zinc-100 dark:border-zinc-800/60">
+                                    <Link href={user.role === 'client' ? (route('client.dashboard') + '?tab=security') : route('profile.edit')} className="flex items-center gap-2 w-full px-4 py-2 text-left text-xs font-bold leading-5 hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border-b border-zinc-100 dark:border-zinc-800/60">
                                         <ShieldCheck className="w-3.5 h-3.5 text-[#FF3B30]" />
                                         <span>Security & Profile (2FA)</span>
                                     </Link>

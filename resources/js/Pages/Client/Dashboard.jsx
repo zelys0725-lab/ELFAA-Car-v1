@@ -8,6 +8,7 @@ import ElfaaChatbot from '@/Components/ElfaaChatbot';
 import AlertModal, { showSwal } from '@/Components/AlertModal';
 import OnlinePaymentModal from '@/Components/OnlinePaymentModal';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
+import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
 import { 
     CheckCircle2, 
     AlertTriangle, 
@@ -321,12 +322,30 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
     const allDocsVerified = govId1.label === 'Verified' && govId2.label === 'Verified' && billingProof.label === 'Verified';
 
-    const [activeTab, setActiveTab] = useState(selectedVehicleId ? 'dashboard' : 'fleet');
+    // Support query param ?tab=security (or defaults to fleet)
+    const { url } = usePage();
+    const queryTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
+    const initialTab = ['fleet', 'dashboard', 'promos', 'security'].includes(queryTab)
+        ? queryTab
+        : (selectedVehicleId ? 'dashboard' : 'fleet');
 
+    const [activeTab, setActiveTab] = useState(initialTab);
+
+    // Keep activeTab in sync with URL query param (e.g. when clicking profile -> ?tab=security)
+    useEffect(() => {
+        const search = url && url.includes('?') ? url.split('?')[1] : '';
+        const params = new URLSearchParams(search);
+        const tab = params.get('tab');
+        if (tab && ['fleet', 'dashboard', 'promos', 'security'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [url]);
+
+    // Visible topbar switcher tabs for clients (Security & 2FA is accessible via the profile dropdown)
     const tabsConfig = [
         { id: 'fleet', label: 'Browse Fleet' },
         { id: 'dashboard', label: 'Reservation Hub' },
-        { id: 'promos', label: 'Promo Campaigns' }
+        { id: 'promos', label: 'Promo Campaigns' },
     ];
 
     return (
@@ -342,7 +361,8 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
             <Head title="Renter Workspace | ELFAA CAR RENTAL" />
 
             <div className="space-y-8 text-zinc-700 dark:text-zinc-300">
-                {/* FLEET FILTERS (Vehicle type and Seats capacity) */}
+                {/* FLEET FILTERS — only visible on Browse Fleet tab */}
+                {activeTab === 'fleet' && (
                 <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-xl shadow-md transition-colors text-left">
                     <div className="flex-1">
                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Filter Vehicle Type</label>
@@ -370,6 +390,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         </select>
                     </div>
                 </div>
+                )}
 
                 {activeTab === 'dashboard' && (
                     <>
@@ -1352,6 +1373,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                 )}
                             </CardContent>
                         </Card>
+                    </div>
+                )}
+
+                {/* SECURITY & 2FA TAB */}
+                {activeTab === 'security' && (
+                    <div className="max-w-4xl mx-auto space-y-6 text-left">
+                        <MfaManagementCard authUser={auth.user} />
                     </div>
                 )}
             </div>
