@@ -33,6 +33,7 @@
     },
     "dependencies": {
         "lucide-react": "^1.54.0",
+        "qrcode": "^1.5.4",
         "sweetalert2": "^11.26.25"
     }
 }

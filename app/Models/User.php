@@ -27,6 +27,14 @@ class User extends Authenticatable
         'role',
         'status',
         'terms_accepted_at',
+        'mfa_enabled',
+        'mfa_type',
+        'mfa_secret',
+        'mfa_email_otp',
+        'mfa_otp_expires_at',
+        'mfa_resend_available_at',
+        'mfa_resend_count',
+        'mfa_failed_attempts',
     ];
 
     /**
@@ -37,6 +45,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'mfa_secret',
+        'mfa_email_otp',
     ];
 
     /**
@@ -50,6 +60,12 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
+            'mfa_enabled' => 'boolean',
+            'mfa_secret' => 'encrypted',
+            'mfa_otp_expires_at' => 'datetime',
+            'mfa_resend_available_at' => 'datetime',
+            'mfa_resend_count' => 'integer',
+            'mfa_failed_attempts' => 'integer',
         ];
     }
 
@@ -98,6 +114,11 @@ class User extends Authenticatable
     public function documentAuditLogs(): HasMany
     {
         return $this->hasMany(DocumentAuditLog::class);
+    }
+
+    public function backupCodes(): HasMany
+    {
+        return $this->hasMany(UserBackupCode::class);
     }
 
     /**

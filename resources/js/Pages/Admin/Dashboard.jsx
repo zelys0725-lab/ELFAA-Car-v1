@@ -16,6 +16,8 @@ import DocumentVerificationModal from '@/Components/DocumentVerificationModal';
 import FleetGpsMonitor from '@/Components/FleetGpsMonitor';
 import PaymentSettingsTab from '@/Components/Admin/PaymentSettingsTab';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
+import MfaSettingsSection from '@/Components/Admin/MfaSettingsSection';
+import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
 import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt } from 'lucide-react';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
@@ -319,6 +321,17 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             actionLabel: 'Unlock Account',
             actionClass: 'bg-green-600 hover:bg-green-700 text-white',
             onConfirm: () => router.post(route('admin.users.unlock', userId)),
+        });
+    };
+
+    const handleResetUserMfa = (userId, userName) => {
+        if (!isAdmin) return;
+        showConfirm({
+            title: '🛡️ Emergency Reset User MFA',
+            message: `Are you sure you want to reset Multi-Factor Authentication for "${userName}"? Their Authenticator app secret and Email OTP requirements will be cleared, allowing emergency recovery access.`,
+            actionLabel: 'Reset MFA Access',
+            actionClass: 'bg-amber-600 hover:bg-amber-700 text-white',
+            onConfirm: () => router.post(route('admin.users.reset_mfa', userId)),
         });
     };
 
@@ -862,6 +875,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             <th className="py-3 px-4 text-zinc-400">Email Address</th>
                                             <th className="py-3 px-4 text-zinc-400">System Role</th>
                                             <th className="py-3 px-4 text-zinc-400">Account status</th>
+                                            <th className="py-3 px-4 text-zinc-400">2FA / MFA</th>
                                             <th className="py-3 px-4 text-zinc-400 text-right">Access Control</th>
                                         </>
                                     )}
@@ -1370,9 +1384,31 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 </span>
                                             )}
                                         </td>
+                                        <td className="py-3.5 px-4">
+                                            {u.mfa_enabled ? (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                                    <ShieldCheck className="w-3 h-3" />
+                                                    {u.mfa_type === 'authenticator' ? 'App 2FA' : u.mfa_type === 'email' ? 'Email OTP' : 'Active'}
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-400">
+                                                    Off
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="py-3.5 px-4 text-right">
                                             {isAdmin && u.id !== auth.user.id && (
                                                 <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
+                                                    {/* Emergency Reset MFA */}
+                                                    {u.mfa_enabled && (
+                                                        <button
+                                                            onClick={() => handleResetUserMfa(u.id, u.name)}
+                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                                                            title="Emergency Reset User MFA"
+                                                        >
+                                                            🛡️ Reset MFA
+                                                        </button>
+                                                    )}
                                                     {/* LOCKED: only show Unlock */}
                                                     {u.status === 'locked' && (
                                                         <button
@@ -1527,6 +1563,19 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
                             <button
                                 type="button"
+                                onClick={() => setSettingsSubTab('mfa')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    settingsSubTab === 'mfa'
+                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                            >
+                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                Security & MFA
+                            </button>
+
+                            <button
+                                type="button"
                                 onClick={() => setActiveTab('payment_settings')}
                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
                             >
@@ -1535,8 +1584,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                             </button>
                         </div>
 
-                        <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left">
-                            <form onSubmit={submitSettings}>
+                        {settingsSubTab === 'mfa' ? (
+                            <div className="space-y-6">
+                                <MfaSettingsSection settings={settings} />
+                                <MfaManagementCard authUser={auth.user} />
+                            </div>
+                        ) : (
+                            <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left">
+                                <form onSubmit={submitSettings}>
                                 {/* TAB 1: BRANDING & GENERAL INFO */}
                                 {settingsSubTab === 'branding' && (
                                     <>
@@ -1985,6 +2040,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 </CardFooter>
                             </form>
                         </Card>
+                        )}
 
                         {/* Administrator Password Change Section */}
                         <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left max-w-4xl mx-auto mt-6">

@@ -55,6 +55,30 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        // Check if Multi-Factor Authentication (MFA) is required
+        $mfaService = app(\App\Services\MfaService::class);
+        if ($mfaService->isMfaRequiredForUser($user)) {
+            $userId = $user->id;
+            $remember = $request->boolean('remember');
+
+            // Log out from full session
+            Auth::guard('web')->logout();
+
+            // Set pending MFA session state
+            $request->session()->put('mfa:user_id', $userId);
+            $request->session()->put('mfa:remember', $remember);
+
+            $defaultMethod = $mfaService->getDefaultMethodForUser($user);
+            $request->session()->put('mfa:method', $defaultMethod);
+
+            // If method is email, dispatch initial OTP code
+            if ($defaultMethod === 'email') {
+                $mfaService->sendEmailOtp($user, false);
+            }
+
+            return redirect()->route('mfa.challenge');
+        }
+
         $request->session()->regenerate();
 
         // Redirect based on role

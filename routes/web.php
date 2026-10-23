@@ -17,6 +17,16 @@ Route::middleware('auth')->group(function () {
     
     // Secure Authenticated Document File Access (Policy protected)
     Route::get('/documents/{document}/file', [DocumentVerificationController::class, 'serveFile'])->name('documents.file');
+
+    // Multi-Factor Authentication Management (Any authenticated user)
+    Route::get('/user/mfa/status', [App\Http\Controllers\MfaSettingsController::class, 'status'])->name('mfa.status');
+    Route::post('/user/mfa/totp/setup', [App\Http\Controllers\MfaSettingsController::class, 'setupTotp'])->name('mfa.totp.setup');
+    Route::post('/user/mfa/totp/confirm', [App\Http\Controllers\MfaSettingsController::class, 'confirmTotp'])->name('mfa.totp.confirm');
+    Route::post('/user/mfa/email/send', [App\Http\Controllers\MfaSettingsController::class, 'sendEmailConfirmation'])->name('mfa.email.send');
+    Route::post('/user/mfa/email/confirm', [App\Http\Controllers\MfaSettingsController::class, 'confirmEmail'])->name('mfa.email.confirm');
+    Route::post('/user/mfa/preferred', [App\Http\Controllers\MfaSettingsController::class, 'setPreferredMethod'])->name('mfa.preferred');
+    Route::post('/user/mfa/backup-codes', [App\Http\Controllers\MfaSettingsController::class, 'generateBackupCodes'])->name('mfa.backup_codes');
+    Route::post('/user/mfa/disable', [App\Http\Controllers\MfaSettingsController::class, 'disable'])->name('mfa.disable');
 });
 
 // Landing Homepage - Guest accessible (Redirect authenticated users to their dashboards)
@@ -137,6 +147,10 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     // Payment Settings & Gateway Diagnostics (Admin Only)
     Route::post('/payment-settings', [App\Http\Controllers\PaymentController::class, 'updatePaymentSettings'])->name('payment_settings.update');
     Route::post('/payment-settings/test-connection', [App\Http\Controllers\PaymentController::class, 'testConnection'])->name('payment_settings.test_connection');
+
+    // MFA Security Policy Settings & Emergency User Reset (Admin Only)
+    Route::post('/mfa-settings', [App\Http\Controllers\MfaSettingsController::class, 'updateAdminSettings'])->name('mfa_settings.update');
+    Route::post('/users/{user}/reset-mfa', [App\Http\Controllers\MfaSettingsController::class, 'adminResetUserMfa'])->name('users.reset_mfa');
 });
 
 // ================= SECURE ONLINE PAYMENTS & WEBHOOKS =================

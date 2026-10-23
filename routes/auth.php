@@ -33,6 +33,22 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Multi-Factor Authentication Challenge
+    Route::get('mfa/challenge', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'show'])
+        ->name('mfa.challenge');
+
+    Route::post('mfa/verify', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'verify'])
+        ->name('mfa.verify');
+
+    Route::post('mfa/resend', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'resend'])
+        ->name('mfa.resend');
+
+    Route::post('mfa/switch', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'switchMethod'])
+        ->name('mfa.switch');
+
+    Route::post('mfa/cancel', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'cancel'])
+        ->name('mfa.cancel');
 });
 
 Route::middleware('auth')->group(function () {

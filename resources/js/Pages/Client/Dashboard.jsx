@@ -321,11 +321,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
     const allDocsVerified = govId1.label === 'Verified' && govId2.label === 'Verified' && billingProof.label === 'Verified';
 
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab] = useState(selectedVehicleId ? 'dashboard' : 'fleet');
 
     const tabsConfig = [
-        { id: 'dashboard', label: 'Reservation Hub' },
         { id: 'fleet', label: 'Browse Fleet' },
+        { id: 'dashboard', label: 'Reservation Hub' },
         { id: 'promos', label: 'Promo Campaigns' }
     ];
 
