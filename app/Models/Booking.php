@@ -28,6 +28,7 @@ class Booking extends Model
         'amount_paid',
         'final_total',
         'payment_method',
+        'payment_gateway',
         'payment_status',
         'payment_reference',
         'payment_proof_path',
@@ -89,5 +90,10 @@ class Booking extends Model
     public function payments()
     {
         return $this->hasMany(BookingPayment::class)->orderBy('created_at', 'desc');
+    }
+
+    public function paymentTransactions()
+    {
+        return $this->hasMany(PaymentTransaction::class)->orderBy('created_at', 'desc');
     }
 }

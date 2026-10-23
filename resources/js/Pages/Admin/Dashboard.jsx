@@ -14,13 +14,18 @@ import DailyOperationsWidget from '@/Components/DailyOperationsWidget';
 import LegacyImportModal from '@/Components/LegacyImportModal';
 import DocumentVerificationModal from '@/Components/DocumentVerificationModal';
 import FleetGpsMonitor from '@/Components/FleetGpsMonitor';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X } from 'lucide-react';
+import PaymentSettingsTab from '@/Components/Admin/PaymentSettingsTab';
+import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt } from 'lucide-react';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
     const { settings } = usePage().props;
     const [activeTab, setActiveTab] = useState('analytics');
     const [subFilter, setSubFilter] = useState('all');
+
+    // Payment History Modal State
+    const [paymentHistoryBooking, setPaymentHistoryBooking] = useState(null);
 
     // Document Inspection Modal State
     const [selectedVerifDoc, setSelectedVerifDoc] = useState(null);
@@ -476,6 +481,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     ];
     if (isAdmin) {
         tabsConfig.push({ id: 'users', label: 'User Accounts' });
+        tabsConfig.push({ id: 'payment_settings', label: 'Payment Settings' });
         tabsConfig.push({ id: 'settings', label: 'Site Settings' });
     }
 
@@ -653,7 +659,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 )}
 
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
-                {!['analytics', 'gps_fleet', 'settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
+                {!['analytics', 'gps_fleet', 'settings', 'payment_settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
                     {/* Header Action Section */}
                     <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
@@ -1091,6 +1097,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                             Breakdown
                                                         </button>
 
+                                                        <button
+                                                            onClick={() => setPaymentHistoryBooking(booking)}
+                                                            title="View Online Payment Transactions & Gateway Logs"
+                                                            className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Payments
+                                                        </button>
+
                                                         <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
                                                     </>
                                                 ) : (
@@ -1462,7 +1476,13 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 <VehicleProfitAnalytics vehicles={vehicles} />
             )}
 
-                {isAdmin && activeTab === 'settings' && (
+            {isAdmin && activeTab === 'payment_settings' && (
+                <div className="w-full">
+                    <PaymentSettingsTab settings={settings} />
+                </div>
+            )}
+
+            {isAdmin && activeTab === 'settings' && (
                     <div className="space-y-6 max-w-4xl mx-auto">
                         {/* Settings Navigation Sub-tabs */}
                         <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
@@ -1503,6 +1523,15 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                             >
                                 <MessageSquare className="w-4 h-4 text-emerald-500" />
                                 SMS Gateway
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('payment_settings')}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                            >
+                                <Zap className="w-4 h-4 text-[#FF3B30]" />
+                                Payment Gateways
                             </button>
                         </div>
 
@@ -2653,6 +2682,15 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     onUpdated={(updated) => {
                         setSelectedVerifDoc(updated);
                     }}
+                />
+            )}
+
+            {/* Payment Transactions & Ledger Modal */}
+            {paymentHistoryBooking && (
+                <PaymentHistoryModal
+                    booking={paymentHistoryBooking}
+                    isOpen={!!paymentHistoryBooking}
+                    onClose={() => setPaymentHistoryBooking(null)}
                 />
             )}
         </PortalLayout>

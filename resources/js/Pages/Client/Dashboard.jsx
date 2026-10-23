@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import PortalLayout from '@/Layouts/PortalLayout';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
 import CustomerAvailabilityPicker from '@/Components/CustomerAvailabilityPicker';
 import VehicleImage from '@/Components/VehicleImage';
 import ElfaaChatbot from '@/Components/ElfaaChatbot';
 import AlertModal, { showSwal } from '@/Components/AlertModal';
+import OnlinePaymentModal from '@/Components/OnlinePaymentModal';
+import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import { 
     CheckCircle2, 
     AlertTriangle, 
@@ -20,10 +22,14 @@ import {
     Star, 
     CreditCard, 
     Receipt, 
-    ExternalLink 
+    ExternalLink,
+    Smartphone,
+    Zap,
+    Lock
 } from 'lucide-react';
 
 export default function Dashboard({ auth, bookings = [], vehicles = [], documents = [], addOns = [], promos = [], selectedVehicleId = null }) {
+    const { paymentGateways = [] } = usePage().props;
     const [selectedType, setSelectedType] = useState('All');
     const [selectedSeats, setSelectedSeats] = useState('All');
     const [selectedCar, setSelectedCar] = useState(null);
@@ -32,6 +38,10 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     const [ratingStars, setRatingStars] = useState(5);
     const [ratingComment, setRatingComment] = useState('');
     const [alert, setAlert] = useState(null);
+
+    // Online Payment Modals State
+    const [onlinePaymentBooking, setOnlinePaymentBooking] = useState(null);
+    const [viewHistoryBooking, setViewHistoryBooking] = useState(null);
 
     // Booking form
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
@@ -869,20 +879,31 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                 : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-400'
                                                         }`}
                                                     >
-                                                        Cash Payment
+                                                        Cash on Meetup
                                                     </button>
                                                     <button 
                                                         type="button"
                                                         onClick={() => setData('payment_method', 'online')}
-                                                        className={`h-10 border rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center transition-all cursor-pointer ${
+                                                        className={`h-10 border rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                                                             data.payment_method === 'online' 
-                                                                ? 'border-[#FF3B30] bg-red-500/15 text-zinc-900 dark:text-white shadow-sm'
+                                                                ? 'border-[#FF3B30] bg-red-500/15 text-[#FF3B30] shadow-sm'
                                                                 : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-400'
                                                         }`}
                                                     >
-                                                        Online Pay
+                                                        <Zap className="w-3.5 h-3.5" />
+                                                        Online Pay (GCash / Card)
                                                     </button>
                                                 </div>
+                                                {data.payment_method === 'online' && (
+                                                    <div className="mt-2.5 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-[11px] text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Smartphone className="w-4 h-4 text-sky-500" />
+                                                            <CreditCard className="w-4 h-4 text-blue-500" />
+                                                            <span className="font-semibold">GCash & Card Checkout</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black uppercase text-[#FF3B30]">Instant Confirmation</span>
+                                                    </div>
+                                                )}
                                                 {errors.payment_method && <p className="text-xs text-red-500 mt-1">{errors.payment_method}</p>}
                                             </div>
                                         </CardContent>
@@ -982,8 +1003,25 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 pt-0.5">
-                                                                    Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-600 font-extrabold">{booking.payment_method}</span>
+                                                                <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                                                                    <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
+                                                                        Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-600 font-extrabold">{booking.payment_method}</span>
+                                                                    </div>
+
+                                                                    {booking.payment_status === 'paid' ? (
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                                                            Paid {booking.payment_gateway ? `via ${booking.payment_gateway === 'stripe' ? 'Stripe' : 'GCash'}` : 'Online'}
+                                                                        </span>
+                                                                    ) : booking.payment_status === 'partial' ? (
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                                            Partial (Paid: PHP {parseFloat(booking.amount_paid || 0).toLocaleString()})
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
+                                                                            Unpaid
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 {booking.inspections && booking.inspections.length > 0 && (
                                                                     <div className="flex items-center gap-2 pt-1 flex-wrap">
@@ -1013,7 +1051,29 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                 )}
                                                             </div>
 
-                                                            <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-2">
+                                                            <div className="w-full md:w-auto flex flex-wrap md:flex-col items-stretch md:items-end gap-2">
+                                                                {booking.payment_status !== 'paid' && booking.status !== 'cancelled' && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setOnlinePaymentBooking(booking)}
+                                                                        className="px-3.5 h-8 bg-[#FF3B30] hover:bg-red-700 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                                                                    >
+                                                                        <Zap className="w-3.5 h-3.5 text-white" />
+                                                                        Pay Online
+                                                                    </button>
+                                                                )}
+
+                                                                {(booking.payment_status === 'paid' || (booking.amount_paid && parseFloat(booking.amount_paid) > 0)) && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setViewHistoryBooking(booking)}
+                                                                        className="px-3 h-8 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                                    >
+                                                                        <Receipt className="w-3.5 h-3.5 text-emerald-500" />
+                                                                        Receipt
+                                                                    </button>
+                                                                )}
+
                                                                 {booking.status === 'pending' && (
                                                                     <button 
                                                                         onClick={() => handleCancelBooking(booking.id)}
@@ -1346,6 +1406,25 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Customer Online Payment Modal */}
+            {onlinePaymentBooking && (
+                <OnlinePaymentModal
+                    booking={onlinePaymentBooking}
+                    isOpen={!!onlinePaymentBooking}
+                    onClose={() => setOnlinePaymentBooking(null)}
+                    availableGateways={paymentGateways}
+                />
+            )}
+
+            {/* Customer Payment Receipt & History Modal */}
+            {viewHistoryBooking && (
+                <PaymentHistoryModal
+                    booking={viewHistoryBooking}
+                    isOpen={!!viewHistoryBooking}
+                    onClose={() => setViewHistoryBooking(null)}
+                />
             )}
         </PortalLayout>
 

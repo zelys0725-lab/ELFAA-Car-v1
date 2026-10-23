@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ELFAA — Payment Settings Setup Guide</title>
+    <meta name="description" content="Step-by-step guide to configure GCash via PayMongo and Stripe inside the ELFAA Payment Settings admin page." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --brand:      #FF3B30;
+            --brand-glow: rgba(255,59,48,0.18);
+            --brand-dim:  rgba(255,59,48,0.08);
+            --sky:        #0ea5e9;
+            --sky-dim:    rgba(14,165,233,0.08);
+            --sky-glow:   rgba(14,165,233,0.2);
+            --violet:     #8b5cf6;
+            --violet-dim: rgba(139,92,246,0.08);
+            --violet-glow:rgba(139,92,246,0.2);
+            --emerald:    #10b981;
+            --emerald-dim:rgba(16,185,129,0.08);
+            --amber:      #f59e0b;
+            --amber-dim:  rgba(245,158,11,0.08);
+            --bg:         #0a0a0b;
+            --bg-2:       #111114;
+            --bg-3:       #18181c;
+            --bg-card:    #1a1a1f;
+            --border:     rgba(255,255,255,0.07);
+            --border-2:   rgba(255,255,255,0.12);
+            --text:       #f4f4f5;
+            --text-2:     #a1a1aa;
+            --text-3:     #71717a;
+            --shadow:     rgba(0,0,0,0.6);
+        }
+        [data-theme="light"] {
+            --bg:         #f8f9fc;
+            --bg-2:       #f1f3f6;
+            --bg-3:       #e5e7eb;
+            --bg-card:    #ffffff;
+            --border:     rgba(0,0,0,0.07);
+            --border-2:   rgba(0,0,0,0.12);
+            --text:       #111827;
+            --text-2:     #374151;
+            --text-3:     #6b7280;
+            --shadow:     rgba(0,0,0,0.07);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        a { color: var(--brand); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; background: var(--bg-3); color: var(--amber); padding: 0.12em 0.4em; border-radius: 4px; }
+        strong { color: var(--text); }
+        .wrapper { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* ── PROGRESS BAR ── */
+        #prog { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--brand), var(--violet)); z-index: 300; width: 0; transition: width .1s; }
+
+        /* ── TOPBAR ── */
+        .topbar { position: sticky; top: 0; z-index: 200; background: rgba(10,10,11,.93); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); padding: .7rem 0; }
+        [data-theme="light"] .topbar { background: rgba(248,249,252,.93); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .logo { display: flex; align-items: center; gap: .6rem; font-size: .88rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; color: var(--text); }
+        .logo-dot { width: 30px; height: 30px; background: var(--brand); border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: .72rem; font-weight: 900; box-shadow: 0 0 12px var(--brand-glow); }
+        .top-links { display: flex; align-items: center; gap: .65rem; }
+        .top-links a { font-size: .73rem; font-weight: 700; color: var(--text-2); padding: .3rem .75rem; border-radius: 999px; transition: color .2s; }
+        .top-links a:hover { color: var(--text); text-decoration: none; }
+        .top-links a.hi { color: var(--brand); background: var(--brand-dim); border: 1px solid rgba(255,59,48,.2); }
+        .btn-th { padding: .38rem .85rem; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 999px; font-size: .73rem; font-weight: 700; color: var(--text-2); cursor: pointer; transition: all .2s; }
+        .btn-th:hover { color: var(--text); border-color: var(--brand); }
+
+        /* ── HERO ── */
+        .hero { padding: 5rem 0 3.5rem; text-align: center; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -160px; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(ellipse, rgba(255,59,48,.09) 0%, transparent 62%); pointer-events: none; }
+        .eyebrow { display: inline-flex; align-items: center; gap: .5rem; font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--brand); background: var(--brand-dim); border: 1px solid rgba(255,59,48,.2); padding: .28rem .9rem; border-radius: 999px; margin-bottom: 1.4rem; }
+        .eyebrow span { width: 6px; height: 6px; background: var(--brand); border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.25;} }
+        .hero h1 { font-size: clamp(2rem,5vw,3rem); font-weight: 900; letter-spacing: -.025em; line-height: 1.15; margin-bottom: .9rem; }
+        .hero p { font-size: 1rem; color: var(--text-2); max-width: 640px; margin: 0 auto 2.2rem; }
+        .chips { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: center; }
+        .chip { display: inline-flex; align-items: center; gap: .4rem; font-size: .72rem; font-weight: 700; padding: .4rem .85rem; border-radius: 999px; border: 1px solid var(--border-2); background: var(--bg-card); color: var(--text-2); transition: all .2s; white-space: nowrap; }
+        .chip:hover { text-decoration: none; }
+        .chip.sky:hover    { border-color:var(--sky);    color:var(--sky);    background:var(--sky-dim); }
+        .chip.vi:hover     { border-color:var(--violet); color:var(--violet); background:var(--violet-dim); }
+        .chip.rd:hover     { border-color:var(--brand);  color:var(--brand);  background:var(--brand-dim); }
+        .chip.em:hover     { border-color:var(--emerald);color:var(--emerald);background:var(--emerald-dim); }
+
+        /* ── SECTION ── */
+        .sec { padding: 3.5rem 0; border-top: 1px solid var(--border); }
+        .sec-badge { display: inline-flex; align-items: center; gap: .45rem; font-size: .63rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; padding: .28rem .82rem; border-radius: 999px; margin-bottom: .9rem; }
+        .sec-badge.sky  { background:var(--sky-dim);    color:var(--sky);    border:1px solid rgba(14,165,233,.22); }
+        .sec-badge.vi   { background:var(--violet-dim); color:var(--violet); border:1px solid rgba(139,92,246,.22); }
+        .sec-badge.rd   { background:var(--brand-dim);  color:var(--brand);  border:1px solid rgba(255,59,48,.22); }
+        .sec-badge.em   { background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.22); }
+        .sec-badge.am   { background:var(--amber-dim);  color:var(--amber);  border:1px solid rgba(245,158,11,.22); }
+        .sec h2 { font-size: clamp(1.45rem,3vw,2rem); font-weight: 900; letter-spacing: -.02em; margin-bottom: .55rem; }
+        .sec-sub { font-size: .94rem; color: var(--text-2); max-width: 720px; margin-bottom: 2.2rem; line-height: 1.7; }
+
+        /* ── PIPELINE ── */
+        .pipeline { display: flex; flex-direction: column; }
+        .step { display: flex; gap: 1.4rem; align-items: flex-start; padding-bottom: 2rem; }
+        .step-l { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+        .step-n { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: .85rem; font-weight: 900; flex-shrink: 0; }
+        .step-n.sky  { background: var(--sky);    color: #000; box-shadow: 0 0 14px var(--sky-glow); }
+        .step-n.vi   { background: var(--violet); color: #fff; box-shadow: 0 0 14px var(--violet-glow); }
+        .step-n.rd   { background: var(--brand);  color: #fff; box-shadow: 0 0 14px var(--brand-glow); }
+        .step-n.em   { background: var(--emerald);color: #000; box-shadow: 0 0 14px rgba(16,185,129,.4); }
+        .step-line { flex: 1; width: 2px; margin-top: 5px; min-height: 36px; }
+        .step-line.sky  { background: linear-gradient(to bottom, var(--sky),    transparent); }
+        .step-line.vi   { background: linear-gradient(to bottom, var(--violet),  transparent); }
+        .step-line.rd   { background: linear-gradient(to bottom, var(--brand),   transparent); }
+        .step-line.em   { background: linear-gradient(to bottom, var(--emerald), transparent); }
+        .step-c { flex: 1; padding-top: .15rem; }
+        .step-c h4 { font-size: .98rem; font-weight: 800; margin-bottom: .4rem; }
+        .step-c p  { font-size: .875rem; color: var(--text-2); line-height: 1.7; margin-bottom: .65rem; }
+        .step-c ul { font-size: .875rem; color: var(--text-2); padding-left: 1.2rem; line-height: 1.7; margin-bottom: .65rem; }
+        .step-c ul li { margin-bottom: .25rem; }
+
+        /* ── CARD ── */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.3rem 1.5rem; margin: .7rem 0; }
+        .card h5 { font-size: .875rem; font-weight: 800; margin-bottom: .45rem; color: var(--text); }
+        .card p  { font-size: .855rem; color: var(--text-2); line-height: 1.65; }
+        .card ul { font-size: .855rem; color: var(--text-2); padding-left: 1.15rem; margin-top: .35rem; }
+        .card ul li { margin-bottom: .22rem; }
+
+        /* ── CODE BLOCK ── */
+        .code { background: #0c0c0f; border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.3rem; font-family: 'JetBrains Mono', monospace; font-size: .79rem; color: #34d399; overflow-x: auto; white-space: pre; margin: .8rem 0; line-height: 1.8; }
+        .code .dim  { color: #52525b; }
+        .code .y    { color: #fbbf24; }
+        .code .b    { color: #93c5fd; }
+        .code .v    { color: #c4b5fd; }
+        .code .r    { color: #fca5a5; }
+
+        /* ── NOTE BOXES ── */
+        .note { display: flex; gap: .8rem; padding: .9rem 1.2rem; border-radius: 12px; border: 1px solid; font-size: .84rem; line-height: 1.65; margin: .9rem 0; }
+        .note.info  { background: rgba(14,165,233,.07); border-color: rgba(14,165,233,.25); color: #7dd3fc; }
+        .note.warn  { background: rgba(245,158,11,.07); border-color: rgba(245,158,11,.25); color: #fcd34d; }
+        .note.ok    { background: rgba(16,185,129,.07); border-color: rgba(16,185,129,.25); color: #6ee7b7; }
+        .note.danger{ background: rgba(255,59,48,.07);  border-color: rgba(255,59,48,.25);  color: #fca5a5; }
+        .ni { font-size: 1.05rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* ── FIELD MAP ── */
+        .field-map { width: 100%; border-collapse: collapse; font-size: .865rem; margin: 1rem 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+        .field-map th { text-align: left; padding: .65rem 1rem; font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); background: var(--bg-2); border-bottom: 1px solid var(--border); }
+        .field-map td { padding: .8rem 1rem; color: var(--text-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+        .field-map tr:last-child td { border-bottom: none; }
+        .field-map tr:hover td { background: var(--bg-2); }
+        .field-map td:first-child { font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: .8rem; white-space: nowrap; }
+        .tag-req { display: inline-block; font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; padding: .12rem .5rem; border-radius: 999px; background: rgba(255,59,48,.1); color: #ff6b6b; border: 1px solid rgba(255,59,48,.2); }
+        .tag-live{ display: inline-block; font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; padding: .12rem .5rem; border-radius: 999px; background: rgba(16,185,129,.1); color: #34d399; border: 1px solid rgba(16,185,129,.2); }
+
+        /* ── TEST CARDS GRID ── */
+        .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+        @media(max-width:600px){ .test-grid { grid-template-columns: 1fr; } }
+        .test-panel { border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+        .test-head { padding: .9rem 1.2rem; border-bottom: 1px solid var(--border); }
+        .test-head.sky  { background: linear-gradient(135deg, rgba(14,165,233,.1), transparent); }
+        .test-head.vi   { background: linear-gradient(135deg, rgba(139,92,246,.1), transparent); }
+        .test-head h4 { font-size: .88rem; font-weight: 800; margin-bottom: .18rem; }
+        .test-head p  { font-size: .78rem; color: var(--text-3); }
+        .test-body { padding: .9rem 1.2rem; background: var(--bg-card); }
+        .test-row { display: flex; align-items: center; justify-content: space-between; padding: .42rem 0; border-bottom: 1px solid var(--border); font-size: .82rem; gap: .75rem; }
+        .test-row:last-child { border-bottom: none; }
+        .test-row .lbl { color: var(--text-3); white-space: nowrap; }
+        .test-row .val { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: .79rem; padding: .18rem .55rem; border-radius: 6px; background: var(--bg-3); white-space: nowrap; }
+        .val.ok  { color: #10b981; }
+        .val.bad { color: #ef4444; }
+
+        /* ── CHECKLIST ── */
+        .checklist { list-style: none; padding: 0; margin: .8rem 0; display: flex; flex-direction: column; gap: .5rem; }
+        .checklist li { display: flex; align-items: flex-start; gap: .7rem; font-size: .875rem; color: var(--text-2); }
+        .checklist li::before { content: '\2713'; color: var(--emerald); font-weight: 900; flex-shrink: 0; margin-top: .1em; }
+
+        /* ── FOOTER ── */
+        .footer { padding: 2.5rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-3); font-size: .855rem; }
+        .footer strong { color: var(--brand); }
+        .footer a { color: var(--text-2); }
+
+        /* ── BACK TOP ── */
+        #bt { position: fixed; bottom: 1.4rem; right: 1.4rem; width: 40px; height: 40px; border-radius: 50%; background: var(--brand); border: none; color: #fff; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 18px var(--brand-glow); opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s; z-index: 100; }
+        #bt.show { opacity: 1; transform: translateY(0); }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: var(--bg-2); } ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+    </style>
+</head>
+<body>
+<div id="prog"></div>
+<button id="bt" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+
+<!-- TOPBAR -->
+<nav class="topbar">
+    <div class="wrapper topbar-inner">
+        <div class="logo"><div class="logo-dot">E</div>ELFAA Car Rental</div>
+        <div class="top-links">
+            <a href="/deployment-guide.html">Deployment Guide</a>
+            <a href="/payment-guide.html" class="hi">&#128179; Payment Guide</a>
+            <button class="btn-th" onclick="toggleTheme()" id="themeBtn">&#9728;&#65039; Light</button>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+    <div class="wrapper">
+        <div class="eyebrow"><span></span>Admin Configuration Reference</div>
+        <h1>Payment Settings<br>Setup Guide</h1>
+        <p>Exactly what accounts to create, where to find each API key, and which field to paste it into — step by step for GCash (PayMongo) and Stripe.</p>
+        <div class="chips">
+            <a href="#overview"   class="chip rd">&#128203; Overview</a>
+            <a href="#paymongo"   class="chip sky">&#128241; GCash / PayMongo</a>
+            <a href="#stripe"     class="chip vi">&#128179; Stripe Cards</a>
+            <a href="#fill"       class="chip rd">&#9881;&#65039; Fill in the Fields</a>
+            <a href="#webhooks"   class="chip em">&#128279; Webhooks</a>
+            <a href="#testing"    class="chip sky">&#129514; Test &amp; Verify</a>
+            <a href="#golive"     class="chip vi">&#128640; Go Live</a>
+        </div>
+    </div>
+</header>
+
+<!-- OVERVIEW -->
+<section class="sec" id="overview">
+    <div class="wrapper">
+        <div class="sec-badge rd">&#128203; Overview</div>
+        <h2>What You Need to Do</h2>
+        <p class="sec-sub">The Payment Settings page (Admin Workspace &#8594; Payment Settings) lets you activate GCash and Stripe without touching any code. Here is the end-to-end checklist of what you need before filling in the fields.</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.1rem;margin-bottom:2rem;">
+            <div class="card" style="border-color:rgba(14,165,233,.25);">
+                <div style="font-size:1.6rem;margin-bottom:.7rem;">&#128241;</div>
+                <h5 style="color:var(--sky);">GCash via PayMongo</h5>
+                <p>Create a free PayMongo account &#8594; get Test &amp; Live API keys &#8594; register a webhook &#8594; paste keys into the <strong>GCash (PayMongo)</strong> tab.</p>
+            </div>
+            <div class="card" style="border-color:rgba(139,92,246,.25);">
+                <div style="font-size:1.6rem;margin-bottom:.7rem;">&#128179;</div>
+                <h5 style="color:var(--violet);">Stripe Card Payments</h5>
+                <p>Create a free Stripe account &#8594; get Test &amp; Live API keys &#8594; register a webhook &#8594; paste keys into the <strong>Stripe Cards</strong> tab.</p>
+            </div>
+            <div class="card" style="border-color:rgba(16,185,129,.25);">
+                <div style="font-size:1.6rem;margin-bottom:.7rem;">&#9989;</div>
+                <h5 style="color:var(--emerald);">What Happens After</h5>
+                <p>Once saved, the "Pay Online" button appears in the Customer Dashboard. Bookings auto-confirm when payment is received via webhook — no manual action needed.</p>
+            </div>
+        </div>
+
+        <div class="note warn">
+            <span class="ni">&#9888;&#65039;</span>
+            <div>You can set up <strong>Test Mode</strong> and test everything with dummy numbers without a verified business account. You only need business verification to accept <strong>real money (Live Mode)</strong>.</div>
+        </div>
+    </div>
+</section>
+
+<!-- PART 1: PAYMONGO -->
+<section class="sec" id="paymongo">
+    <div class="wrapper">
+        <div class="sec-badge sky">&#128241; Part 1 — GCash via PayMongo</div>
+        <h2>Create a PayMongo Account &amp; Get Your Keys</h2>
+        <p class="sec-sub">PayMongo is the payment gateway that processes GCash in ELFAA. You will create a free account, then copy 3 keys (Test Public Key, Test Secret Key, Test Webhook Secret) into the Payment Settings page.</p>
+
+        <div class="pipeline">
+
+            <!-- STEP 1 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n sky">1</div>
+                    <div class="step-line sky"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Go to PayMongo and Sign Up</h4>
+                    <p>Open <a href="https://dashboard.paymongo.com/signup" target="_blank" rel="noopener"><strong>dashboard.paymongo.com/signup</strong></a> in your browser.</p>
+                    <div class="card">
+                        <h5>Fill in the registration form:</h5>
+                        <ul>
+                            <li><strong>Full Name</strong> — your name as business owner</li>
+                            <li><strong>Email Address</strong> — use a business email you check regularly</li>
+                            <li><strong>Password</strong> — use a strong password</li>
+                            <li><strong>Mobile Number</strong> — for OTP verification</li>
+                            <li><strong>Business Name</strong> — e.g. <em>ELFAA Car Rental</em></li>
+                            <li><strong>Business Type</strong> — select <em>Transportation / Car Rental</em></li>
+                        </ul>
+                    </div>
+                    <div class="note info">
+                        <span class="ni">&#8505;&#65039;</span>
+                        <div>PayMongo will send an email verification link. Open your email and click <strong>Verify Email</strong> before continuing. Check your spam folder if you don't see it.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n sky">2</div>
+                    <div class="step-line sky"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Navigate to API Keys</h4>
+                    <p>After logging in, go to:</p>
+                    <div class="code"><span class="dim"># Inside PayMongo Dashboard:</span>
+Settings &#8594; API Keys</div>
+                    <p>You will see a <strong>Test Keys</strong> section (immediately available) and a <strong>Live Keys</strong> section (available after business verification).</p>
+                </div>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n sky">3</div>
+                    <div class="step-line sky"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Copy Your API Keys</h4>
+                    <p>Copy each key shown below. You will paste them directly into the GCash tab of the Payment Settings page.</p>
+                    <div class="code"><span class="dim"># Test Keys (available immediately):</span>
+<span class="y">Test Public Key</span>  →  <span class="b">pk_test_xxxxxxxxxxxxxxxxxxxx</span>
+<span class="y">Test Secret Key</span>  →  <span class="b">sk_test_xxxxxxxxxxxxxxxxxxxx</span>
+
+<span class="dim"># Live Keys (after KYB verification — for real payments):</span>
+<span class="v">Live Public Key</span>  →  <span class="b">pk_live_xxxxxxxxxxxxxxxxxxxx</span>
+<span class="v">Live Secret Key</span>  →  <span class="b">sk_live_xxxxxxxxxxxxxxxxxxxx</span></div>
+                    <div class="note danger">
+                        <span class="ni">&#128272;</span>
+                        <div>The <strong>Secret Key</strong> gives full access to your PayMongo account. Never paste it anywhere public, share it via chat, or commit it to GitHub. The ELFAA admin masks it after you save.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n sky">4</div>
+                    <div class="step-line sky"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Create a Webhook &amp; Copy the Webhook Secret</h4>
+                    <p>In the PayMongo Dashboard go to:</p>
+                    <div class="code"><span class="dim"># Navigate to:</span>
+Settings &#8594; Webhooks &#8594; Add Endpoint
+
+<span class="dim"># Enter this exact URL (replace with your real domain):</span>
+<span class="y">https://YOUR-DOMAIN.com/api/webhooks/paymongo</span>
+
+<span class="dim"># Select these 3 events to monitor:</span>
+payment.paid
+payment.failed
+source.chargeable</div>
+                    <div class="card">
+                        <h5>After clicking Create:</h5>
+                        <ul>
+                            <li>PayMongo will show a <strong>Webhook Secret Key</strong> — it starts with <code>whsk_</code></li>
+                            <li>Copy it immediately (it is only shown once)</li>
+                            <li>Paste it into <strong>Test Webhook Secret</strong> in the Payment Settings GCash tab</li>
+                        </ul>
+                    </div>
+                    <div class="note info">
+                        <span class="ni">&#8505;&#65039;</span>
+                        <div>If your site runs on <strong>localhost</strong> during development, use <a href="https://ngrok.com" target="_blank">ngrok.com</a> to get a public URL first: run <code>ngrok http 8000</code> then use the <code>https://xxxx.ngrok.io</code> URL as your webhook endpoint.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 5 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n sky">5</div>
+                </div>
+                <div class="step-c">
+                    <h4>Verify Your Business (for Live Mode)</h4>
+                    <p>To accept real GCash payments you need KYB (Know Your Business) verification. Go to <strong>Settings &#8594; Account Verification</strong> and upload:</p>
+                    <ul>
+                        <li>DTI or SEC Business Registration Certificate</li>
+                        <li>BIR Certificate of Registration (Form 2303)</li>
+                        <li>Valid government ID of the business owner</li>
+                        <li>Business address proof (utility bill or lease agreement)</li>
+                    </ul>
+                    <div class="note warn">
+                        <span class="ni">&#9888;&#65039;</span>
+                        <div>Verification takes <strong>3–7 business days</strong>. You can skip this for now and test with Test Mode keys first. Come back and add the Live Keys once verified.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end pipeline -->
+    </div>
+</section>
+
+<!-- PART 2: STRIPE -->
+<section class="sec" id="stripe">
+    <div class="wrapper">
+        <div class="sec-badge vi">&#128179; Part 2 — Stripe Card Payments</div>
+        <h2>Create a Stripe Account &amp; Get Your Keys</h2>
+        <p class="sec-sub">Stripe handles Visa, Mastercard, and Amex card payments. Create a free account and copy 3 keys (Test Publishable, Test Secret, Test Webhook Signing Secret) into the Stripe Cards tab of Payment Settings.</p>
+
+        <div class="pipeline">
+
+            <!-- STEP 1 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n vi">1</div>
+                    <div class="step-line vi"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Go to Stripe and Sign Up</h4>
+                    <p>Open <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener"><strong>dashboard.stripe.com/register</strong></a> in your browser.</p>
+                    <div class="card">
+                        <h5>Fill in the registration form:</h5>
+                        <ul>
+                            <li><strong>Email Address</strong> — your business email</li>
+                            <li><strong>Full Name</strong></li>
+                            <li><strong>Password</strong></li>
+                            <li>Verify your email via the confirmation link Stripe sends</li>
+                            <li>After login: select <strong>Country: Philippines</strong></li>
+                            <li>Business type: <strong>Individual</strong> or <strong>Company</strong></li>
+                            <li>Industry: <strong>Transportation &#8594; Car Rental</strong></li>
+                        </ul>
+                    </div>
+                    <div class="note ok">
+                        <span class="ni">&#9989;</span>
+                        <div>Stripe gives you <strong>full test access immediately</strong> after email verification — no waiting, no business documents needed yet. You can copy your test keys and start testing right now.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n vi">2</div>
+                    <div class="step-line vi"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Navigate to API Keys</h4>
+                    <p>In the Stripe Dashboard go to:</p>
+                    <div class="code"><span class="dim"># Inside Stripe Dashboard:</span>
+Developers &#8594; API Keys</div>
+                    <p>At the top of the Stripe Dashboard there is a <strong>Test mode / Live mode toggle</strong>. Make sure you are in <strong>Test mode</strong> first to copy Test keys.</p>
+                </div>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n vi">3</div>
+                    <div class="step-line vi"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Copy Your Stripe API Keys</h4>
+                    <div class="code"><span class="dim"># In TEST MODE — copy these two keys:</span>
+<span class="y">Test Publishable Key</span>  →  <span class="b">pk_test_xxxxxxxxxxxxxxxxxxxx</span>
+<span class="y">Test Secret Key</span>       →  <span class="b">sk_test_xxxxxxxxxxxxxxxxxxxx</span>
+                                  <span class="dim">(click "Reveal test key" to see it)</span>
+
+<span class="dim"># In LIVE MODE — copy these two keys (after verification):</span>
+<span class="v">Live Publishable Key</span>  →  <span class="b">pk_live_xxxxxxxxxxxxxxxxxxxx</span>
+<span class="v">Live Secret Key</span>       →  <span class="b">sk_live_xxxxxxxxxxxxxxxxxxxx</span>
+                                  <span class="dim">(click "Reveal" to see it)</span></div>
+                    <div class="note danger">
+                        <span class="ni">&#128272;</span>
+                        <div>The Stripe <strong>Secret Key</strong> must be kept private. Never expose it in frontend code or share it. ELFAA only uses it server-side and masks it in the admin panel.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n vi">4</div>
+                    <div class="step-line vi"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Create a Stripe Webhook Endpoint</h4>
+                    <p>In the Stripe Dashboard go to:</p>
+                    <div class="code"><span class="dim"># Navigate to:</span>
+Developers &#8594; Webhooks &#8594; Add Endpoint
+
+<span class="dim"># Enter this URL (replace with your real domain):</span>
+<span class="y">https://YOUR-DOMAIN.com/api/webhooks/stripe</span>
+
+<span class="dim"># Select these events to listen to:</span>
+checkout.session.completed
+payment_intent.succeeded
+payment_intent.payment_failed
+charge.refunded</div>
+                    <div class="card">
+                        <h5>After the endpoint is created:</h5>
+                        <ul>
+                            <li>Click on the endpoint you just created to open it</li>
+                            <li>Scroll down to <strong>Signing Secret</strong> and click <strong>Reveal</strong></li>
+                            <li>The secret starts with <code>whsec_</code> — copy the whole value</li>
+                            <li>Paste it into <strong>Test Webhook Secret</strong> in the Payment Settings Stripe tab</li>
+                        </ul>
+                    </div>
+                    <div class="note danger">
+                        <span class="ni">&#128272;</span>
+                        <div>The Webhook Signing Secret is what proves an event actually came from Stripe. Without it, ELFAA cannot verify webhooks and bookings will NOT auto-confirm after payment.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 5 -->
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n vi">5</div>
+                </div>
+                <div class="step-c">
+                    <h4>Activate Your Stripe Account (for Live Mode)</h4>
+                    <p>To accept real card payments, click <strong>"Activate your account"</strong> on the Stripe Dashboard home. You will need to provide:</p>
+                    <ul>
+                        <li>Valid government-issued ID (passport, driver's license, or TIN/SSS card)</li>
+                        <li>DTI or SEC Business Registration Certificate</li>
+                        <li>Tax Identification Number (TIN)</li>
+                        <li>Your ELFAA website URL (must be live with HTTPS)</li>
+                        <li>Philippine bank account for payouts (BDO, BPI, UnionBank, etc.)</li>
+                    </ul>
+                    <div class="note warn">
+                        <span class="ni">&#9888;&#65039;</span>
+                        <div>Stripe activation takes <strong>1–3 business days</strong>. Use Test Mode in the meantime. Your website must be live and accessible when Stripe reviews it.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end pipeline -->
+    </div>
+</section>
+
+<!-- PART 3: FILL IN THE FIELDS -->
+<section class="sec" id="fill">
+    <div class="wrapper">
+        <div class="sec-badge rd">&#9881;&#65039; Part 3 — Fill in Payment Settings</div>
+        <h2>Paste Your Keys into the Admin Dashboard</h2>
+        <p class="sec-sub">Open <strong>Administrator Workspace &#8594; Payment Settings</strong>. You will see the tabs shown below. Here is exactly which key goes in which field.</p>
+
+        <!-- GCash fields table -->
+        <h3 style="font-size:1rem;font-weight:800;margin-bottom:.9rem;color:var(--sky);">&#128241; GCash (PayMongo) Tab — Field Reference</h3>
+        <table class="field-map">
+            <thead>
+                <tr>
+                    <th>Field in Payment Settings</th>
+                    <th>Where to Find It in PayMongo</th>
+                    <th>Required?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GCash Gateway Status</td>
+                    <td>Toggle the switch to <strong>Enabled</strong></td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Processing Mode</td>
+                    <td>Select <strong>Test Mode</strong> now; switch to <strong>Live Mode</strong> after KYB verification</td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Test Public Key<br><small style="color:var(--text-3)">(pk_test_...)</small></td>
+                    <td>PayMongo Dashboard &#8594; <strong>Settings &#8594; API Keys &#8594; Test Public Key</strong></td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Test Secret Key<br><small style="color:var(--text-3)">(sk_test_...)</small></td>
+                    <td>PayMongo Dashboard &#8594; <strong>Settings &#8594; API Keys &#8594; Test Secret Key</strong></td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Test Webhook Secret<br><small style="color:var(--text-3)">(whsk_...)</small></td>
+                    <td>PayMongo Dashboard &#8594; <strong>Settings &#8594; Webhooks &#8594; Your Endpoint &#8594; Webhook Secret</strong></td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Live Public Key<br><small style="color:var(--text-3)">(pk_live_...)</small></td>
+                    <td>PayMongo Dashboard &#8594; <strong>Settings &#8594; API Keys</strong> (visible after KYB approval)</td>
+                    <td><span class="tag-live">Live Only</span></td>
+                </tr>
+                <tr>
+                    <td>Live Secret Key<br><small style="color:var(--text-3)">(sk_live_...)</small></td>
+                    <td>PayMongo Dashboard &#8594; <strong>Settings &#8594; API Keys &#8594; Live Secret Key</strong></td>
+                    <td><span class="tag-live">Live Only</span></td>
+                </tr>
+                <tr>
+                    <td>Live Webhook Secret<br><small style="color:var(--text-3)">(whsk_...)</small></td>
+                    <td>PayMongo Dashboard &#8594; <strong>Settings &#8594; Webhooks &#8594; Live Webhook Secret</strong></td>
+                    <td><span class="tag-live">Live Only</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Stripe fields table -->
+        <h3 style="font-size:1rem;font-weight:800;margin:2rem 0 .9rem;color:var(--violet);">&#128179; Stripe Cards Tab — Field Reference</h3>
+        <table class="field-map">
+            <thead>
+                <tr>
+                    <th>Field in Payment Settings</th>
+                    <th>Where to Find It in Stripe</th>
+                    <th>Required?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Stripe Gateway Status</td>
+                    <td>Toggle the switch to <strong>Enabled</strong></td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Processing Mode</td>
+                    <td>Select <strong>Test Mode</strong> now; switch to <strong>Live Mode</strong> after account activation</td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Test Public Key<br><small style="color:var(--text-3)">(pk_test_...)</small></td>
+                    <td>Stripe Dashboard &#8594; <strong>Developers &#8594; API Keys &#8594; Publishable key</strong> (in Test mode)</td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Test Secret Key<br><small style="color:var(--text-3)">(sk_test_...)</small></td>
+                    <td>Stripe Dashboard &#8594; <strong>Developers &#8594; API Keys &#8594; Secret key &#8594; click Reveal</strong> (in Test mode)</td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Test Webhook Secret<br><small style="color:var(--text-3)">(whsec_...)</small></td>
+                    <td>Stripe Dashboard &#8594; <strong>Developers &#8594; Webhooks &#8594; Your Endpoint &#8594; Signing Secret &#8594; Reveal</strong></td>
+                    <td><span class="tag-req">Required</span></td>
+                </tr>
+                <tr>
+                    <td>Live Public Key<br><small style="color:var(--text-3)">(pk_live_...)</small></td>
+                    <td>Stripe Dashboard &#8594; switch to <strong>Live mode</strong> &#8594; Developers &#8594; API Keys &#8594; Publishable key</td>
+                    <td><span class="tag-live">Live Only</span></td>
+                </tr>
+                <tr>
+                    <td>Live Secret Key<br><small style="color:var(--text-3)">(sk_live_...)</small></td>
+                    <td>Stripe Dashboard &#8594; switch to <strong>Live mode</strong> &#8594; Developers &#8594; API Keys &#8594; Secret key &#8594; Reveal</td>
+                    <td><span class="tag-live">Live Only</span></td>
+                </tr>
+                <tr>
+                    <td>Live Webhook Secret<br><small style="color:var(--text-3)">(whsec_...)</small></td>
+                    <td>Stripe Dashboard &#8594; Live mode &#8594; <strong>Developers &#8594; Webhooks &#8594; Live Endpoint &#8594; Signing Secret</strong></td>
+                    <td><span class="tag-live">Live Only</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Test Connection + Save -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:1.8rem;">
+            <div class="card" style="border-color:rgba(16,185,129,.25);">
+                <h5>&#9989; Test the API Connection</h5>
+                <p>Inside each gateway tab there is a <strong>"Test GCash API"</strong> or <strong>"Test Stripe API"</strong> button. Click it after entering your keys — a green popup means the keys are valid and the connection works.</p>
+            </div>
+            <div class="card" style="border-color:rgba(255,59,48,.25);">
+                <h5>&#128190; Save Payment Settings</h5>
+                <p>Click the red <strong>"Save Payment Settings"</strong> button at the bottom. A success alert confirms the settings were saved to the database. The amber warning bar at the bottom shows when you have unsaved changes.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- WEBHOOKS SETUP -->
+<section class="sec" id="webhooks">
+    <div class="wrapper">
+        <div class="sec-badge em">&#128279; Webhook Setup</div>
+        <h2>Webhook URLs to Register</h2>
+        <p class="sec-sub">Webhooks are how the payment provider tells ELFAA a payment was received. Without them, bookings will NOT auto-confirm. Register these exact URLs in both dashboards.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;">
+            <div class="card" style="border-color:rgba(14,165,233,.25);">
+                <h5 style="color:var(--sky);">&#128241; PayMongo — GCash Webhook</h5>
+                <div class="code" style="margin-top:.7rem;">https://YOUR-DOMAIN.com
+/api/webhooks/paymongo</div>
+                <p style="font-size:.82rem;color:var(--text-3);margin-top:.5rem;">Register at: <strong>Settings &#8594; Webhooks &#8594; Add Endpoint</strong><br>Events: <code>payment.paid</code> &nbsp;<code>payment.failed</code> &nbsp;<code>source.chargeable</code></p>
+            </div>
+            <div class="card" style="border-color:rgba(139,92,246,.25);">
+                <h5 style="color:var(--violet);">&#128179; Stripe — Card Payments Webhook</h5>
+                <div class="code" style="margin-top:.7rem;">https://YOUR-DOMAIN.com
+/api/webhooks/stripe</div>
+                <p style="font-size:.82rem;color:var(--text-3);margin-top:.5rem;">Register at: <strong>Developers &#8594; Webhooks &#8594; Add Endpoint</strong><br>Events: <code>checkout.session.completed</code> &nbsp;<code>payment_intent.succeeded</code> &nbsp;<code>payment_intent.payment_failed</code></p>
+            </div>
+        </div>
+
+        <div class="note warn" style="margin-top:1.2rem;">
+            <span class="ni">&#9888;&#65039;</span>
+            <div><strong>Important:</strong> Webhook URLs must be publicly accessible HTTPS URLs. If testing on <strong>localhost</strong>, use <a href="https://ngrok.com" target="_blank">ngrok</a> — run <code>ngrok http 8000</code>, then use the generated <code>https://xxxx.ngrok.io</code> URL as your webhook endpoint. Remember to update the URL when you go live on a real domain.</div>
+        </div>
+
+        <div class="note info" style="margin-top:.8rem;">
+            <span class="ni">&#128270;</span>
+            <div><strong>Local Stripe Webhook Testing (Stripe CLI method):</strong>
+                <div class="code" style="margin-top:.6rem;"><span class="dim"># Install Stripe CLI, then run:</span>
+stripe login
+stripe listen --forward-to localhost:8000/api/webhooks/stripe
+<span class="dim"># Use the webhook secret the CLI prints in the admin Test Webhook Secret field</span>
+<span class="dim"># Trigger a test event:</span>
+stripe trigger checkout.session.completed</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TESTING -->
+<section class="sec" id="testing">
+    <div class="wrapper">
+        <div class="sec-badge sky">&#129514; Testing Payments</div>
+        <h2>Test Mode Credentials</h2>
+        <p class="sec-sub">Always test in <strong>Test Mode</strong> before switching to Live Mode. Use these dummy credentials — no real money is charged.</p>
+
+        <div class="test-grid">
+            <div class="test-panel">
+                <div class="test-head sky">
+                    <h4>&#128241; PayMongo GCash Test</h4>
+                    <p>Use during GCash checkout in Test Mode</p>
+                </div>
+                <div class="test-body">
+                    <div class="test-row"><span class="lbl">GCash Test Number</span><span class="val">09170000001</span></div>
+                    <div class="test-row"><span class="lbl">OTP — Payment Success</span><span class="val ok">123456</span></div>
+                    <div class="test-row"><span class="lbl">OTP — Payment Failed</span><span class="val bad">654321</span></div>
+                    <div class="test-row"><span class="lbl">Result</span><span class="val ok">Booking auto-confirms</span></div>
+                </div>
+            </div>
+            <div class="test-panel">
+                <div class="test-head vi">
+                    <h4>&#128179; Stripe Test Card Numbers</h4>
+                    <p>Use on the Stripe Checkout page in Test Mode</p>
+                </div>
+                <div class="test-body">
+                    <div class="test-row"><span class="lbl">Visa — Success</span><span class="val ok">4242 4242 4242 4242</span></div>
+                    <div class="test-row"><span class="lbl">Mastercard — Success</span><span class="val ok">5555 5555 5555 4444</span></div>
+                    <div class="test-row"><span class="lbl">Card Declined</span><span class="val bad">4000 0000 0000 0002</span></div>
+                    <div class="test-row"><span class="lbl">Insufficient Funds</span><span class="val bad">4000 0000 0000 9995</span></div>
+                    <div class="test-row"><span class="lbl">Expiry / CVC / ZIP</span><span class="val">12/34 &nbsp;•&nbsp; 123 &nbsp;•&nbsp; 12345</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note ok" style="margin-top:1.2rem;">
+            <span class="ni">&#9989;</span>
+            <div><strong>After a successful test payment, verify:</strong>
+                <ul class="checklist" style="margin-top:.5rem;">
+                    <li>A "Pay Online" button appears in the Customer Dashboard for approved bookings</li>
+                    <li>Clicking it shows the GCash / Stripe card selection modal</li>
+                    <li>Completing payment redirects back to ELFAA with a success message</li>
+                    <li>The booking status changes to <strong>Confirmed</strong> automatically in the admin Bookings Log</li>
+                    <li>Payment history is visible in the Customer Dashboard as a receipt</li>
+                    <li>Webhook delivery log in PayMongo / Stripe shows a <strong>200 OK</strong> response</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- GO LIVE -->
+<section class="sec" id="golive">
+    <div class="wrapper">
+        <div class="sec-badge vi">&#128640; Go Live Checklist</div>
+        <h2>Switching to Live Mode</h2>
+        <p class="sec-sub">When you're ready to accept real payments, follow this checklist. Go through it item by item before switching your Payment Settings to Live Mode.</p>
+
+        <div class="pipeline">
+
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n em">1</div>
+                    <div class="step-line em"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Confirm Business Verification is Approved</h4>
+                    <p>Check both <strong>PayMongo Dashboard</strong> and <strong>Stripe Dashboard</strong> for any pending items. Both must show a <em>Verified</em> or <em>Active</em> account status. Stripe also requires your business website to be live at this point.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n em">2</div>
+                    <div class="step-line em"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Register Live Webhook Endpoints</h4>
+                    <p>In both PayMongo and Stripe, create <strong>new webhook endpoints</strong> using your real production HTTPS domain. Copy the new Live Webhook Secrets for each provider.</p>
+                    <div class="code"><span class="dim"># Production webhook URLs:</span>
+<span class="y">https://elfaacarrental.com/api/webhooks/paymongo</span>
+<span class="y">https://elfaacarrental.com/api/webhooks/stripe</span></div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n em">3</div>
+                    <div class="step-line em"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Enter Live Keys in the Admin Dashboard</h4>
+                    <p>Go to <strong>Payment Settings</strong> in the admin. In each gateway tab fill in the <strong>Live Production Keys</strong> section with your <code>pk_live_</code>, <code>sk_live_</code>, and live webhook secret. Then switch <strong>Processing Mode</strong> to <strong>Live Mode</strong> and save.</p>
+                    <div class="note danger">
+                        <span class="ni">&#128272;</span>
+                        <div>Triple-check that you're pasting <strong>Live Keys</strong> (not Test Keys) into the Live fields. Mixing them up causes payment failures for real customers.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n em">4</div>
+                    <div class="step-line em"></div>
+                </div>
+                <div class="step-c">
+                    <h4>Run One Real Test Payment</h4>
+                    <p>Make a small real payment using an actual GCash account or real credit card. Confirm the transaction appears in the ELFAA admin and in the provider's live dashboard. Then refund yourself if needed.</p>
+                    <div class="note ok">
+                        <span class="ni">&#9989;</span>
+                        <div>Once the live payment confirms and the booking auto-confirms in admin — you're fully live. Payments are active for customers.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-l">
+                    <div class="step-n em">5</div>
+                </div>
+                <div class="step-c">
+                    <h4>Monitor &amp; Emergency Rollback</h4>
+                    <ul>
+                        <li>Check Admin Bookings Log — booking statuses update after payment</li>
+                        <li>Check PayMongo / Stripe webhook delivery logs — all responses should be <strong>200 OK</strong></li>
+                        <li>If payments break: go to Payment Settings &#8594; toggle the gateway to <strong>Disabled</strong> &#8594; Save — this instantly removes the Pay Online button for customers with zero downtime</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div><!-- end pipeline -->
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="wrapper">
+        <p>ELFAA Car Rental &nbsp;&#8212;&nbsp; <strong>Payment Settings Setup Guide</strong></p>
+        <p style="margin-top:.5rem;">
+            <a href="https://dashboard.paymongo.com" target="_blank">PayMongo Dashboard</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://docs.paymongo.com" target="_blank">PayMongo Docs</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://dashboard.stripe.com" target="_blank">Stripe Dashboard</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://stripe.com/docs" target="_blank">Stripe Docs</a>
+            &nbsp;&middot;&nbsp;
+            <a href="/deployment-guide.html">Deployment Guide</a>
+        </p>
+        <p style="margin-top:.5rem;font-size:.78rem;color:var(--text-3);">Keep API keys and webhook secrets confidential. Do not share them with unauthorized parties.</p>
+    </div>
+</footer>
+
+<script>
+    function toggleTheme() {
+        const h = document.documentElement;
+        const light = h.dataset.theme === 'light';
+        h.dataset.theme = light ? 'dark' : 'light';
+        document.getElementById('themeBtn').textContent = light ? '\u2600\uFE0F Light' : '\uD83C\uDF19 Dark';
+        localStorage.setItem('elfaa-pg-theme', h.dataset.theme);
+    }
+    const sv = localStorage.getItem('elfaa-pg-theme');
+    if (sv) {
+        document.documentElement.dataset.theme = sv;
+        document.getElementById('themeBtn').textContent = sv === 'light' ? '\uD83C\uDF19 Dark' : '\u2600\uFE0F Light';
+    }
+    window.addEventListener('scroll', () => {
+        const s = window.scrollY, m = document.body.scrollHeight - window.innerHeight;
+        document.getElementById('prog').style.width = (s / m * 100) + '%';
+        const b = document.getElementById('bt');
+        s > 380 ? b.classList.add('show') : b.classList.remove('show');
+    });
+</script>
+</body>
+</html>

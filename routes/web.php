@@ -133,7 +133,25 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     Route::get('/gps/live-fleet', [App\Http\Controllers\GpsTrackerController::class, 'liveFleet'])->name('gps.live_fleet');
     Route::get('/gps/route-history/{vehicle}', [App\Http\Controllers\GpsTrackerController::class, 'routeHistory'])->name('gps.route_history');
     Route::post('/vehicles/{vehicle}/gps-config', [App\Http\Controllers\GpsTrackerController::class, 'updateConfig'])->name('vehicles.gps_config');
+
+    // Payment Settings & Gateway Diagnostics (Admin Only)
+    Route::post('/payment-settings', [App\Http\Controllers\PaymentController::class, 'updatePaymentSettings'])->name('payment_settings.update');
+    Route::post('/payment-settings/test-connection', [App\Http\Controllers\PaymentController::class, 'testConnection'])->name('payment_settings.test_connection');
 });
+
+// ================= SECURE ONLINE PAYMENTS & WEBHOOKS =================
+Route::middleware(['auth', 'nocache'])->group(function () {
+    Route::post('/bookings/{booking}/pay', [App\Http\Controllers\PaymentController::class, 'initiateCheckout'])->name('bookings.pay');
+    Route::get('/bookings/{booking}/transactions', [App\Http\Controllers\PaymentController::class, 'getBookingTransactions'])->name('bookings.transactions');
+});
+
+// Customer Redirect Callbacks
+Route::get('/payment/success', [App\Http\Controllers\PaymentController::class, 'paymentSuccess'])->name('payment.success');
+Route::get('/payment/cancel', [App\Http\Controllers\PaymentController::class, 'paymentCancel'])->name('payment.cancel');
+
+// Payment Webhooks (CSRF exempt under /api/*)
+Route::post('/api/webhooks/stripe', [App\Http\Controllers\PaymentController::class, 'stripeWebhook'])->name('webhooks.stripe');
+Route::post('/api/webhooks/paymongo', [App\Http\Controllers\PaymentController::class, 'paymongoWebhook'])->name('webhooks.paymongo');
 
 // Public GPS Phone Transmitter & Traccar Ingestion Endpoints
 Route::post('/api/gps/ping', [App\Http\Controllers\GpsTrackerController::class, 'recordPing'])->name('gps.ping');
