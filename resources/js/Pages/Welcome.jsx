@@ -81,8 +81,8 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                 });
             });
         } else {
-            // Logged in, redirect to renter dashboard booking modal
-            window.location.href = '/client/dashboard?select_vehicle=' + vehicle.id;
+            // Logged in, redirect to renter dashboard browse fleet
+            window.location.href = '/client/dashboard?tab=fleet&select_vehicle=' + vehicle.id;
         }
     };
 
@@ -110,23 +110,27 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
             <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 dark:bg-gray-950/90 dark:border-gray-900 shadow-sm transition-all">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        {settings?.site_logo_image ? (
-                            <img src={settings.site_logo_image} className="h-10 max-w-[150px] object-contain rounded" alt={settings?.site_logo || 'Logo'} />
-                        ) : (
-                            <Link href="/" className="flex items-center gap-2.5 group">
-                                <div className="h-10 w-10 rounded-lg bg-[#FF3B30] flex items-center justify-center p-2 shadow-md group-hover:scale-105 transition-transform">
+                        <Link href="/" className="flex items-center gap-2.5 group">
+                            {settings?.site_logo_image ? (
+                                <img 
+                                    src={settings.site_logo_image} 
+                                    className="h-10 w-auto max-w-[120px] object-contain rounded group-hover:scale-105 transition-transform shrink-0" 
+                                    alt={settings?.site_logo || 'Logo'} 
+                                />
+                            ) : (
+                                <div className="h-10 w-10 rounded-lg bg-[#FF3B30] flex items-center justify-center p-2 shadow-md group-hover:scale-105 transition-transform shrink-0">
                                     <ApplicationLogo className="w-full h-full fill-white" />
                                 </div>
-                                <div>
-                                    <span className="font-black text-lg tracking-tight text-gray-900 dark:text-white uppercase leading-none block">
-                                        {settings?.site_logo || 'ELFAA'}
-                                    </span>
-                                    <span className="text-[10px] uppercase font-bold text-[#FF3B30] block tracking-widest mt-0.5">
-                                        CAR RENTAL
-                                    </span>
-                                </div>
-                            </Link>
-                        )}
+                            )}
+                            <div>
+                                <span className="font-black text-lg tracking-tight text-gray-900 dark:text-white uppercase leading-none block">
+                                    {settings?.site_logo || 'ELFAA'}
+                                </span>
+                                <span className="text-[10px] uppercase font-bold text-[#FF3B30] block tracking-widest mt-0.5">
+                                    CAR RENTAL
+                                </span>
+                            </div>
+                        </Link>
                     </div>
 
                     <nav className="hidden md:flex items-center gap-8 text-sm font-semibold">
@@ -363,26 +367,31 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
             {/* Footer */}
             <footer className="bg-gray-950 text-gray-400 border-t border-gray-800 py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex items-center gap-3">
-                        {settings?.site_logo_image ? (
-                            <img src={settings.site_logo_image} className="h-8 max-w-[120px] object-contain rounded" alt={settings?.site_logo || 'Logo'} />
-                        ) : (
-                            <>
-                                <div className="h-8 w-8 rounded-lg bg-[#FF3B30] flex items-center justify-center p-1.5 shadow">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 text-left">
+                        <div className="flex items-center gap-2.5">
+                            {settings?.site_logo_image ? (
+                                <img 
+                                    src={settings.site_logo_image} 
+                                    className="h-9 w-auto max-w-[120px] object-contain rounded shrink-0" 
+                                    alt={settings?.site_logo || 'Logo'} 
+                                />
+                            ) : (
+                                <div className="h-8 w-8 rounded-lg bg-[#FF3B30] flex items-center justify-center p-1.5 shadow shrink-0">
                                     <ApplicationLogo className="w-full h-full fill-white" />
                                 </div>
-                                <div className="text-left">
-                                    <span className="font-black text-white uppercase tracking-tight text-sm block">
-                                        {settings?.site_logo || 'ELFAA CAR RENTAL'}
-                                    </span>
-                                </div>
-                            </>
-                        )}
-                        <div className="text-left font-medium">
-                            <div className="text-[11px] text-gray-400 space-y-0.5 mt-1">
-                                {settings?.contact_email && <p>Email: {settings.contact_email}</p>}
-                                {settings?.contact_phone && <p>Phone: {settings.contact_phone}</p>}
+                            )}
+                            <div>
+                                <span className="font-black text-white uppercase tracking-tight text-sm block leading-none">
+                                    {settings?.site_logo || 'ELFAA CAR RENTAL'}
+                                </span>
+                                <span className="text-[9px] uppercase font-bold text-[#FF3B30] block tracking-wider mt-0.5">
+                                    PREMIUM VEHICLE FLEET
+                                </span>
                             </div>
+                        </div>
+                        <div className="text-[11px] text-gray-400 space-y-0.5 sm:border-l sm:border-gray-800 sm:pl-4">
+                            {settings?.contact_email && <p>Email: {settings.contact_email}</p>}
+                            {settings?.contact_phone && <p>Phone: {settings.contact_phone}</p>}
                         </div>
                     </div>
 

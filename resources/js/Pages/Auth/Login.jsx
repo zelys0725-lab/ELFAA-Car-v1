@@ -5,7 +5,7 @@ import TextInput from '@/Components/TextInput';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2, ShieldAlert, Clock } from 'lucide-react';
+import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2, ShieldAlert, Clock, PhoneCall } from 'lucide-react';
 
 const CAROUSEL_IMAGES = [
     {
@@ -46,10 +46,12 @@ export default function Login({ status, canResetPassword }) {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
-    // Parse seconds remaining from throttle error message (appended as '|seconds:N')
     const rawEmailError = errors.email || '';
     const isThrottled = rawEmailError.includes('|seconds:');
-    const isLocked = rawEmailError === 'Your account has been locked by an administrator. Please contact support.';
+    const isLocked = !isThrottled && (
+        rawEmailError.toLowerCase().includes('account has been locked') ||
+        rawEmailError.toLowerCase().includes('account is locked')
+    );
     const isDeactivated = rawEmailError === 'Your account has been deactivated. Please contact support.';
     const displayEmailError = isThrottled ? rawEmailError.split('|seconds:')[0].trim() : rawEmailError;
 
@@ -193,11 +195,30 @@ export default function Login({ status, canResetPassword }) {
                                 <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">
                                         <Clock className="w-4 h-4 text-[#FF3B30]" />
-                                        <span>Unlock In:</span>
+                                        <span>Auto-Unlock In:</span>
                                     </div>
                                     <div className="text-xl font-black font-mono text-[#FF3B30] tabular-nums">
                                         {formatTimeRemaining(countdown)}
                                     </div>
+                                </div>
+
+                                {/* Call Support to unlock immediately */}
+                                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 space-y-1.5 text-left">
+                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                        <PhoneCall className="w-4 h-4 text-amber-500 shrink-0" />
+                                        <span>Need Urgent Access? Call Support to Unlock</span>
+                                    </div>
+                                    <p className="text-[11px] font-medium leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                        If you locked yourself out, you can call our support desk at{' '}
+                                        <a href={`tel:${settings?.contact_phone || '0917-888-9999'}`} className="font-bold underline text-[#FF3B30] hover:text-red-600">
+                                            {settings?.contact_phone || '0917-888-9999'}
+                                        </a>{' '}
+                                        or email{' '}
+                                        <a href={`mailto:${settings?.contact_email || 'support@elfaacarrental.com'}`} className="font-bold underline text-[#FF3B30] hover:text-red-600">
+                                            {settings?.contact_email || 'support@elfaacarrental.com'}
+                                        </a>
+                                        . An administrator can verify your identity and unlock your account immediately so you can sign in right away.
+                                    </p>
                                 </div>
 
                                 <div className="flex justify-end pt-2">
@@ -219,7 +240,7 @@ export default function Login({ status, canResetPassword }) {
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4 shrink-0" />
-                                    <span>3 failed attempts reached. Account temporarily locked.</span>
+                                    <span>3 failed attempts reached. Account locked.</span>
                                 </div>
                                 <button
                                     type="button"
@@ -241,6 +262,10 @@ export default function Login({ status, canResetPassword }) {
                                             style={{ width: `${Math.min(100, (countdown / 900) * 100)}%` }}
                                         />
                                     </div>
+                                    <div className="pt-1 text-[11px] font-normal text-zinc-600 dark:text-zinc-300 flex items-center gap-1.5">
+                                        <PhoneCall className="w-3.5 h-3.5 text-[#FF3B30] shrink-0" />
+                                        <span>Customer helpline: Call <a href={`tel:${settings?.contact_phone || '0917-888-9999'}`} className="font-bold underline text-[#FF3B30]">{settings?.contact_phone || '0917-888-9999'}</a> to unlock.</span>
+                                    </div>
                                 </div>
                             )}
                             {countdown === 0 && (
@@ -249,11 +274,26 @@ export default function Login({ status, canResetPassword }) {
                         </div>
                     )}
 
-                    {/* Admin-locked account banner */}
+                    {/* Admin-locked or brute-force locked account banner */}
                     {isLocked && (
-                        <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-start gap-2">
-                            <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-                            <span>Your account has been <strong>locked</strong> by an administrator. Please contact support to regain access.</span>
+                        <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-600 dark:text-amber-400 space-y-2">
+                            <div className="flex items-start gap-2">
+                                <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+                                <div>
+                                    <p>Your account is currently <strong>locked</strong>.</p>
+                                    <p className="mt-1 font-medium text-[11px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                                        If you locked your account due to failed login attempts, you can call our support helpline at{' '}
+                                        <a href={`tel:${settings?.contact_phone || '0917-888-9999'}`} className="font-bold underline text-[#FF3B30]">
+                                            {settings?.contact_phone || '0917-888-9999'}
+                                        </a>{' '}
+                                        or email{' '}
+                                        <a href={`mailto:${settings?.contact_email || 'support@elfaacarrental.com'}`} className="font-bold underline text-[#FF3B30]">
+                                            {settings?.contact_email || 'support@elfaacarrental.com'}
+                                        </a>
+                                        . An administrator can unlock your account immediately upon your call.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
 

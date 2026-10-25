@@ -19,6 +19,7 @@ import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import MfaSettingsSection from '@/Components/Admin/MfaSettingsSection';
 import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
 import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt } from 'lucide-react';
+import { resolvePhotoUrl } from '@/utils/photoHelper';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
     const isAdmin = auth.user.role === 'admin';
@@ -75,6 +76,21 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const [previewPhoto, setPreviewPhoto] = useState(null);
     const [requestSearch, setRequestSearch] = useState('');
     const [showImportModal, setShowImportModal] = useState(false);
+
+    // User Accounts search & status filter
+    const [userSearch, setUserSearch] = useState('');
+    const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'locked' | 'active'
+
+    const lockedUsersCount = users.filter(u => u.status === 'locked').length;
+    const filteredUsers = users.filter(u => {
+        if (userStatusFilter === 'locked' && u.status !== 'locked') return false;
+        if (userStatusFilter === 'active' && u.status !== 'active') return false;
+        if (!userSearch.trim()) return true;
+        const q = userSearch.toLowerCase();
+        return (u.name && u.name.toLowerCase().includes(q)) ||
+               (u.email && u.email.toLowerCase().includes(q)) ||
+               (u.phone && u.phone.toLowerCase().includes(q));
+    });
 
     // Styled Confirmation Dialog States
     const [confirmDialog, setConfirmDialog] = useState({
@@ -184,18 +200,18 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             mail_from_name: settingsForm.data.mail_from_name,
             mail_from_address: settingsForm.data.mail_from_address,
         })
-        .then(res => {
-            setTestEmailResult(res.data);
-        })
-        .catch(err => {
-            setTestEmailResult({
-                success: false,
-                message: err.response?.data?.message || err.message || 'SMTP Connection Error',
+            .then(res => {
+                setTestEmailResult(res.data);
+            })
+            .catch(err => {
+                setTestEmailResult({
+                    success: false,
+                    message: err.response?.data?.message || err.message || 'SMTP Connection Error',
+                });
+            })
+            .finally(() => {
+                setTestEmailLoading(false);
             });
-        })
-        .finally(() => {
-            setTestEmailLoading(false);
-        });
     };
 
     const handleSendTestSms = (e) => {
@@ -213,18 +229,18 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             sms_api_url: settingsForm.data.sms_api_url,
             sms_notifications_enabled: settingsForm.data.sms_notifications_enabled,
         })
-        .then(res => {
-            setTestSmsResult(res.data);
-        })
-        .catch(err => {
-            setTestSmsResult({
-                success: false,
-                message: err.response?.data?.message || err.message || 'SMS Gateway Error',
+            .then(res => {
+                setTestSmsResult(res.data);
+            })
+            .catch(err => {
+                setTestSmsResult({
+                    success: false,
+                    message: err.response?.data?.message || err.message || 'SMS Gateway Error',
+                });
+            })
+            .finally(() => {
+                setTestSmsLoading(false);
             });
-        })
-        .finally(() => {
-            setTestSmsLoading(false);
-        });
     };
 
     // Admin Password Change Form
@@ -293,8 +309,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             message: isConfirm
                 ? 'Approve and confirm this rental booking?'
                 : isReject
-                ? 'Reject this booking request? The client will be notified.'
-                : 'Mark this booking as completed? This action is final.',
+                    ? 'Reject this booking request? The client will be notified.'
+                    : 'Mark this booking as completed? This action is final.',
             actionLabel: isConfirm ? 'Confirm Booking' : isReject ? 'Reject' : 'Complete Ride',
             actionClass: isConfirm ? 'bg-green-600 hover:bg-green-700 text-white' : isReject ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-[#FF3B30] hover:bg-red-700 text-white',
             onConfirm: () => router.post(route('admin.bookings.verify', bookingId), { action }),
@@ -346,12 +362,12 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         });
     };
 
-    const handleUnlockUser = (userId, userName) => {
+    const handleUnlockUser = (userId, userName, userEmail) => {
         if (!isAdmin) return;
         showConfirm({
-            title: '🔓 Unlock User Account',
-            message: `Restore access for "${userName}"? Their account will return to Active status and they can sign in again.`,
-            actionLabel: 'Unlock Account',
+            title: '🔓 Unlock Customer Account & Reset Limiter',
+            message: `Unlock account and reset login limiter for "${userName}"${userEmail ? ` (${userEmail})` : ''}? The customer will immediately regain access to sign in without waiting for the lockout timer.`,
+            actionLabel: 'Unlock & Reset Limiter',
             actionClass: 'bg-green-600 hover:bg-green-700 text-white',
             onConfirm: () => router.post(route('admin.users.unlock', userId)),
         });
@@ -609,27 +625,38 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="flex items-end justify-between gap-4 h-[180px] pt-4 px-2 border-b border-zinc-200 dark:border-zinc-800/80">
+                                        {/* Chart Area with explicit height and flex column alignment */}
+                                        <div className="relative h-[200px] w-full pt-4 pb-1 px-3 border-b border-zinc-200 dark:border-zinc-800 flex items-end justify-between gap-4">
+                                            {/* Subtle Horizontal Guide Lines */}
+                                            <div className="absolute inset-x-3 top-4 bottom-1 pointer-events-none flex flex-col justify-between opacity-25 dark:opacity-20">
+                                                <div className="border-b border-dashed border-zinc-400 dark:border-zinc-500 w-full"></div>
+                                                <div className="border-b border-dashed border-zinc-400 dark:border-zinc-500 w-full"></div>
+                                                <div className="border-b border-dashed border-zinc-400 dark:border-zinc-500 w-full"></div>
+                                            </div>
+
                                             {monthlyEarnings.map((data, idx) => {
-                                                const maxEarn = Math.max(...monthlyEarnings.map(m => m.earnings), 1);
-                                                const heightPct = Math.round((data.earnings / maxEarn) * 100);
+                                                const earnVal = Number(data.earnings) || 0;
+                                                const maxEarn = Math.max(...monthlyEarnings.map(m => Number(m.earnings) || 0), 1);
+                                                const heightPct = Math.round((earnVal / maxEarn) * 100);
                                                 return (
-                                                    <div key={idx} className="flex-1 flex flex-col items-center group relative cursor-pointer">
+                                                    <div key={idx} className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer z-10">
                                                         {/* Tooltip on Hover */}
-                                                        <div className="absolute bottom-[105%] bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase rounded p-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap shadow-xl">
-                                                            PHP {Math.round(data.earnings).toLocaleString()}
+                                                        <div className="absolute -top-3 opacity-0 group-hover:opacity-100 transition-all duration-200 transform -translate-y-1 group-hover:translate-y-0 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black uppercase rounded-md px-2.5 py-1 pointer-events-none whitespace-nowrap shadow-xl z-20">
+                                                            PHP {earnVal.toLocaleString()}
                                                         </div>
-                                                        {/* Main Visual bar */}
-                                                        <div 
-                                                            style={{ height: `${Math.max(heightPct, 8)}%` }} 
-                                                            className="w-full bg-[#FF3B30] dark:bg-[#FF453A] group-hover:bg-red-700/80 rounded-t-md transition-all duration-300"
-                                                        />
+                                                        {/* Visual Track and Bar Container */}
+                                                        <div className="w-full max-w-[48px] h-full flex items-end justify-center bg-zinc-100/80 dark:bg-zinc-800/40 rounded-t-lg p-1 group-hover:bg-zinc-200/60 dark:group-hover:bg-zinc-800/70 transition-colors">
+                                                            <div
+                                                                style={{ height: `${Math.max(heightPct, 6)}%` }}
+                                                                className="w-full bg-gradient-to-t from-[#FF3B30] to-[#FF6B60] dark:from-[#FF453A] dark:to-[#FF6B60] group-hover:from-red-600 group-hover:to-red-500 rounded-t-md shadow-sm transition-all duration-500"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                         {/* X Axis Labels */}
-                                        <div className="flex justify-between text-[10px] font-black text-zinc-500 uppercase tracking-wider px-1">
+                                        <div className="flex justify-between text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-3">
                                             {monthlyEarnings.map((data, idx) => (
                                                 <span key={idx} className="flex-1 text-center truncate">{data.month}</span>
                                             ))}
@@ -661,7 +688,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                         <span className="text-[10px] text-zinc-550 font-extrabold">{categoryPct}% ({cat.count} Rides)</span>
                                                     </div>
                                                     <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-950 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800/60">
-                                                        <div 
+                                                        <div
                                                             style={{ width: `${categoryPct}%` }}
                                                             className="h-full bg-red-500 dark:bg-red-650 transition-all duration-500"
                                                         />
@@ -727,896 +754,939 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
                 {!['analytics', 'gps_fleet', 'settings', 'payment_settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
-                    {/* Header Action Section */}
-                    <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
-                        {/* Sub filters pill tags */}
-                        {activeTab === 'booking_requests' && (
-                            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                                <div className="flex items-center gap-2">
-                                    <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                        Pending Booking Requests ({pendingRequestsCount})
-                                    </span>
-                                    <button 
-                                        type="button"
-                                        onClick={() => { setActiveTab('bookings'); setSubFilter('all'); }}
-                                        className="px-3 py-1 rounded-lg text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                                    >
-                                        <span>View Bookings Log</span>
-                                        <ArrowRight className="w-3 h-3" />
-                                    </button>
+                        {/* Header Action Section */}
+                        <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
+                            {/* Sub filters pill tags */}
+                            {activeTab === 'booking_requests' && (
+                                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                            Pending Booking Requests ({pendingRequestsCount})
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setActiveTab('bookings'); setSubFilter('all'); }}
+                                            className="px-3 py-1 rounded-lg text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                        >
+                                            <span>View Bookings Log</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                        {activeTab === 'bookings' && (
-                            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                                {/* Active vs Archived tab toggle */}
-                                <div className="flex bg-zinc-200/80 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-300 dark:border-zinc-800">
-                                    <button 
-                                        onClick={() => { setBookingLogTab('active'); setBookingPage(1); }}
-                                        className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${
-                                            bookingLogTab === 'active' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                        }`}
-                                    >
-                                        Active Log ({bookings.length})
-                                    </button>
-                                    <button 
-                                        onClick={() => { setBookingLogTab('archived'); setBookingPage(1); }}
-                                        className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${
-                                            bookingLogTab === 'archived' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                        }`}
-                                    >
-                                        Archived Records ({archivedBookings.length})
-                                    </button>
-                                </div>
+                            )}
+                            {activeTab === 'bookings' && (
+                                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                                    {/* Active vs Archived tab toggle */}
+                                    <div className="flex bg-zinc-200/80 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-300 dark:border-zinc-800">
+                                        <button
+                                            onClick={() => { setBookingLogTab('active'); setBookingPage(1); }}
+                                            className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${bookingLogTab === 'active' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                                }`}
+                                        >
+                                            Active Log ({bookings.length})
+                                        </button>
+                                        <button
+                                            onClick={() => { setBookingLogTab('archived'); setBookingPage(1); }}
+                                            className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${bookingLogTab === 'archived' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                                }`}
+                                        >
+                                            Archived Records ({archivedBookings.length})
+                                        </button>
+                                    </div>
 
-                                {/* Status filter */}
-                                <div className="flex flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800/60 transition-colors">
+                                    {/* Status filter */}
+                                    <div className="flex flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800/60 transition-colors">
+                                        {[
+                                            { k: 'all', l: 'All Status' },
+                                            { k: 'pending', l: 'Pending' },
+                                            { k: 'confirmed', l: 'Confirmed' },
+                                            { k: 'completed', l: 'Completed' },
+                                            { k: 'rejected', l: 'Rejected' }
+                                        ].map(filter => (
+                                            <button key={filter.k} onClick={() => { setSubFilter(filter.k); setBookingPage(1); }} className={`px-2.5 py-1 rounded-lg text-[9px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}>
+                                                {filter.l}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {activeTab === 'vehicles' && (
+                                <div className="flex flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-950 p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800/60 max-w-fit transition-colors">
                                     {[
-                                        { k: 'all', l: 'All Status' },
-                                        { k: 'pending', l: 'Pending' },
-                                        { k: 'confirmed', l: 'Confirmed' },
-                                        { k: 'completed', l: 'Completed' },
-                                        { k: 'rejected', l: 'Rejected' }
+                                        { k: 'all', l: 'All Units' },
+                                        { k: 'available', l: 'Available' },
+                                        { k: 'reserved', l: 'Reserved' },
+                                        { k: 'rented', l: 'Rented' },
+                                        { k: 'maintenance', l: 'Maintenance' },
+                                        { k: 'unavailable', l: 'Unavailable' }
                                     ].map(filter => (
-                                        <button key={filter.k} onClick={() => { setSubFilter(filter.k); setBookingPage(1); }} className={`px-2.5 py-1 rounded-lg text-[9px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}>
+                                        <button key={filter.k} onClick={() => setSubFilter(filter.k)} className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-850 text-zinc-900 dark:text-white' : 'text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}>
                                             {filter.l}
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                        {activeTab === 'vehicles' && (
-                            <div className="flex flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-950 p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800/60 max-w-fit transition-colors">
-                                {[
-                                    { k: 'all', l: 'All Units' },
-                                    { k: 'available', l: 'Available' },
-                                    { k: 'reserved', l: 'Reserved' },
-                                    { k: 'rented', l: 'Rented' },
-                                    { k: 'maintenance', l: 'Maintenance' },
-                                    { k: 'unavailable', l: 'Unavailable' }
-                                ].map(filter => (
-                                    <button key={filter.k} onClick={() => setSubFilter(filter.k)} className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-850 text-zinc-900 dark:text-white' : 'text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}>
-                                        {filter.l}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {!['bookings', 'booking_requests', 'vehicles'].includes(activeTab) && (
-                            <div>
-                                <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-wider">{tabsConfig.find(t => t.id === activeTab)?.label}</h3>
-                            </div>
-                        )}
-
-                        {/* Search & Actions */}
-                        <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto">
-                            {activeTab === 'booking_requests' && (
-                                <Input 
-                                    type="text" 
-                                    placeholder="Search pending requests..." 
-                                    value={requestSearch} 
-                                    onChange={(e) => setRequestSearch(e.target.value)}
-                                    className="h-8 text-xs w-56 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
-                                />
                             )}
-                            {activeTab === 'bookings' && (
-                                <Input 
-                                    type="text" 
-                                    placeholder="Search customer, vehicle..." 
-                                    value={bookingSearch} 
-                                    onChange={(e) => { setBookingSearch(e.target.value); setBookingPage(1); }}
-                                    className="h-8 text-xs w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
-                                />
-                            )}
-                            {activeTab === 'vehicles' && (
-                                <button onClick={openAddVehicle} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
-                                    + Add Vehicle
-                                </button>
-                            )}
-                            {activeTab === 'promos' && (
-                                <button onClick={openAddPromo} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
-                                    + Add Campaign
-                                </button>
-                            )}
-                            {activeTab === 'addons' && (
-                                <button onClick={openAddAddon} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
-                                    + Add Accessory
-                                </button>
-                            )}
-                            {activeTab === 'bookings' && isAdmin && (
-                                <button
-                                    onClick={() => setShowImportModal(true)}
-                                    className="px-3.5 h-9 bg-purple-700 dark:bg-purple-600 text-white hover:bg-purple-800 dark:hover:bg-purple-700 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
-                                >
-                                    <span>↑</span> Import Legacy Records
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Table View Body */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left">
-                            <thead>
-                                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/20 text-zinc-500 text-[10px] font-black uppercase tracking-wider transition-colors">
-                                    <th className="py-3 px-4 w-4"></th>
-                                    <th className="py-3 px-4 w-4">
-                                        <input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" disabled />
-                                    </th>
-                                    {activeTab === 'booking_requests' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Renter Details</th>
-                                            <th className="py-3 px-4 text-zinc-400">Reserved Vehicle</th>
-                                            <th className="py-3 px-4 text-zinc-400">Total Price & Method</th>
-                                            <th className="py-3 px-4 text-zinc-400">Rental Period</th>
-                                            <th className="py-3 px-4 text-zinc-400">Pickup Location</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Accept / Reject</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'bookings' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Renter Details</th>
-                                            <th className="py-3 px-4 text-zinc-400">Reserved Vehicle</th>
-                                            <th className="py-3 px-4 text-zinc-400">Total Price</th>
-                                            <th className="py-3 px-4 text-zinc-400">Rental Period</th>
-                                            <th className="py-3 px-4 text-zinc-400">Status</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-center">Pickup Photo</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-center">Return Photo</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Verification Action</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'verifications' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Customer Identification</th>
-                                            <th className="py-3 px-4 text-zinc-400">Document Type</th>
-                                            <th className="py-3 px-4 text-zinc-400">OCR Confidence & Readability</th>
-                                            <th className="py-3 px-4 text-zinc-400">Validation Findings</th>
-                                            <th className="py-3 px-4 text-zinc-400">Verification Status</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Review Decisions</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'vehicles' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Vehicle Models</th>
-                                            <th className="py-3 px-4 text-zinc-400">Plate Number</th>
-                                            <th className="py-3 px-4 text-zinc-400">Category Tag</th>
-                                            <th className="py-3 px-4 text-zinc-400">Price Per Day</th>
-                                            <th className="py-3 px-4 text-zinc-400">Status</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Management</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'promos' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Campaign Header</th>
-                                            <th className="py-3 px-4 text-zinc-400">Promo Code</th>
-                                            <th className="py-3 px-4 text-zinc-400">Discount Text</th>
-                                            <th className="py-3 px-4 text-zinc-400">Status</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Management</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'addons' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Accessory Name</th>
-                                            <th className="py-3 px-4 text-zinc-400">Rate Per Day</th>
-                                            <th className="py-3 px-4 text-zinc-400">Status</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Management</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'users' && (
-                                        <>
-                                            <th className="py-3 px-4 text-zinc-400">Full Name</th>
-                                            <th className="py-3 px-4 text-zinc-400">Email Address</th>
-                                            <th className="py-3 px-4 text-zinc-400">System Role</th>
-                                            <th className="py-3 px-4 text-zinc-400">Account status</th>
-                                            <th className="py-3 px-4 text-zinc-400">2FA / MFA</th>
-                                            <th className="py-3 px-4 text-zinc-400 text-right">Access Control</th>
-                                        </>
-                                    )}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors">
-                                {/* A1. PENDING BOOKING REQUESTS (Accept & Reject) BODY */}
-                                {activeTab === 'booking_requests' && filteredRequests.length === 0 && (
-                                    <tr>
-                                        <td colSpan="8" className="py-12 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-2">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                                                    <CheckCircle className="w-5 h-5" />
-                                                </div>
-                                                <div className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">No Pending Booking Requests</div>
-                                                <p className="text-xs text-zinc-400 max-w-sm">All customer reservations have been reviewed and decided.</p>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveTab('bookings')}
-                                                    className="mt-2 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 cursor-pointer"
-                                                >
-                                                    View All Booking Logs
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                                {activeTab === 'booking_requests' && filteredRequests.map((booking) => (
-                                    <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
-                                            <GripVertical className="w-3.5 h-3.5" />
-                                        </td>
-                                        <td className="py-3.5 px-4">
-                                            <input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" />
-                                        </td>
-                                        <td className="py-3.5 px-4">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
-                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase">
-                                                    Pending Review
+                            {activeTab === 'users' && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <div className="flex bg-zinc-200/80 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-300 dark:border-zinc-800">
+                                        <button
+                                            type="button"
+                                            onClick={() => setUserStatusFilter('all')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${userStatusFilter === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                        >
+                                            All Users ({users.length})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setUserStatusFilter('locked')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${userStatusFilter === 'locked' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                        >
+                                            <span>🔒 Locked / Call-in</span>
+                                            {lockedUsersCount > 0 && (
+                                                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-500 text-white font-black animate-pulse">
+                                                    {lockedUsersCount}
                                                 </span>
-                                            </div>
-                                            <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email || '—'}</span>
-                                            {booking.user?.phone && (
-                                                <span className="text-[10px] text-zinc-400 block font-mono">{booking.user.phone}</span>
                                             )}
-                                        </td>
-                                        <td className="py-3.5 px-4">
-                                            <span className="font-extrabold text-zinc-800 dark:text-zinc-200 block">{booking.vehicle?.name || 'Vehicle'}</span>
-                                            <span className="text-[10px] font-mono text-zinc-400">{booking.vehicle?.plate_number || 'N/A'} • {booking.vehicle?.type}</span>
-                                        </td>
-                                        <td className="py-3.5 px-4">
-                                            <span className="font-black text-zinc-900 dark:text-white block">PHP {parseFloat(booking.total_price).toLocaleString()}</span>
-                                            <span className="text-[10px] font-bold uppercase text-zinc-500">{booking.payment_method || 'Cash / Meetup'}</span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">
-                                            <div className="font-bold text-zinc-700 dark:text-zinc-300">{booking.start_date} to {booking.end_date}</div>
-                                            <span className="text-[10px] text-zinc-400 block font-mono">
-                                                {Math.max(1, Math.ceil((new Date(booking.end_date) - new Date(booking.start_date)) / (1000 * 60 * 60 * 24)))} Days
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 text-xs">
-                                            {booking.pickup_location || 'Standard Meetup'}
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleVerifyBooking(booking.id, 'confirm')}
-                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded shadow-sm transition-all cursor-pointer inline-flex items-center gap-1"
-                                                title="Accept and approve this booking request"
-                                            >
-                                                <Check className="w-3 h-3" />
-                                                <span>Accept</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleVerifyBooking(booking.id, 'reject')}
-                                                className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase rounded shadow-sm transition-all cursor-pointer inline-flex items-center gap-1"
-                                                title="Reject this booking request"
-                                            >
-                                                <X className="w-3 h-3" />
-                                                <span>Reject</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setBreakdownBooking(booking)}
-                                                className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold uppercase rounded transition-colors cursor-pointer"
-                                                title="Review full price breakdown"
-                                            >
-                                                Details
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setUserStatusFilter('active')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${userStatusFilter === 'active' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                        >
+                                            Active
+                                        </button>
+                                    </div>
+                                    {lockedUsersCount > 0 && (
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                                            <span>⚠️ {lockedUsersCount} customer account{lockedUsersCount === 1 ? '' : 's'} locked by login limiter. Click "Unlock" to restore access immediately.</span>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                            {!['bookings', 'booking_requests', 'vehicles', 'users'].includes(activeTab) && (
+                                <div>
+                                    <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-wider">{tabsConfig.find(t => t.id === activeTab)?.label}</h3>
+                                </div>
+                            )}
 
-                                {/* A2. BOOKINGS LOG DATA BODY */}
-                                {activeTab === 'bookings' && paginatedBookings.length === 0 && (
-                                    <tr>
-                                        <td colSpan="8" className="py-8 text-center text-zinc-400 text-xs font-medium">
-                                            No {bookingLogTab} bookings found matching your search or filters.
-                                        </td>
-                                    </tr>
+                            {/* Search & Actions */}
+                            <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto">
+                                {activeTab === 'booking_requests' && (
+                                    <Input
+                                        type="text"
+                                        placeholder="Search pending requests..."
+                                        value={requestSearch}
+                                        onChange={(e) => setRequestSearch(e.target.value)}
+                                        className="h-8 text-xs w-56 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                    />
                                 )}
-                                {activeTab === 'bookings' && paginatedBookings.map((booking) => {
-                                    const pickup = booking.inspections?.find(i => i.type === 'pickup');
-                                    const returnInsp = booking.inspections?.find(i => i.type === 'return');
-                                    const pickupPhoto = pickup?.photos?.[0];
-                                    const returnPhoto = returnInsp?.photos?.[0];
+                                {activeTab === 'bookings' && (
+                                    <Input
+                                        type="text"
+                                        placeholder="Search customer, vehicle..."
+                                        value={bookingSearch}
+                                        onChange={(e) => { setBookingSearch(e.target.value); setBookingPage(1); }}
+                                        className="h-8 text-xs w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                    />
+                                )}
+                                {activeTab === 'vehicles' && (
+                                    <button onClick={openAddVehicle} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
+                                        + Add Vehicle
+                                    </button>
+                                )}
+                                {activeTab === 'promos' && (
+                                    <button onClick={openAddPromo} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
+                                        + Add Campaign
+                                    </button>
+                                )}
+                                {activeTab === 'addons' && (
+                                    <button onClick={openAddAddon} className="px-3.5 h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors">
+                                        + Add Accessory
+                                    </button>
+                                )}
+                                {activeTab === 'users' && (
+                                    <Input
+                                        type="text"
+                                        placeholder="Search customer name, email..."
+                                        value={userSearch}
+                                        onChange={(e) => setUserSearch(e.target.value)}
+                                        className="h-8 text-xs w-56 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                                    />
+                                )}
+                                {activeTab === 'bookings' && isAdmin && (
+                                    <button
+                                        onClick={() => setShowImportModal(true)}
+                                        className="px-3.5 h-9 bg-purple-700 dark:bg-purple-600 text-white hover:bg-purple-800 dark:hover:bg-purple-700 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+                                    >
+                                        <span>↑</span> Import Legacy Records
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
-                                    return (
+                        {/* Table View Body */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-left">
+                                <thead>
+                                    <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/20 text-zinc-500 text-[10px] font-black uppercase tracking-wider transition-colors">
+                                        <th className="py-3 px-4 w-4"></th>
+                                        <th className="py-3 px-4 w-4">
+                                            <input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" disabled />
+                                        </th>
+                                        {activeTab === 'booking_requests' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Renter Details</th>
+                                                <th className="py-3 px-4 text-zinc-400">Reserved Vehicle</th>
+                                                <th className="py-3 px-4 text-zinc-400">Total Price & Method</th>
+                                                <th className="py-3 px-4 text-zinc-400">Rental Period</th>
+                                                <th className="py-3 px-4 text-zinc-400">Pickup Location</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Accept / Reject</th>
+                                            </>
+                                        )}
+                                        {activeTab === 'bookings' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Renter Details</th>
+                                                <th className="py-3 px-4 text-zinc-400">Reserved Vehicle</th>
+                                                <th className="py-3 px-4 text-zinc-400">Total Price</th>
+                                                <th className="py-3 px-4 text-zinc-400">Rental Period</th>
+                                                <th className="py-3 px-4 text-zinc-400">Status</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-center">Pickup Photo</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-center">Return Photo</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Verification Action</th>
+                                            </>
+                                        )}
+                                        {activeTab === 'verifications' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Customer Identification</th>
+                                                <th className="py-3 px-4 text-zinc-400">Document Type</th>
+                                                <th className="py-3 px-4 text-zinc-400">OCR Confidence & Readability</th>
+                                                <th className="py-3 px-4 text-zinc-400">Validation Findings</th>
+                                                <th className="py-3 px-4 text-zinc-400">Verification Status</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Review Decisions</th>
+                                            </>
+                                        )}
+                                        {activeTab === 'vehicles' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Vehicle Models</th>
+                                                <th className="py-3 px-4 text-zinc-400">Plate Number</th>
+                                                <th className="py-3 px-4 text-zinc-400">Category Tag</th>
+                                                <th className="py-3 px-4 text-zinc-400">Price Per Day</th>
+                                                <th className="py-3 px-4 text-zinc-400">Status</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Management</th>
+                                            </>
+                                        )}
+                                        {activeTab === 'promos' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Campaign Header</th>
+                                                <th className="py-3 px-4 text-zinc-400">Promo Code</th>
+                                                <th className="py-3 px-4 text-zinc-400">Discount Text</th>
+                                                <th className="py-3 px-4 text-zinc-400">Status</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Management</th>
+                                            </>
+                                        )}
+                                        {activeTab === 'addons' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Accessory Name</th>
+                                                <th className="py-3 px-4 text-zinc-400">Rate Per Day</th>
+                                                <th className="py-3 px-4 text-zinc-400">Status</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Management</th>
+                                            </>
+                                        )}
+                                        {activeTab === 'users' && (
+                                            <>
+                                                <th className="py-3 px-4 text-zinc-400">Full Name</th>
+                                                <th className="py-3 px-4 text-zinc-400">Email Address</th>
+                                                <th className="py-3 px-4 text-zinc-400">System Role</th>
+                                                <th className="py-3 px-4 text-zinc-400">Account status</th>
+                                                <th className="py-3 px-4 text-zinc-400">2FA / MFA</th>
+                                                <th className="py-3 px-4 text-zinc-400 text-right">Access Control</th>
+                                            </>
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors">
+                                    {/* A1. PENDING BOOKING REQUESTS (Accept & Reject) BODY */}
+                                    {activeTab === 'booking_requests' && filteredRequests.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-12 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-2">
+                                                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                                        <CheckCircle className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">No Pending Booking Requests</div>
+                                                    <p className="text-xs text-zinc-400 max-w-sm">All customer reservations have been reviewed and decided.</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveTab('bookings')}
+                                                        className="mt-2 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                                                    >
+                                                        View All Booking Logs
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {activeTab === 'booking_requests' && filteredRequests.map((booking) => (
                                         <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
                                                 <GripVertical className="w-3.5 h-3.5" />
                                             </td>
-                                            <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
+                                            <td className="py-3.5 px-4">
+                                                <input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" />
+                                            </td>
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
-                                                    {booking.is_legacy && (
-                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-black uppercase">
-                                                            Legacy Import
-                                                        </span>
-                                                    )}
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase">
+                                                        Pending Review
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email}</span>
+                                                <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email || '—'}</span>
+                                                {booking.user?.phone && (
+                                                    <span className="text-[10px] text-zinc-400 block font-mono">{booking.user.phone}</span>
+                                                )}
                                             </td>
-                                            <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">
-                                                <div>{booking.vehicle?.name || 'Vehicle'}</div>
-                                                <div className="text-[10px] text-zinc-400 font-mono">{booking.vehicle?.plate_number || 'N/A'}</div>
-                                            </td>
-                                            <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(booking.total_price).toLocaleString()}</td>
-                                            <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{booking.start_date} to {booking.end_date}</td>
                                             <td className="py-3.5 px-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                    booking.status === 'confirmed' ? 'text-green-600 dark:text-green-500' :
-                                                    booking.status === 'completed' ? 'text-sky-600 dark:text-sky-400' :
-                                                    booking.status === 'rejected' ? 'text-rose-600 dark:text-rose-500' : 'text-amber-600 dark:text-amber-500'
-                                                }`}>
-                                                    <span className={`h-1.5 w-1.5 rounded-full ${
-                                                        booking.status === 'confirmed' ? 'bg-green-600 dark:bg-green-500' :
-                                                        booking.status === 'completed' ? 'bg-sky-600 dark:bg-sky-400' :
-                                                        booking.status === 'rejected' ? 'bg-rose-600 dark:bg-rose-500' : 'bg-amber-600 dark:bg-amber-500'
-                                                    }`}></span>
-                                                    {booking.status}
+                                                <span className="font-extrabold text-zinc-800 dark:text-zinc-200 block">{booking.vehicle?.name || 'Vehicle'}</span>
+                                                <span className="text-[10px] font-mono text-zinc-400">{booking.vehicle?.plate_number || 'N/A'} • {booking.vehicle?.type}</span>
+                                            </td>
+                                            <td className="py-3.5 px-4">
+                                                <span className="font-black text-zinc-900 dark:text-white block">PHP {parseFloat(booking.total_price).toLocaleString()}</span>
+                                                <span className="text-[10px] font-bold uppercase text-zinc-500">
+                                                    {booking.payment_method === 'online' || booking.payment_method === 'cash' || !booking.payment_method ? 'Pay Online' : booking.payment_method}
                                                 </span>
                                             </td>
-
-                                            {/* Picture of Pickup */}
-                                            <td className="py-3.5 px-4 text-center">
-                                                {pickupPhoto ? (
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPreviewPhoto({ url: `/storage/${pickupPhoto}`, title: `Pickup Photo — ${booking.vehicle?.name}`, inspection: pickup, booking })}
-                                                            className="w-12 h-9 rounded-lg border border-blue-500/40 overflow-hidden relative group shadow-sm cursor-pointer mx-auto block"
-                                                            title="Click to view full pickup photo"
-                                                        >
-                                                            <img src={`/storage/${pickupPhoto}`} alt="Pickup photo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                                            <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
-                                                                <Eye className="w-3.5 h-3.5 text-white opacity-90" />
-                                                            </div>
-                                                        </button>
-                                                        <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400">
-                                                            ✓ Pickup ({pickup.photos.length})
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('pickup'); }}
-                                                        className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
-                                                        title="Take or upload vehicle pickup photo"
-                                                    >
-                                                        <Camera className="w-3 h-3" />
-                                                        <span>+ Photo</span>
-                                                    </button>
-                                                )}
+                                            <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">
+                                                <div className="font-bold text-zinc-700 dark:text-zinc-300">{booking.start_date} to {booking.end_date}</div>
+                                                <span className="text-[10px] text-zinc-400 block font-mono">
+                                                    {Math.max(1, Math.ceil((new Date(booking.end_date) - new Date(booking.start_date)) / (1000 * 60 * 60 * 24)))} Days
+                                                </span>
                                             </td>
-
-                                            {/* Picture of Return */}
-                                            <td className="py-3.5 px-4 text-center">
-                                                {returnPhoto ? (
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPreviewPhoto({ url: `/storage/${returnPhoto}`, title: `Return Photo — ${booking.vehicle?.name}`, inspection: returnInsp, booking })}
-                                                            className="w-12 h-9 rounded-lg border border-emerald-500/40 overflow-hidden relative group shadow-sm cursor-pointer mx-auto block"
-                                                            title="Click to view full return photo"
-                                                        >
-                                                            <img src={`/storage/${returnPhoto}`} alt="Return photo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                                            <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
-                                                                <Eye className="w-3.5 h-3.5 text-white opacity-90" />
-                                                            </div>
-                                                        </button>
-                                                        <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400">
-                                                            ✓ Return ({returnInsp.photos.length})
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setInspectionBooking(booking); setInspectionType('return'); }}
-                                                        className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
-                                                        title="Take or upload vehicle return photo"
-                                                    >
-                                                        <Camera className="w-3 h-3" />
-                                                        <span>+ Photo</span>
-                                                    </button>
-                                                )}
+                                            <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 text-xs">
+                                                {booking.pickup_location || 'Standard Meetup'}
                                             </td>
-
-                                            {/* Actions */}
-                                            <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
-                                                {bookingLogTab === 'active' ? (
-                                                    <>
-                                                        {booking.status === 'confirmed' && (
-                                                            <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2 py-0.5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
-                                                        )}
-                                                        
-                                                        {/* Comparison Drawer */}
-                                                        <button
-                                                            onClick={() => setComparisonBooking(booking)}
-                                                            title="View Inspection Comparison & Surcharges"
-                                                            className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                        >
-                                                            Inspections {booking.inspections?.length > 0 ? `(${booking.inspections.length})` : ''}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setBreakdownBooking(booking)}
-                                                            title="Review Complete Price Breakdown & Statement"
-                                                            className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                        >
-                                                            Breakdown
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() => setPaymentHistoryBooking(booking)}
-                                                            title="View Online Payment Transactions & Gateway Logs"
-                                                            className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                        >
-                                                            Payments
-                                                        </button>
-
-                                                        <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
-                                                    </>
-                                                ) : (
-                                                    <button onClick={() => handleRestoreBooking(booking.id)} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Restore Record</button>
-                                                )}
+                                            <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleVerifyBooking(booking.id, 'confirm')}
+                                                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded shadow-sm transition-all cursor-pointer inline-flex items-center gap-1"
+                                                    title="Accept and approve this booking request"
+                                                >
+                                                    <Check className="w-3 h-3" />
+                                                    <span>Accept</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleVerifyBooking(booking.id, 'reject')}
+                                                    className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase rounded shadow-sm transition-all cursor-pointer inline-flex items-center gap-1"
+                                                    title="Reject this booking request"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                    <span>Reject</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBreakdownBooking(booking)}
+                                                    className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold uppercase rounded transition-colors cursor-pointer"
+                                                    title="Review full price breakdown"
+                                                >
+                                                    Details
+                                                </button>
                                             </td>
                                         </tr>
-                                    );
-                                })}
+                                    ))}
 
-                                {/* B. ID VERIFICATION DATA BODY */}
-                                {activeTab === 'verifications' && documents.map((doc) => {
-                                    const ocrConf = doc.ocr_confidence ? parseFloat(doc.ocr_confidence) : null;
-                                    const summary = doc.verification_summary || {};
-                                    const issues = summary.issues || [];
-                                    const isVerified = doc.status === 'verified';
-                                    const isRejected = doc.status === 'rejected';
-                                    const isResubmit = doc.status === 'resubmission_requested';
+                                    {/* A2. BOOKINGS LOG DATA BODY */}
+                                    {activeTab === 'bookings' && paginatedBookings.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-8 text-center text-zinc-400 text-xs font-medium">
+                                                No {bookingLogTab} bookings found matching your search or filters.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {activeTab === 'bookings' && paginatedBookings.map((booking) => {
+                                        const pickup = booking.inspections?.find(i => i.type === 'pickup');
+                                        const returnInsp = booking.inspections?.find(i => i.type === 'return');
+                                        const pickupPhoto = pickup?.photos?.[0];
+                                        const returnPhoto = returnInsp?.photos?.[0];
 
-                                    return (
-                                        <tr key={doc.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                        return (
+                                            <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                                <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
+                                                    <GripVertical className="w-3.5 h-3.5" />
+                                                </td>
+                                                <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="font-extrabold text-zinc-900 dark:text-white block">{booking.user?.name || 'Client User'}</span>
+                                                        {booking.is_legacy && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-black uppercase">
+                                                                Legacy Import
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] text-zinc-550 dark:text-zinc-500 block mt-0.5">{booking.user?.email}</span>
+                                                </td>
+                                                <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-medium">
+                                                    <div>{booking.vehicle?.name || 'Vehicle'}</div>
+                                                    <div className="text-[10px] text-zinc-400 font-mono">{booking.vehicle?.plate_number || 'N/A'}</div>
+                                                </td>
+                                                <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(booking.total_price).toLocaleString()}</td>
+                                                <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{booking.start_date} to {booking.end_date}</td>
+                                                <td className="py-3.5 px-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${booking.status === 'confirmed' ? 'text-green-600 dark:text-green-500' :
+                                                            booking.status === 'completed' ? 'text-sky-600 dark:text-sky-400' :
+                                                                booking.status === 'rejected' ? 'text-rose-600 dark:text-rose-500' : 'text-amber-600 dark:text-amber-500'
+                                                        }`}>
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${booking.status === 'confirmed' ? 'bg-green-600 dark:bg-green-500' :
+                                                                booking.status === 'completed' ? 'bg-sky-600 dark:bg-sky-400' :
+                                                                    booking.status === 'rejected' ? 'bg-rose-600 dark:bg-rose-500' : 'bg-amber-600 dark:bg-amber-500'
+                                                            }`}></span>
+                                                        {booking.status}
+                                                    </span>
+                                                </td>
+
+                                                {/* Picture of Pickup */}
+                                                <td className="py-3.5 px-4 text-center">
+                                                    {pickupPhoto ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewPhoto({ url: resolvePhotoUrl(pickupPhoto), title: `Pickup Photo — ${booking.vehicle?.name}`, inspection: pickup, booking })}
+                                                                className="w-12 h-9 rounded-lg border border-blue-500/40 overflow-hidden relative group shadow-sm cursor-pointer mx-auto block"
+                                                                title="Click to view full pickup photo"
+                                                            >
+                                                                <img src={resolvePhotoUrl(pickupPhoto)} alt="Pickup photo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                                <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                                                                    <Eye className="w-3.5 h-3.5 text-white opacity-90" />
+                                                                </div>
+                                                            </button>
+                                                            <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400">
+                                                                ✓ Pickup ({pickup.photos.length})
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setInspectionBooking(booking); setInspectionType('pickup'); }}
+                                                            className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
+                                                            title="Take or upload vehicle pickup photo"
+                                                        >
+                                                            <Camera className="w-3 h-3" />
+                                                            <span>+ Photo</span>
+                                                        </button>
+                                                    )}
+                                                </td>
+
+                                                {/* Picture of Return */}
+                                                <td className="py-3.5 px-4 text-center">
+                                                    {returnPhoto ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewPhoto({ url: resolvePhotoUrl(returnPhoto), title: `Return Photo — ${booking.vehicle?.name}`, inspection: returnInsp, booking })}
+                                                                className="w-12 h-9 rounded-lg border border-emerald-500/40 overflow-hidden relative group shadow-sm cursor-pointer mx-auto block"
+                                                                title="Click to view full return photo"
+                                                            >
+                                                                <img src={resolvePhotoUrl(returnPhoto)} alt="Return photo" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                                <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                                                                    <Eye className="w-3.5 h-3.5 text-white opacity-90" />
+                                                                </div>
+                                                            </button>
+                                                            <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400">
+                                                                ✓ Return ({returnInsp.photos.length})
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setInspectionBooking(booking); setInspectionType('return'); }}
+                                                            className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
+                                                            title="Take or upload vehicle return photo"
+                                                        >
+                                                            <Camera className="w-3 h-3" />
+                                                            <span>+ Photo</span>
+                                                        </button>
+                                                    )}
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+                                                    {bookingLogTab === 'active' ? (
+                                                        <>
+                                                            {booking.status === 'confirmed' && (
+                                                                <button onClick={() => handleVerifyBooking(booking.id, 'complete')} className="px-2 py-0.5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Complete Ride</button>
+                                                            )}
+
+                                                            {/* Comparison Drawer */}
+                                                            <button
+                                                                onClick={() => setComparisonBooking(booking)}
+                                                                title="View Inspection Comparison & Surcharges"
+                                                                className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                            >
+                                                                Inspections {booking.inspections?.length > 0 ? `(${booking.inspections.length})` : ''}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setBreakdownBooking(booking)}
+                                                                title="Review Complete Price Breakdown & Statement"
+                                                                className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                            >
+                                                                Breakdown
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => setPaymentHistoryBooking(booking)}
+                                                                title="View Online Payment Transactions & Gateway Logs"
+                                                                className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                            >
+                                                                Payments
+                                                            </button>
+
+                                                            <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
+                                                        </>
+                                                    ) : (
+                                                        <button onClick={() => handleRestoreBooking(booking.id)} className="px-2.5 py-1 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Restore Record</button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+
+                                    {/* B. ID VERIFICATION DATA BODY */}
+                                    {activeTab === 'verifications' && documents.map((doc) => {
+                                        const ocrConf = doc.ocr_confidence ? parseFloat(doc.ocr_confidence) : null;
+                                        const summary = doc.verification_summary || {};
+                                        const issues = summary.issues || [];
+                                        const isVerified = doc.status === 'verified';
+                                        const isRejected = doc.status === 'rejected';
+                                        const isResubmit = doc.status === 'resubmission_requested';
+
+                                        return (
+                                            <tr key={doc.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                                <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
+                                                    <GripVertical className="w-3.5 h-3.5" />
+                                                </td>
+                                                <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
+
+                                                {/* Customer */}
+                                                <td className="py-3.5 px-4">
+                                                    <div className="font-bold text-zinc-900 dark:text-white leading-tight">{doc.user?.name || 'Client'}</div>
+                                                    <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{doc.user?.email || '—'}</div>
+                                                </td>
+
+                                                {/* Document Type */}
+                                                <td className="py-3.5 px-4">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                                                        {doc.type === 'gov_id_1' ? "Driver's License" :
+                                                            doc.type === 'gov_id_2' ? "Secondary ID" :
+                                                                doc.type?.startsWith('proof_of_billing') ? "Billing Proof" : doc.type}
+                                                    </span>
+                                                    {(doc.id_number || doc.user?.drivers_license_number) && (
+                                                        <div className="text-[10px] font-mono text-zinc-400 mt-1 truncate max-w-[120px]">
+                                                            ID: {doc.id_number || doc.user?.drivers_license_number}
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                {/* OCR Confidence & Readability */}
+                                                <td className="py-3.5 px-4">
+                                                    {doc.ocr_status === 'completed' && ocrConf !== null ? (
+                                                        <div>
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black font-mono ${ocrConf >= 70 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                                                                    ocrConf >= 40 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
+                                                                        'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                                                }`}>
+                                                                <span className={`h-1.5 w-1.5 rounded-full ${ocrConf >= 70 ? 'bg-emerald-500' :
+                                                                        ocrConf >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                                                                    }`} />
+                                                                {ocrConf}% Conf.
+                                                            </span>
+                                                            <span className="block text-[10px] text-zinc-500 mt-0.5">
+                                                                {doc.ocr_word_count || 0} words parsed
+                                                            </span>
+                                                        </div>
+                                                    ) : doc.ocr_status === 'failed' ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                                            Scan Failed
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                                                            Pending Scan
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Validation Findings */}
+                                                <td className="py-3.5 px-4 max-w-[200px]">
+                                                    {issues.length > 0 ? (
+                                                        <div className="space-y-0.5">
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                                                                {issues.length} {issues.length === 1 ? 'Finding' : 'Findings'}
+                                                            </span>
+                                                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate" title={issues[0]}>
+                                                                {issues[0]}
+                                                            </p>
+                                                        </div>
+                                                    ) : doc.ocr_status === 'completed' ? (
+                                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                                            <CheckCircle className="w-3 h-3" />
+                                                            Checks Passed
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-zinc-400 italic">No automated flags</span>
+                                                    )}
+                                                </td>
+
+                                                {/* Status */}
+                                                <td className="py-3.5 px-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${isVerified ? 'text-emerald-600 dark:text-emerald-500' :
+                                                            isRejected ? 'text-rose-600 dark:text-rose-500' :
+                                                                isResubmit ? 'text-amber-600 dark:text-amber-500' :
+                                                                    'text-zinc-600 dark:text-zinc-400'
+                                                        }`}>
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${isVerified ? 'bg-emerald-600 dark:bg-emerald-500' :
+                                                                isRejected ? 'bg-rose-600 dark:bg-rose-500' :
+                                                                    isResubmit ? 'bg-amber-600 dark:bg-amber-500' :
+                                                                        'bg-zinc-500'
+                                                            }`}></span>
+                                                        {isResubmit ? 'Resubmit' : doc.status}
+                                                    </span>
+                                                    {doc.reject_reason && <span className="text-[9px] text-zinc-500 block mt-1 truncate max-w-[140px]" title={doc.reject_reason}>Reason: {doc.reject_reason}</span>}
+                                                    {doc.resubmission_notes && <span className="text-[9px] text-amber-500 block mt-1 truncate max-w-[140px]" title={doc.resubmission_notes}>Note: {doc.resubmission_notes}</span>}
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => setSelectedVerifDoc(doc)}
+                                                        className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-[10px] font-black uppercase rounded transition-colors cursor-pointer inline-flex items-center gap-1"
+                                                    >
+                                                        <Eye className="w-3 h-3" />
+                                                        <span>Inspect & Verify</span>
+                                                    </button>
+                                                    {doc.status === 'pending' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleVerifyDoc(doc.id, 'verify')}
+                                                                className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleVerifyDoc(doc.id, 'reject')}
+                                                                className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+
+                                    {/* C. FLEET INVENTORY DATA BODY */}
+                                    {activeTab === 'vehicles' && filteredVehicles.map((vehicle) => (
+                                        <tr key={vehicle.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
                                                 <GripVertical className="w-3.5 h-3.5" />
                                             </td>
                                             <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
-                                            
-                                            {/* Customer */}
+                                            <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-bold block">{vehicle.name}</td>
+                                            <td className="py-3.5 px-4 font-mono text-zinc-600 dark:text-zinc-450 uppercase">{vehicle.plate_number}</td>
+                                            <td className="py-3.5 px-4 text-zinc-605 dark:text-zinc-450">{vehicle.type}</td>
+                                            <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(vehicle.price_per_day).toLocaleString()}</td>
                                             <td className="py-3.5 px-4">
-                                                <div className="font-bold text-zinc-900 dark:text-white leading-tight">{doc.user?.name || 'Client'}</div>
-                                                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{doc.user?.email || '—'}</div>
-                                            </td>
-
-                                            {/* Document Type */}
-                                            <td className="py-3.5 px-4">
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                                                    {doc.type === 'gov_id_1' ? "Driver's License" :
-                                                     doc.type === 'gov_id_2' ? "Secondary ID" :
-                                                     doc.type?.startsWith('proof_of_billing') ? "Billing Proof" : doc.type}
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${vehicle.status === 'available' ? 'text-green-600 dark:text-green-500' :
+                                                        vehicle.status === 'reserved' ? 'text-blue-600 dark:text-blue-400' :
+                                                            vehicle.status === 'rented' ? 'text-purple-600 dark:text-purple-400' :
+                                                                vehicle.status === 'maintenance' ? 'text-amber-600 dark:text-amber-500' : 'text-rose-600 dark:text-rose-500'
+                                                    }`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${vehicle.status === 'available' ? 'bg-green-600 dark:bg-green-500' :
+                                                            vehicle.status === 'reserved' ? 'bg-blue-600 dark:bg-blue-400' :
+                                                                vehicle.status === 'rented' ? 'bg-purple-600 dark:bg-purple-400' :
+                                                                    vehicle.status === 'maintenance' ? 'bg-amber-600 dark:bg-amber-500' : 'bg-rose-600 dark:bg-rose-500'
+                                                        }`}></span>
+                                                    {vehicle.status}
                                                 </span>
-                                                {(doc.id_number || doc.user?.drivers_license_number) && (
-                                                    <div className="text-[10px] font-mono text-zinc-400 mt-1 truncate max-w-[120px]">
-                                                        ID: {doc.id_number || doc.user?.drivers_license_number}
-                                                    </div>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+                                                {vehicle.gps_tracker_key ? (
+                                                    <a
+                                                        href={`/tracker/${vehicle.gps_tracker_key}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="px-2 py-1 bg-red-500/10 text-[#FF3B30] border border-red-500/20 text-[10px] font-black uppercase rounded cursor-pointer inline-flex items-center gap-1 hover:bg-red-500/20"
+                                                        title="Open in-car mobile phone transmitter"
+                                                    >
+                                                        <Smartphone className="w-3 h-3" />
+                                                        GPS Phone
+                                                    </a>
+                                                ) : null}
+                                                <button onClick={() => openEditVehicle(vehicle)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
+                                                <button onClick={() => deleteVehicle(vehicle.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors animate-pulse-once">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {/* D. PROMOS DATA BODY */}
+                                    {activeTab === 'promos' && promos.map((promo) => (
+                                        <tr key={promo.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                            <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
+                                            <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
+                                            <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{promo.title}</td>
+                                            <td className="py-3.5 px-4 font-mono uppercase text-zinc-600 dark:text-zinc-450">{promo.promo_code}</td>
+                                            <td className="py-3.5 px-4 text-red-600 dark:text-red-500 font-black uppercase">{promo.discount_text}</td>
+                                            <td className="py-3.5 px-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${promo.status === 'active' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'
+                                                    }`}>
+                                                    {promo.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right space-x-1">
+                                                <button onClick={() => openEditPromo(promo)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
+                                                <button onClick={() => deletePromo(promo.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {/* E. ADDONS DATA BODY */}
+                                    {activeTab === 'addons' && extraGoods.map((addon) => (
+                                        <tr key={addon.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                            <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
+                                            <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
+                                            <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{addon.name}</td>
+                                            <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-bold">PHP {parseFloat(addon.price_per_day).toLocaleString()}</td>
+                                            <td className="py-3.5 px-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${addon.status === 'available' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'
+                                                    }`}>
+                                                    {addon.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right space-x-1">
+                                                <button onClick={() => openEditAddon(addon)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
+                                                <button onClick={() => deleteAddon(addon.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {/* F. USERS DATA BODY */}
+                                    {activeTab === 'users' && filteredUsers.map((u) => (
+                                        <tr key={u.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                            <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
+                                            <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
+                                            <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{u.name}</td>
+                                            <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{u.email}</td>
+                                            <td className="py-3.5 px-4 font-mono font-bold uppercase text-[10px] text-zinc-550 dark:text-zinc-400">{u.role}</td>
+                                            <td className="py-3.5 px-4">
+                                                {u.status === 'active' && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                        Active
+                                                    </span>
+                                                )}
+                                                {u.status === 'locked' && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+                                                        <Lock className="w-3 h-3" />
+                                                        Locked
+                                                    </span>
+                                                )}
+                                                {u.status === 'deactivated' && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-500/10 border border-zinc-400/20 text-zinc-500 dark:text-zinc-400">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                                                        Deactivated
+                                                    </span>
                                                 )}
                                             </td>
-
-                                            {/* OCR Confidence & Readability */}
                                             <td className="py-3.5 px-4">
-                                                {doc.ocr_status === 'completed' && ocrConf !== null ? (
-                                                    <div>
-                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black font-mono ${
-                                                            ocrConf >= 70 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
-                                                            ocrConf >= 40 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
-                                                            'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                                        }`}>
-                                                            <span className={`h-1.5 w-1.5 rounded-full ${
-                                                                ocrConf >= 70 ? 'bg-emerald-500' :
-                                                                ocrConf >= 40 ? 'bg-amber-500' : 'bg-rose-500'
-                                                            }`} />
-                                                            {ocrConf}% Conf.
-                                                        </span>
-                                                        <span className="block text-[10px] text-zinc-500 mt-0.5">
-                                                            {doc.ocr_word_count || 0} words parsed
-                                                        </span>
-                                                    </div>
-                                                ) : doc.ocr_status === 'failed' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                                        Scan Failed
+                                                {u.mfa_enabled ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                                        <ShieldCheck className="w-3 h-3" />
+                                                        {u.mfa_type === 'authenticator' ? 'App 2FA' : u.mfa_type === 'email' ? 'Email OTP' : 'Active'}
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-                                                        Pending Scan
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-400">
+                                                        Off
                                                     </span>
                                                 )}
                                             </td>
-
-                                            {/* Validation Findings */}
-                                            <td className="py-3.5 px-4 max-w-[200px]">
-                                                {issues.length > 0 ? (
-                                                    <div className="space-y-0.5">
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-                                                            {issues.length} {issues.length === 1 ? 'Finding' : 'Findings'}
-                                                        </span>
-                                                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate" title={issues[0]}>
-                                                            {issues[0]}
-                                                        </p>
+                                            <td className="py-3.5 px-4 text-right">
+                                                {isAdmin && u.id !== auth.user.id && (
+                                                    <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
+                                                        {/* Inline Role Editor */}
+                                                        {roleEditingUser === u.id ? (
+                                                            <div className="flex items-center gap-1">
+                                                                <select
+                                                                    value={roleDraft}
+                                                                    onChange={e => setRoleDraft(e.target.value)}
+                                                                    className="h-7 px-2 text-[10px] font-black uppercase rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:outline-none cursor-pointer"
+                                                                >
+                                                                    <option value="client">Client</option>
+                                                                    <option value="staff">Staff</option>
+                                                                    <option value="admin">Admin</option>
+                                                                </select>
+                                                                <button
+                                                                    onClick={() => submitRoleChange(u.id, u.name)}
+                                                                    className="px-2 py-1 rounded text-[10px] font-black uppercase border bg-[#FF3B30]/10 border-[#FF3B30]/30 hover:bg-[#FF3B30]/20 text-[#FF3B30] transition-colors cursor-pointer"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setRoleEditingUser(null)}
+                                                                    className="px-2 py-1 rounded text-[10px] font-black uppercase border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 transition-colors cursor-pointer"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleChangeRole(u.id, u.role)}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer"
+                                                                title="Change system role"
+                                                            >
+                                                                ✏️ Role
+                                                            </button>
+                                                        )}
+                                                        {/* Emergency Reset MFA */}
+                                                        {u.mfa_enabled && (
+                                                            <button
+                                                                onClick={() => handleResetUserMfa(u.id, u.name)}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                                                                title="Emergency Reset User MFA"
+                                                            >
+                                                                🛡️ Reset MFA
+                                                            </button>
+                                                        )}
+                                                        {/* LOCKED: only show Unlock */}
+                                                        {u.status === 'locked' && (
+                                                            <button
+                                                                onClick={() => handleUnlockUser(u.id, u.name, u.email)}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/15 border-green-500/30 hover:bg-green-500/25 text-green-700 dark:text-green-400 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                                                title="Customer called? Unlock account and reset rate limiter immediately"
+                                                            >
+                                                                <span>🔓 Unlock & Reset Limiter</span>
+                                                            </button>
+                                                        )}
+                                                        {/* ACTIVE: show Deactivate + Lock */}
+                                                        {u.status === 'active' && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleToggleUser(u.id, u.status)}
+                                                                    className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
+                                                                >
+                                                                    Deactivate
+                                                                </button>
+                                                                {u.role !== 'admin' && (
+                                                                    <button
+                                                                        onClick={() => handleLockUser(u.id, u.name)}
+                                                                        className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                                                                    >
+                                                                        🔒 Lock
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                        {/* DEACTIVATED: show Activate only */}
+                                                        {u.status === 'deactivated' && (
+                                                            <button
+                                                                onClick={() => handleToggleUser(u.id, u.status)}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/10 border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 transition-colors cursor-pointer"
+                                                            >
+                                                                Activate
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                ) : doc.ocr_status === 'completed' ? (
-                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                                        <CheckCircle className="w-3 h-3" />
-                                                        Checks Passed
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[10px] text-zinc-400 italic">No automated flags</span>
-                                                )}
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="py-3.5 px-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                    isVerified ? 'text-emerald-600 dark:text-emerald-500' :
-                                                    isRejected ? 'text-rose-600 dark:text-rose-500' :
-                                                    isResubmit ? 'text-amber-600 dark:text-amber-500' :
-                                                    'text-zinc-600 dark:text-zinc-400'
-                                                }`}>
-                                                    <span className={`h-1.5 w-1.5 rounded-full ${
-                                                        isVerified ? 'bg-emerald-600 dark:bg-emerald-500' :
-                                                        isRejected ? 'bg-rose-600 dark:bg-rose-500' :
-                                                        isResubmit ? 'bg-amber-600 dark:bg-amber-500' :
-                                                        'bg-zinc-500'
-                                                    }`}></span>
-                                                    {isResubmit ? 'Resubmit' : doc.status}
-                                                </span>
-                                                {doc.reject_reason && <span className="text-[9px] text-zinc-500 block mt-1 truncate max-w-[140px]" title={doc.reject_reason}>Reason: {doc.reject_reason}</span>}
-                                                {doc.resubmission_notes && <span className="text-[9px] text-amber-500 block mt-1 truncate max-w-[140px]" title={doc.resubmission_notes}>Note: {doc.resubmission_notes}</span>}
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
-                                                <button
-                                                    onClick={() => setSelectedVerifDoc(doc)}
-                                                    className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-[10px] font-black uppercase rounded transition-colors cursor-pointer inline-flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-3 h-3" />
-                                                    <span>Inspect & Verify</span>
-                                                </button>
-                                                {doc.status === 'pending' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleVerifyDoc(doc.id, 'verify')}
-                                                            className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                        >
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleVerifyDoc(doc.id, 'reject')}
-                                                            className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </>
                                                 )}
                                             </td>
                                         </tr>
-                                    );
-                                })}
-
-                                {/* C. FLEET INVENTORY DATA BODY */}
-                                {activeTab === 'vehicles' && filteredVehicles.map((vehicle) => (
-                                    <tr key={vehicle.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
-                                            <GripVertical className="w-3.5 h-3.5" />
-                                        </td>
-                                        <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5" /></td>
-                                        <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-bold block">{vehicle.name}</td>
-                                        <td className="py-3.5 px-4 font-mono text-zinc-600 dark:text-zinc-450 uppercase">{vehicle.plate_number}</td>
-                                        <td className="py-3.5 px-4 text-zinc-605 dark:text-zinc-450">{vehicle.type}</td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(vehicle.price_per_day).toLocaleString()}</td>
-                                        <td className="py-3.5 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                vehicle.status === 'available' ? 'text-green-600 dark:text-green-500' :
-                                                vehicle.status === 'reserved' ? 'text-blue-600 dark:text-blue-400' :
-                                                vehicle.status === 'rented' ? 'text-purple-600 dark:text-purple-400' :
-                                                vehicle.status === 'maintenance' ? 'text-amber-600 dark:text-amber-500' : 'text-rose-600 dark:text-rose-500'
-                                            }`}>
-                                                <span className={`h-1.5 w-1.5 rounded-full ${
-                                                    vehicle.status === 'available' ? 'bg-green-600 dark:bg-green-500' :
-                                                    vehicle.status === 'reserved' ? 'bg-blue-600 dark:bg-blue-400' :
-                                                    vehicle.status === 'rented' ? 'bg-purple-600 dark:bg-purple-400' :
-                                                    vehicle.status === 'maintenance' ? 'bg-amber-600 dark:bg-amber-500' : 'bg-rose-600 dark:bg-rose-500'
-                                                }`}></span>
-                                                {vehicle.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
-                                            {vehicle.gps_tracker_key ? (
-                                                <a 
-                                                    href={`/tracker/${vehicle.gps_tracker_key}`} 
-                                                    target="_blank" 
-                                                    rel="noreferrer" 
-                                                    className="px-2 py-1 bg-red-500/10 text-[#FF3B30] border border-red-500/20 text-[10px] font-black uppercase rounded cursor-pointer inline-flex items-center gap-1 hover:bg-red-500/20"
-                                                    title="Open in-car mobile phone transmitter"
-                                                >
-                                                    <Smartphone className="w-3 h-3" />
-                                                    GPS Phone
-                                                </a>
-                                            ) : null}
-                                            <button onClick={() => openEditVehicle(vehicle)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
-                                            <button onClick={() => deleteVehicle(vehicle.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors animate-pulse-once">Delete</button>
-                                        </td>
-                                    </tr>
-                                ))}
-
-                                {/* D. PROMOS DATA BODY */}
-                                {activeTab === 'promos' && promos.map((promo) => (
-                                    <tr key={promo.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
-                                        <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{promo.title}</td>
-                                        <td className="py-3.5 px-4 font-mono uppercase text-zinc-600 dark:text-zinc-450">{promo.promo_code}</td>
-                                        <td className="py-3.5 px-4 text-red-600 dark:text-red-500 font-black uppercase">{promo.discount_text}</td>
-                                        <td className="py-3.5 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                promo.status === 'active' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'
-                                            }`}>
-                                                {promo.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1">
-                                            <button onClick={() => openEditPromo(promo)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
-                                            <button onClick={() => deletePromo(promo.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors">Delete</button>
-                                        </td>
-                                    </tr>
-                                ))}
-
-                                {/* E. ADDONS DATA BODY */}
-                                {activeTab === 'addons' && extraGoods.map((addon) => (
-                                    <tr key={addon.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
-                                        <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{addon.name}</td>
-                                        <td className="py-3.5 px-4 text-zinc-800 dark:text-zinc-150 font-bold">PHP {parseFloat(addon.price_per_day).toLocaleString()}</td>
-                                        <td className="py-3.5 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${
-                                                addon.status === 'available' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'
-                                            }`}>
-                                                {addon.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right space-x-1">
-                                            <button onClick={() => openEditAddon(addon)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
-                                            <button onClick={() => deleteAddon(addon.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors">Delete</button>
-                                        </td>
-                                    </tr>
-                                ))}
-
-                                {/* F. USERS DATA BODY */}
-                                {activeTab === 'users' && users.map((u) => (
-                                    <tr key={u.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
-                                        <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
-                                        <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
-                                        <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">{u.name}</td>
-                                        <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{u.email}</td>
-                                        <td className="py-3.5 px-4 font-mono font-bold uppercase text-[10px] text-zinc-550 dark:text-zinc-400">{u.role}</td>
-                                        <td className="py-3.5 px-4">
-                                            {u.status === 'active' && (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                    Active
-                                                </span>
-                                            )}
-                                            {u.status === 'locked' && (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
-                                                    <Lock className="w-3 h-3" />
-                                                    Locked
-                                                </span>
-                                            )}
-                                            {u.status === 'deactivated' && (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-500/10 border border-zinc-400/20 text-zinc-500 dark:text-zinc-400">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                                                    Deactivated
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-3.5 px-4">
-                                            {u.mfa_enabled ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                                                    <ShieldCheck className="w-3 h-3" />
-                                                    {u.mfa_type === 'authenticator' ? 'App 2FA' : u.mfa_type === 'email' ? 'Email OTP' : 'Active'}
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-400">
-                                                    Off
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right">
-                                            {isAdmin && u.id !== auth.user.id && (
-                                                <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
-                                                    {/* Inline Role Editor */}
-                                                    {roleEditingUser === u.id ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <select
-                                                                value={roleDraft}
-                                                                onChange={e => setRoleDraft(e.target.value)}
-                                                                className="h-7 px-2 text-[10px] font-black uppercase rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:outline-none cursor-pointer"
-                                                            >
-                                                                <option value="client">Client</option>
-                                                                <option value="staff">Staff</option>
-                                                                <option value="admin">Admin</option>
-                                                            </select>
-                                                            <button
-                                                                onClick={() => submitRoleChange(u.id, u.name)}
-                                                                className="px-2 py-1 rounded text-[10px] font-black uppercase border bg-[#FF3B30]/10 border-[#FF3B30]/30 hover:bg-[#FF3B30]/20 text-[#FF3B30] transition-colors cursor-pointer"
-                                                            >
-                                                                Save
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setRoleEditingUser(null)}
-                                                                className="px-2 py-1 rounded text-[10px] font-black uppercase border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 transition-colors cursor-pointer"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleChangeRole(u.id, u.role)}
-                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer"
-                                                            title="Change system role"
-                                                        >
-                                                            ✏️ Role
-                                                        </button>
-                                                    )}
-                                                    {/* Emergency Reset MFA */}
-                                                    {u.mfa_enabled && (
-                                                        <button
-                                                            onClick={() => handleResetUserMfa(u.id, u.name)}
-                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
-                                                            title="Emergency Reset User MFA"
-                                                        >
-                                                            🛡️ Reset MFA
-                                                        </button>
-                                                    )}
-                                                    {/* LOCKED: only show Unlock */}
-                                                    {u.status === 'locked' && (
-                                                        <button
-                                                            onClick={() => handleUnlockUser(u.id, u.name)}
-                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/10 border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 transition-colors cursor-pointer"
-                                                        >
-                                                            🔓 Unlock
-                                                        </button>
-                                                    )}
-                                                    {/* ACTIVE: show Deactivate + Lock */}
-                                                    {u.status === 'active' && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleToggleUser(u.id, u.status)}
-                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
-                                                            >
-                                                                Deactivate
-                                                            </button>
-                                                            {u.role !== 'admin' && (
-                                                                <button
-                                                                    onClick={() => handleLockUser(u.id, u.name)}
-                                                                    className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
-                                                                >
-                                                                    🔒 Lock
-                                                                </button>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                    {/* DEACTIVATED: show Activate only */}
-                                                    {u.status === 'deactivated' && (
-                                                        <button
-                                                            onClick={() => handleToggleUser(u.id, u.status)}
-                                                            className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/10 border-green-500/20 hover:bg-green-500/20 text-green-600 dark:text-green-400 transition-colors cursor-pointer"
-                                                        >
-                                                            Activate
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination Footer for Bookings */}
-                    {activeTab === 'bookings' && totalBookingPages > 1 && (
-                        <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
-                            <span className="text-xs text-zinc-500 font-medium">
-                                Page {currentBookingPage} of {totalBookingPages} ({filteredBookings.length} total records)
-                            </span>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setBookingPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentBookingPage === 1}
-                                    className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    onClick={() => setBookingPage(prev => Math.min(totalBookingPages, prev + 1))}
-                                    disabled={currentBookingPage === totalBookingPages}
-                                    className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                                >
-                                    Next
-                                </button>
-                            </div>
+                                    ))}
+                                    {activeTab === 'users' && filteredUsers.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-12 text-center text-zinc-400 font-bold text-xs">
+                                                No customer accounts found matching your filter or search.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
-                </div>
-            )}
 
-            {activeTab === 'reports' && (
-                <SmartReportsDashboard 
-                    stats={stats} 
-                    vehicles={vehicles} 
-                    bookings={bookings} 
-                    documents={documents} 
-                    isAdmin={isAdmin} 
-                />
-            )}
+                        {/* Pagination Footer for Bookings */}
+                        {activeTab === 'bookings' && totalBookingPages > 1 && (
+                            <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
+                                <span className="text-xs text-zinc-500 font-medium">
+                                    Page {currentBookingPage} of {totalBookingPages} ({filteredBookings.length} total records)
+                                </span>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setBookingPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentBookingPage === 1}
+                                        className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => setBookingPage(prev => Math.min(totalBookingPages, prev + 1))}
+                                        disabled={currentBookingPage === totalBookingPages}
+                                        className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
-            {activeTab === 'calendar' && (
-                <VehicleCalendar vehicles={vehicles} isAdmin={isAdmin} />
-            )}
+                {activeTab === 'reports' && (
+                    <SmartReportsDashboard
+                        stats={stats}
+                        vehicles={vehicles}
+                        bookings={bookings}
+                        documents={documents}
+                        isAdmin={isAdmin}
+                    />
+                )}
 
-            {activeTab === 'gps_fleet' && (
-                <FleetGpsMonitor isAdmin={isAdmin} vehicles={vehicles} />
-            )}
+                {activeTab === 'calendar' && (
+                    <VehicleCalendar vehicles={vehicles} isAdmin={isAdmin} />
+                )}
 
-            {activeTab === 'daily_schedule' && (
-                <DailyRentalSchedule vehicles={vehicles} bookings={bookings} />
-            )}
+                {activeTab === 'gps_fleet' && (
+                    <FleetGpsMonitor isAdmin={isAdmin} vehicles={vehicles} />
+                )}
 
-            {activeTab === 'bill_records' && (
-                <BillRecordsManager billRecords={billRecords} showConfirm={showConfirm} />
-            )}
+                {activeTab === 'daily_schedule' && (
+                    <DailyRentalSchedule vehicles={vehicles} bookings={bookings} />
+                )}
 
-            {activeTab === 'profit_analytics' && (
-                <VehicleProfitAnalytics vehicles={vehicles} />
-            )}
+                {activeTab === 'bill_records' && (
+                    <BillRecordsManager billRecords={billRecords} showConfirm={showConfirm} />
+                )}
 
-            {isAdmin && activeTab === 'payment_settings' && (
-                <div className="w-full">
-                    <PaymentSettingsTab settings={settings} />
-                </div>
-            )}
+                {activeTab === 'profit_analytics' && (
+                    <VehicleProfitAnalytics vehicles={vehicles} />
+                )}
 
-            {isAdmin && activeTab === 'settings' && (
+                {isAdmin && activeTab === 'payment_settings' && (
+                    <div className="w-full">
+                        <PaymentSettingsTab settings={settings} />
+                    </div>
+                )}
+
+                {isAdmin && activeTab === 'settings' && (
                     <div className="space-y-6 max-w-4xl mx-auto">
                         {/* Settings Navigation Sub-tabs */}
                         <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                             <button
                                 type="button"
                                 onClick={() => setSettingsSubTab('branding')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    settingsSubTab === 'branding'
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'branding'
                                         ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
                                         : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <Globe className="w-4 h-4 text-[#FF3B30]" />
                                 Branding & Info
@@ -1625,11 +1695,10 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                             <button
                                 type="button"
                                 onClick={() => setSettingsSubTab('smtp')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    settingsSubTab === 'smtp'
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'smtp'
                                         ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
                                         : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <Mail className="w-4 h-4 text-blue-500" />
                                 SMTP Email
@@ -1638,11 +1707,10 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                             <button
                                 type="button"
                                 onClick={() => setSettingsSubTab('sms')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    settingsSubTab === 'sms'
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'sms'
                                         ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
                                         : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <MessageSquare className="w-4 h-4 text-emerald-500" />
                                 SMS Gateway
@@ -1651,33 +1719,23 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                             <button
                                 type="button"
                                 onClick={() => setSettingsSubTab('mfa')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    settingsSubTab === 'mfa'
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'mfa'
                                         ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
                                         : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
                                 Security & MFA
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('payment_settings')}
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                            >
-                                <Zap className="w-4 h-4 text-[#FF3B30]" />
-                                Payment Gateways
-                            </button>
 
                             <button
                                 type="button"
                                 onClick={() => setSettingsSubTab('account')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    settingsSubTab === 'account'
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'account'
                                         ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
                                         : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <Lock className="w-4 h-4 text-amber-500" />
                                 My Account
@@ -1757,454 +1815,454 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         ) : (
                             <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-xl overflow-hidden transition-colors text-left">
                                 <form onSubmit={submitSettings}>
-                                {/* TAB 1: BRANDING & GENERAL INFO */}
-                                {settingsSubTab === 'branding' && (
-                                    <>
-                                        <CardHeader className="px-6 pt-5 pb-3">
-                                            <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
-                                                <Globe className="w-4 h-4 text-[#FF3B30]" />
-                                                Site & Branding Settings
-                                            </CardTitle>
-                                            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                                Dynamically customize the global branding assets, banner titles, and contact details across the landing page.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-5 px-6">
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo / Brand Text</label>
-                                                        <Input 
-                                                            value={settingsForm.data.site_logo} 
-                                                            onChange={e => settingsForm.setData('site_logo', e.target.value)} 
-                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo Image</label>
-                                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                                                            {settings?.site_logo_image && !settingsForm.data.clear_logo_image && (
-                                                                <div className="flex items-center gap-2 p-1.5 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
-                                                                    <img src={settings.site_logo_image} className="h-7 max-w-[120px] object-contain rounded" alt={settings?.site_logo || "Current logo"} />
-                                                                    <button 
-                                                                        type="button" 
-                                                                        onClick={() => {
-                                                                            settingsForm.setData({ ...settingsForm.data, clear_logo_image: true, site_logo_image_file: null });
-                                                                        }}
-                                                                        className="text-[10px] font-black text-red-500 uppercase tracking-wide hover:underline cursor-pointer"
-                                                                    >
-                                                                        Clear
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            <Input 
-                                                                type="file"
-                                                                onChange={e => {
-                                                                    settingsForm.setData({ ...settingsForm.data, site_logo_image_file: e.target.files[0] ? e.target.files[0] : null, clear_logo_image: false });
-                                                                }}
-                                                                accept="image/*"
-                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 py-1.5 focus:border-[#FF3B30] text-xs flex-1"
+                                    {/* TAB 1: BRANDING & GENERAL INFO */}
+                                    {settingsSubTab === 'branding' && (
+                                        <>
+                                            <CardHeader className="px-6 pt-5 pb-3">
+                                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                    <Globe className="w-4 h-4 text-[#FF3B30]" />
+                                                    Site & Branding Settings
+                                                </CardTitle>
+                                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                                    Dynamically customize the global branding assets, banner titles, and contact details across the landing page.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-5 px-6">
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo / Brand Text</label>
+                                                            <Input
+                                                                value={settingsForm.data.site_logo}
+                                                                onChange={e => settingsForm.setData('site_logo', e.target.value)}
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                                             />
                                                         </div>
+
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Site Logo Image</label>
+                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                                                {settings?.site_logo_image && !settingsForm.data.clear_logo_image && (
+                                                                    <div className="flex items-center gap-2 p-1.5 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
+                                                                        <img src={settings.site_logo_image} className="h-7 max-w-[120px] object-contain rounded" alt={settings?.site_logo || "Current logo"} />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                settingsForm.setData({ ...settingsForm.data, clear_logo_image: true, site_logo_image_file: null });
+                                                                            }}
+                                                                            className="text-[10px] font-black text-red-500 uppercase tracking-wide hover:underline cursor-pointer"
+                                                                        >
+                                                                            Clear
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                                <Input
+                                                                    type="file"
+                                                                    onChange={e => {
+                                                                        settingsForm.setData({ ...settingsForm.data, site_logo_image_file: e.target.files[0] ? e.target.files[0] : null, clear_logo_image: false });
+                                                                    }}
+                                                                    accept="image/*"
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 py-1.5 focus:border-[#FF3B30] text-xs flex-1"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Main Title</label>
-                                                    <Input 
-                                                        value={settingsForm.data.home_hero_title} 
-                                                        onChange={e => settingsForm.setData('home_hero_title', e.target.value)} 
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Subtitle / Description</label>
-                                                    <textarea 
-                                                        rows="3"
-                                                        value={settingsForm.data.home_hero_subtitle} 
-                                                        onChange={e => settingsForm.setData('home_hero_subtitle', e.target.value)} 
-                                                        className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF3B30] transition-colors"
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Email Address</label>
-                                                        <Input 
-                                                            type="email"
-                                                            value={settingsForm.data.contact_email} 
-                                                            onChange={e => settingsForm.setData('contact_email', e.target.value)} 
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Main Title</label>
+                                                        <Input
+                                                            value={settingsForm.data.home_hero_title}
+                                                            onChange={e => settingsForm.setData('home_hero_title', e.target.value)}
                                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                                         />
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Phone Number</label>
-                                                        <Input 
-                                                            value={settingsForm.data.contact_phone} 
-                                                            onChange={e => settingsForm.setData('contact_phone', e.target.value)} 
-                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Home Hero Subtitle / Description</label>
+                                                        <textarea
+                                                            rows="3"
+                                                            value={settingsForm.data.home_hero_subtitle}
+                                                            onChange={e => settingsForm.setData('home_hero_subtitle', e.target.value)}
+                                                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF3B30] transition-colors"
                                                         />
-                                                    </div>
-                                                </div>
-
-                                                {/* Social Media Links Section */}
-                                                <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
-                                                    <div className="mb-3">
-                                                        <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
-                                                            <Globe className="w-4 h-4 text-[#FF3B30]" />
-                                                            Social Media Channels
-                                                        </span>
-                                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">
-                                                            Configure your brand's official social media profiles displayed on the landing page and footer.
-                                                        </span>
                                                     </div>
 
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                         <div>
-                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Facebook Page URL</label>
-                                                            <Input 
-                                                                placeholder="https://facebook.com/yourbrand"
-                                                                value={settingsForm.data.social_facebook} 
-                                                                onChange={e => settingsForm.setData('social_facebook', e.target.value)} 
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Email Address</label>
+                                                            <Input
+                                                                type="email"
+                                                                value={settingsForm.data.contact_email}
+                                                                onChange={e => settingsForm.setData('contact_email', e.target.value)}
                                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                                             />
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Instagram Profile URL</label>
-                                                            <Input 
-                                                                placeholder="https://instagram.com/yourbrand"
-                                                                value={settingsForm.data.social_instagram} 
-                                                                onChange={e => settingsForm.setData('social_instagram', e.target.value)} 
-                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Twitter / X URL</label>
-                                                            <Input 
-                                                                placeholder="https://x.com/yourbrand"
-                                                                value={settingsForm.data.social_twitter} 
-                                                                onChange={e => settingsForm.setData('social_twitter', e.target.value)} 
-                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">WhatsApp Number / Link</label>
-                                                            <Input 
-                                                                placeholder="https://wa.me/639123456789 or +639123456789"
-                                                                value={settingsForm.data.social_whatsapp} 
-                                                                onChange={e => settingsForm.setData('social_whatsapp', e.target.value)} 
-                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">TikTok Profile URL</label>
-                                                            <Input 
-                                                                placeholder="https://tiktok.com/@yourbrand"
-                                                                value={settingsForm.data.social_tiktok} 
-                                                                onChange={e => settingsForm.setData('social_tiktok', e.target.value)} 
-                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">YouTube Channel URL</label>
-                                                            <Input 
-                                                                placeholder="https://youtube.com/@yourbrand"
-                                                                value={settingsForm.data.social_youtube} 
-                                                                onChange={e => settingsForm.setData('social_youtube', e.target.value)} 
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Contact Phone Number</label>
+                                                            <Input
+                                                                value={settingsForm.data.contact_phone}
+                                                                onChange={e => settingsForm.setData('contact_phone', e.target.value)}
                                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                                             />
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </>
-                                )}
 
-                                {/* TAB 2: SMTP EMAIL SETTINGS */}
-                                {settingsSubTab === 'smtp' && (
-                                    <>
-                                        <CardHeader className="px-6 pt-5 pb-3 flex flex-row items-center justify-between">
-                                            <div>
-                                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
-                                                    <Mail className="w-4 h-4 text-blue-500" />
-                                                    SMTP Email Server Configuration
-                                                </CardTitle>
-                                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                                    Configure email server credentials and sender profiles for automated system notifications.
-                                                </CardDescription>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                onClick={() => { setTestEmailOpen(true); setTestEmailResult(null); }}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-3 gap-1.5 rounded-lg"
-                                            >
-                                                <Send className="w-3.5 h-3.5" />
-                                                Send Test Email
-                                            </Button>
-                                        </CardHeader>
-                                        <CardContent className="space-y-5 px-6">
-                                            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                                                <div>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white block">Email Dispatch System</span>
-                                                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Enable or disable transactional email notifications platform-wide</span>
+                                                    {/* Social Media Links Section */}
+                                                    <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                                                        <div className="mb-3">
+                                                            <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                                <Globe className="w-4 h-4 text-[#FF3B30]" />
+                                                                Social Media Channels
+                                                            </span>
+                                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">
+                                                                Configure your brand's official social media profiles displayed on the landing page and footer.
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Facebook Page URL</label>
+                                                                <Input
+                                                                    placeholder="https://facebook.com/yourbrand"
+                                                                    value={settingsForm.data.social_facebook}
+                                                                    onChange={e => settingsForm.setData('social_facebook', e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Instagram Profile URL</label>
+                                                                <Input
+                                                                    placeholder="https://instagram.com/yourbrand"
+                                                                    value={settingsForm.data.social_instagram}
+                                                                    onChange={e => settingsForm.setData('social_instagram', e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Twitter / X URL</label>
+                                                                <Input
+                                                                    placeholder="https://x.com/yourbrand"
+                                                                    value={settingsForm.data.social_twitter}
+                                                                    onChange={e => settingsForm.setData('social_twitter', e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">WhatsApp Number / Link</label>
+                                                                <Input
+                                                                    placeholder="https://wa.me/639123456789 or +639123456789"
+                                                                    value={settingsForm.data.social_whatsapp}
+                                                                    onChange={e => settingsForm.setData('social_whatsapp', e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">TikTok Profile URL</label>
+                                                                <Input
+                                                                    placeholder="https://tiktok.com/@yourbrand"
+                                                                    value={settingsForm.data.social_tiktok}
+                                                                    onChange={e => settingsForm.setData('social_tiktok', e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">YouTube Channel URL</label>
+                                                                <Input
+                                                                    placeholder="https://youtube.com/@yourbrand"
+                                                                    value={settingsForm.data.social_youtube}
+                                                                    onChange={e => settingsForm.setData('social_youtube', e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <select
-                                                    value={settingsForm.data.email_notifications_enabled}
-                                                    onChange={e => settingsForm.setData('email_notifications_enabled', e.target.value)}
-                                                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                            </CardContent>
+                                        </>
+                                    )}
+
+                                    {/* TAB 2: SMTP EMAIL SETTINGS */}
+                                    {settingsSubTab === 'smtp' && (
+                                        <>
+                                            <CardHeader className="px-6 pt-5 pb-3 flex flex-row items-center justify-between">
+                                                <div>
+                                                    <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                        <Mail className="w-4 h-4 text-blue-500" />
+                                                        SMTP Email Server Configuration
+                                                    </CardTitle>
+                                                    <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                                        Configure email server credentials and sender profiles for automated system notifications.
+                                                    </CardDescription>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => { setTestEmailOpen(true); setTestEmailResult(null); }}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-3 gap-1.5 rounded-lg"
                                                 >
-                                                    <option value="1">Enabled</option>
-                                                    <option value="0">Disabled</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Mailer Driver</label>
-                                                    <select
-                                                        value={settingsForm.data.mail_driver}
-                                                        onChange={e => settingsForm.setData('mail_driver', e.target.value)}
-                                                        className="w-full text-xs font-medium h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
-                                                    >
-                                                        <option value="smtp">SMTP (Recommended)</option>
-                                                        <option value="sendmail">Sendmail</option>
-                                                        <option value="mailgun">Mailgun</option>
-                                                        <option value="ses">Amazon SES</option>
-                                                        <option value="log">Log Only (Testing)</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="sm:col-span-2">
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Host / Server</label>
-                                                    <Input
-                                                        placeholder="e.g. smtp.gmail.com or mail.yourdomain.com"
-                                                        value={settingsForm.data.mail_host}
-                                                        onChange={e => settingsForm.setData('mail_host', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Port</label>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="587, 465, or 25"
-                                                        value={settingsForm.data.mail_port}
-                                                        onChange={e => settingsForm.setData('mail_port', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Encryption Standard</label>
-                                                    <select
-                                                        value={settingsForm.data.mail_encryption}
-                                                        onChange={e => settingsForm.setData('mail_encryption', e.target.value)}
-                                                        className="w-full text-xs font-medium h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-mono"
-                                                    >
-                                                        <option value="tls">TLS (Port 587)</option>
-                                                        <option value="ssl">SSL (Port 465)</option>
-                                                        <option value="none">None / Unencrypted (Port 25)</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Username / User Email</label>
-                                                    <Input
-                                                        placeholder="e.g. notifications@elfaa.com"
-                                                        value={settingsForm.data.mail_username}
-                                                        onChange={e => settingsForm.setData('mail_username', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Password / App Secret</label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            type={showMailPassword ? 'text' : 'password'}
-                                                            placeholder="••••••••••••••••"
-                                                            value={settingsForm.data.mail_password}
-                                                            onChange={e => settingsForm.setData('mail_password', e.target.value)}
-                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowMailPassword(!showMailPassword)}
-                                                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-200"
-                                                        >
-                                                            {showMailPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender Name</label>
-                                                    <Input
-                                                        placeholder="e.g. ELFAA Car Rental"
-                                                        value={settingsForm.data.mail_from_name}
-                                                        onChange={e => settingsForm.setData('mail_from_name', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender From Address</label>
-                                                    <Input
-                                                        type="email"
-                                                        placeholder="e.g. no-reply@elfaacar.com"
-                                                        value={settingsForm.data.mail_from_address}
-                                                        onChange={e => settingsForm.setData('mail_from_address', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </>
-                                )}
-
-                                {/* TAB 3: SMS GATEWAY SETTINGS */}
-                                {settingsSubTab === 'sms' && (
-                                    <>
-                                        <CardHeader className="px-6 pt-5 pb-3 flex flex-row items-center justify-between">
-                                            <div>
-                                                <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
-                                                    <MessageSquare className="w-4 h-4 text-emerald-500" />
-                                                    SMS Notification Gateway
-                                                </CardTitle>
-                                                <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                                    Integrate Semaphore, Twilio, or custom SMS API HTTP endpoints for instant customer SMS updates.
-                                                </CardDescription>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                onClick={() => { setTestSmsOpen(true); setTestSmsResult(null); }}
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3 gap-1.5 rounded-lg"
-                                            >
-                                                <Send className="w-3.5 h-3.5" />
-                                                Send Test SMS
-                                            </Button>
-                                        </CardHeader>
-                                        <CardContent className="space-y-5 px-6">
-                                            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                                                <div>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white block">SMS Service Dispatch</span>
-                                                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Enable or disable automated mobile SMS text alerts</span>
-                                                </div>
-                                                <select
-                                                    value={settingsForm.data.sms_notifications_enabled}
-                                                    onChange={e => settingsForm.setData('sms_notifications_enabled', e.target.value)}
-                                                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
-                                                >
-                                                    <option value="1">Enabled</option>
-                                                    <option value="0">Disabled</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMS Provider</label>
-                                                    <select
-                                                        value={settingsForm.data.sms_provider}
-                                                        onChange={e => settingsForm.setData('sms_provider', e.target.value)}
-                                                        className="w-full text-xs font-bold h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
-                                                    >
-                                                        <option value="semaphore">Semaphore Philippines (Recommended)</option>
-                                                        <option value="twilio">Twilio SMS</option>
-                                                        <option value="generic_http">Custom HTTP Gateway / REST API</option>
-                                                    </select>
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender ID / Header Name</label>
-                                                    <Input
-                                                        placeholder="e.g. ELFAACAR"
-                                                        value={settingsForm.data.sms_sender_id}
-                                                        onChange={e => settingsForm.setData('sms_sender_id', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs uppercase"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
-                                                        {settingsForm.data.sms_provider === 'twilio' ? 'Twilio Auth Token / API Key' : 'API Key / Secret Token'}
-                                                    </label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            type={showSmsApiKey ? 'text' : 'password'}
-                                                            placeholder="Paste your API key here..."
-                                                            value={settingsForm.data.sms_api_key}
-                                                            onChange={e => settingsForm.setData('sms_api_key', e.target.value)}
-                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowSmsApiKey(!showSmsApiKey)}
-                                                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-200"
-                                                        >
-                                                            {showSmsApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {settingsForm.data.sms_provider === 'twilio' && (
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    Send Test Email
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent className="space-y-5 px-6">
+                                                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                                                     <div>
-                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Twilio Account SID</label>
+                                                        <span className="text-xs font-bold text-zinc-900 dark:text-white block">Email Dispatch System</span>
+                                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Enable or disable transactional email notifications platform-wide</span>
+                                                    </div>
+                                                    <select
+                                                        value={settingsForm.data.email_notifications_enabled}
+                                                        onChange={e => settingsForm.setData('email_notifications_enabled', e.target.value)}
+                                                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                    >
+                                                        <option value="1">Enabled</option>
+                                                        <option value="0">Disabled</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Mailer Driver</label>
+                                                        <select
+                                                            value={settingsForm.data.mail_driver}
+                                                            onChange={e => settingsForm.setData('mail_driver', e.target.value)}
+                                                            className="w-full text-xs font-medium h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                        >
+                                                            <option value="smtp">SMTP (Recommended)</option>
+                                                            <option value="sendmail">Sendmail</option>
+                                                            <option value="mailgun">Mailgun</option>
+                                                            <option value="ses">Amazon SES</option>
+                                                            <option value="log">Log Only (Testing)</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div className="sm:col-span-2">
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Host / Server</label>
                                                         <Input
-                                                            placeholder="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-                                                            value={settingsForm.data.sms_account_sid}
-                                                            onChange={e => settingsForm.setData('sms_account_sid', e.target.value)}
+                                                            placeholder="e.g. smtp.gmail.com or mail.yourdomain.com"
+                                                            value={settingsForm.data.mail_host}
+                                                            onChange={e => settingsForm.setData('mail_host', e.target.value)}
                                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
                                                         />
                                                     </div>
-                                                )}
-
-                                                <div className={settingsForm.data.sms_provider === 'twilio' ? 'sm:col-span-2' : ''}>
-                                                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">API Endpoint URL (Optional / Custom)</label>
-                                                    <Input
-                                                        placeholder={
-                                                            settingsForm.data.sms_provider === 'semaphore'
-                                                                ? 'Default: https://api.semaphore.co/api/v4/messages'
-                                                                : 'https://your-custom-gateway.com/api/send-sms'
-                                                        }
-                                                        value={settingsForm.data.sms_api_url}
-                                                        onChange={e => settingsForm.setData('sms_api_url', e.target.value)}
-                                                        className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
-                                                    />
                                                 </div>
-                                            </div>
-                                        </CardContent>
-                                    </>
-                                )}
 
-                                <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                    <Button 
-                                        type="submit" 
-                                        disabled={settingsForm.processing} 
-                                        className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer shadow-md"
-                                    >
-                                        {settingsForm.processing ? 'Saving Settings...' : 'Save All Settings'}
-                                    </Button>
-                                </CardFooter>
-                            </form>
-                        </Card>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Port</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="587, 465, or 25"
+                                                            value={settingsForm.data.mail_port}
+                                                            onChange={e => settingsForm.setData('mail_port', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Encryption Standard</label>
+                                                        <select
+                                                            value={settingsForm.data.mail_encryption}
+                                                            onChange={e => settingsForm.setData('mail_encryption', e.target.value)}
+                                                            className="w-full text-xs font-medium h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-mono"
+                                                        >
+                                                            <option value="tls">TLS (Port 587)</option>
+                                                            <option value="ssl">SSL (Port 465)</option>
+                                                            <option value="none">None / Unencrypted (Port 25)</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Username / User Email</label>
+                                                        <Input
+                                                            placeholder="e.g. notifications@elfaa.com"
+                                                            value={settingsForm.data.mail_username}
+                                                            onChange={e => settingsForm.setData('mail_username', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMTP Password / App Secret</label>
+                                                        <div className="relative">
+                                                            <Input
+                                                                type={showMailPassword ? 'text' : 'password'}
+                                                                placeholder="••••••••••••••••"
+                                                                value={settingsForm.data.mail_password}
+                                                                onChange={e => settingsForm.setData('mail_password', e.target.value)}
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowMailPassword(!showMailPassword)}
+                                                                className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-200"
+                                                            >
+                                                                {showMailPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender Name</label>
+                                                        <Input
+                                                            placeholder="e.g. ELFAA Car Rental"
+                                                            value={settingsForm.data.mail_from_name}
+                                                            onChange={e => settingsForm.setData('mail_from_name', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 text-xs"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender From Address</label>
+                                                        <Input
+                                                            type="email"
+                                                            placeholder="e.g. no-reply@elfaacar.com"
+                                                            value={settingsForm.data.mail_from_address}
+                                                            onChange={e => settingsForm.setData('mail_from_address', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </>
+                                    )}
+
+                                    {/* TAB 3: SMS GATEWAY SETTINGS */}
+                                    {settingsSubTab === 'sms' && (
+                                        <>
+                                            <CardHeader className="px-6 pt-5 pb-3 flex flex-row items-center justify-between">
+                                                <div>
+                                                    <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                                                        <MessageSquare className="w-4 h-4 text-emerald-500" />
+                                                        SMS Notification Gateway
+                                                    </CardTitle>
+                                                    <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                                                        Integrate Semaphore, Twilio, or custom SMS API HTTP endpoints for instant customer SMS updates.
+                                                    </CardDescription>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => { setTestSmsOpen(true); setTestSmsResult(null); }}
+                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3 gap-1.5 rounded-lg"
+                                                >
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    Send Test SMS
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent className="space-y-5 px-6">
+                                                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                                    <div>
+                                                        <span className="text-xs font-bold text-zinc-900 dark:text-white block">SMS Service Dispatch</span>
+                                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Enable or disable automated mobile SMS text alerts</span>
+                                                    </div>
+                                                    <select
+                                                        value={settingsForm.data.sms_notifications_enabled}
+                                                        onChange={e => settingsForm.setData('sms_notifications_enabled', e.target.value)}
+                                                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                    >
+                                                        <option value="1">Enabled</option>
+                                                        <option value="0">Disabled</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMS Provider</label>
+                                                        <select
+                                                            value={settingsForm.data.sms_provider}
+                                                            onChange={e => settingsForm.setData('sms_provider', e.target.value)}
+                                                            className="w-full text-xs font-bold h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
+                                                        >
+                                                            <option value="semaphore">Semaphore Philippines (Recommended)</option>
+                                                            <option value="twilio">Twilio SMS</option>
+                                                            <option value="generic_http">Custom HTTP Gateway / REST API</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender ID / Header Name</label>
+                                                        <Input
+                                                            placeholder="e.g. ELFAACAR"
+                                                            value={settingsForm.data.sms_sender_id}
+                                                            onChange={e => settingsForm.setData('sms_sender_id', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs uppercase"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
+                                                            {settingsForm.data.sms_provider === 'twilio' ? 'Twilio Auth Token / API Key' : 'API Key / Secret Token'}
+                                                        </label>
+                                                        <div className="relative">
+                                                            <Input
+                                                                type={showSmsApiKey ? 'text' : 'password'}
+                                                                placeholder="Paste your API key here..."
+                                                                value={settingsForm.data.sms_api_key}
+                                                                onChange={e => settingsForm.setData('sms_api_key', e.target.value)}
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowSmsApiKey(!showSmsApiKey)}
+                                                                className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-200"
+                                                            >
+                                                                {showSmsApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {settingsForm.data.sms_provider === 'twilio' && (
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Twilio Account SID</label>
+                                                            <Input
+                                                                placeholder="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                                                                value={settingsForm.data.sms_account_sid}
+                                                                onChange={e => settingsForm.setData('sms_account_sid', e.target.value)}
+                                                                className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    <div className={settingsForm.data.sms_provider === 'twilio' ? 'sm:col-span-2' : ''}>
+                                                        <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">API Endpoint URL (Optional / Custom)</label>
+                                                        <Input
+                                                            placeholder={
+                                                                settingsForm.data.sms_provider === 'semaphore'
+                                                                    ? 'Default: https://api.semaphore.co/api/v4/messages'
+                                                                    : 'https://your-custom-gateway.com/api/send-sms'
+                                                            }
+                                                            value={settingsForm.data.sms_api_url}
+                                                            onChange={e => settingsForm.setData('sms_api_url', e.target.value)}
+                                                            className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </>
+                                    )}
+
+                                    <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                        <Button
+                                            type="submit"
+                                            disabled={settingsForm.processing}
+                                            className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer shadow-md"
+                                        >
+                                            {settingsForm.processing ? 'Saving Settings...' : 'Save All Settings'}
+                                        </Button>
+                                    </CardFooter>
+                                </form>
+                            </Card>
                         )}
 
                         {/* Administrator Password Change Section */}
@@ -2222,11 +2280,11 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 <CardContent className="space-y-4 px-6">
                                     <div>
                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Current Password</label>
-                                        <Input 
+                                        <Input
                                             type="password"
-                                            value={passwordForm.data.current_password} 
-                                            onChange={e => passwordForm.setData('current_password', e.target.value)} 
-                                            required 
+                                            value={passwordForm.data.current_password}
+                                            onChange={e => passwordForm.setData('current_password', e.target.value)}
+                                            required
                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                         />
                                         {passwordForm.errors.current_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.current_password}</p>}
@@ -2234,22 +2292,22 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">New Password</label>
-                                            <Input 
+                                            <Input
                                                 type="password"
-                                                value={passwordForm.data.new_password} 
-                                                onChange={e => passwordForm.setData('new_password', e.target.value)} 
-                                                required 
+                                                value={passwordForm.data.new_password}
+                                                onChange={e => passwordForm.setData('new_password', e.target.value)}
+                                                required
                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                             />
                                             {passwordForm.errors.new_password && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Confirm New Password</label>
-                                            <Input 
+                                            <Input
                                                 type="password"
-                                                value={passwordForm.data.new_password_confirmation} 
-                                                onChange={e => passwordForm.setData('new_password_confirmation', e.target.value)} 
-                                                required 
+                                                value={passwordForm.data.new_password_confirmation}
+                                                onChange={e => passwordForm.setData('new_password_confirmation', e.target.value)}
+                                                required
                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30] focus:ring-0 focus:outline-none"
                                             />
                                             {passwordForm.errors.new_password_confirmation && <p className="text-xs text-red-500 mt-1">{passwordForm.errors.new_password_confirmation}</p>}
@@ -2257,9 +2315,9 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     </div>
                                 </CardContent>
                                 <CardFooter className="border-t border-zinc-200 dark:border-zinc-800/80 px-6 py-4 flex justify-end gap-2 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                    <Button 
-                                        type="submit" 
-                                        disabled={passwordForm.processing} 
+                                    <Button
+                                        type="submit"
+                                        disabled={passwordForm.processing}
                                         className="bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-10 px-6 rounded-lg cursor-pointer"
                                     >
                                         {passwordForm.processing ? 'Updating Password...' : 'Update Password'}
@@ -2397,11 +2455,11 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         </div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={vehicleForm.data.gps_enabled} 
-                                            onChange={e => vehicleForm.setData('gps_enabled', e.target.checked)} 
-                                            className="sr-only peer" 
+                                        <input
+                                            type="checkbox"
+                                            checked={vehicleForm.data.gps_enabled}
+                                            onChange={e => vehicleForm.setData('gps_enabled', e.target.checked)}
+                                            className="sr-only peer"
                                         />
                                         <div className="w-9 h-5 bg-zinc-300 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF3B30]"></div>
                                     </label>
@@ -2413,11 +2471,11 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
                                                 GPS Device Identifier (or Traccar ID)
                                             </label>
-                                            <Input 
-                                                value={vehicleForm.data.gps_device_id || ''} 
-                                                placeholder="e.g., ELFAA-GPS-001" 
-                                                onChange={e => vehicleForm.setData('gps_device_id', e.target.value)} 
-                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-mono text-xs" 
+                                            <Input
+                                                value={vehicleForm.data.gps_device_id || ''}
+                                                placeholder="e.g., ELFAA-GPS-001"
+                                                onChange={e => vehicleForm.setData('gps_device_id', e.target.value)}
+                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-mono text-xs"
                                             />
                                         </div>
 
@@ -2432,28 +2490,28 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <input 
-                                                        readOnly 
-                                                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/tracker/${editingVehicleRecord.gps_tracker_key}`} 
-                                                        className="flex-1 text-[11px] font-mono bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2.5 py-1.5 text-zinc-700 dark:text-zinc-300 select-all" 
+                                                    <input
+                                                        readOnly
+                                                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/tracker/${editingVehicleRecord.gps_tracker_key}`}
+                                                        className="flex-1 text-[11px] font-mono bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2.5 py-1.5 text-zinc-700 dark:text-zinc-300 select-all"
                                                     />
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         onClick={() => {
                                                             const url = `${window.location.origin}/tracker/${editingVehicleRecord.gps_tracker_key}`;
                                                             navigator.clipboard.writeText(url);
                                                             setGpsLinkCopied(true);
                                                             setTimeout(() => setGpsLinkCopied(false), 2000);
-                                                        }} 
+                                                        }}
                                                         className="px-2.5 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
                                                         title="Copy URL"
                                                     >
                                                         {gpsLinkCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                                                     </button>
-                                                    <a 
-                                                        href={`/tracker/${editingVehicleRecord.gps_tracker_key}`} 
-                                                        target="_blank" 
-                                                        rel="noreferrer" 
+                                                    <a
+                                                        href={`/tracker/${editingVehicleRecord.gps_tracker_key}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
                                                         className="px-2.5 py-1.5 bg-[#FF3B30] hover:bg-red-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1"
                                                         title="Launch Phone Transmitter"
                                                     >
@@ -2617,6 +2675,11 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                     booking={comparisonBooking}
                     isAdmin={isAdmin}
                     onClose={() => setComparisonBooking(null)}
+                    onRecordInspection={(type) => {
+                        setInspectionBooking(comparisonBooking);
+                        setInspectionType(type);
+                        setComparisonBooking(null);
+                    }}
                 />
             )}
 
@@ -2645,11 +2708,10 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-                                        previewPhoto.inspection?.type === 'return'
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${previewPhoto.inspection?.type === 'return'
                                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                                             : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                                    }`}>
+                                        }`}>
                                         {previewPhoto.inspection?.type ? `${previewPhoto.inspection.type} Inspection` : 'Inspection Photo'}
                                     </span>
                                     <h2 className="font-extrabold text-base">{previewPhoto.title}</h2>
@@ -2723,16 +2785,15 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 </span>
                                 <div className="flex gap-2 overflow-x-auto pb-1">
                                     {previewPhoto.inspection.photos.map((p, pIdx) => {
-                                        const pUrl = `/storage/${p}`;
+                                        const pUrl = resolvePhotoUrl(p);
                                         const isSelected = previewPhoto.url === pUrl;
                                         return (
                                             <button
                                                 key={pIdx}
                                                 type="button"
                                                 onClick={() => setPreviewPhoto(prev => ({ ...prev, url: pUrl }))}
-                                                className={`w-16 h-12 rounded-lg border-2 overflow-hidden shrink-0 transition-all cursor-pointer ${
-                                                    isSelected ? 'border-[#FF3B30] scale-105' : 'border-transparent opacity-70 hover:opacity-100'
-                                                }`}
+                                                className={`w-16 h-12 rounded-lg border-2 overflow-hidden shrink-0 transition-all cursor-pointer ${isSelected ? 'border-[#FF3B30] scale-105' : 'border-transparent opacity-70 hover:opacity-100'
+                                                    }`}
                                             >
                                                 <img src={pUrl} alt={`Photo ${pIdx + 1}`} className="w-full h-full object-cover" />
                                             </button>

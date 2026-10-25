@@ -86,7 +86,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->route('client.dashboard');
+        return redirect()->route('client.dashboard', ['tab' => 'fleet']);
     }
 
     /**

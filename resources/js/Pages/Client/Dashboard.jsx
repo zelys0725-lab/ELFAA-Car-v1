@@ -28,6 +28,7 @@ import {
     Zap,
     Lock
 } from 'lucide-react';
+import { resolvePhotoUrl } from '@/utils/photoHelper';
 
 export default function Dashboard({ auth, bookings = [], vehicles = [], documents = [], addOns = [], promos = [], selectedVehicleId = null }) {
     const { paymentGateways = [] } = usePage().props;
@@ -53,7 +54,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         custom_pickup_address: '',
         dropoff_location: 'Main Garage / HQ (Mercedes Homes Padre Pio, Sto. Tomas)',
         custom_dropoff_address: '',
-        payment_method: 'cash',
+        payment_method: 'online',
         promo_code: '',
     });
 
@@ -327,7 +328,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     const queryTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
     const initialTab = ['fleet', 'dashboard', 'promos', 'security'].includes(queryTab)
         ? queryTab
-        : (selectedVehicleId ? 'dashboard' : 'fleet');
+        : 'fleet';
 
     const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -1026,7 +1027,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                 </div>
                                                                 <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                                                                     <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
-                                                                        Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="uppercase text-zinc-600 font-extrabold">{booking.payment_method}</span>
+                                                                        Total: <span className="text-[#FF3B30]">PHP {parseFloat(booking.total_price).toLocaleString()}</span> via <span className="font-extrabold text-zinc-700 dark:text-zinc-200">
+                                                                            {(!booking.payment_method || booking.payment_method.toLowerCase() === 'cash' || booking.payment_method.toLowerCase() === 'online')
+                                                                                ? 'Pay Online'
+                                                                                : (booking.payment_method.toLowerCase() === 'gcash' ? 'GCash' : booking.payment_method.toLowerCase() === 'card' ? 'Card' : 'Pay Online')}
+                                                                        </span>
                                                                     </div>
 
                                                                     {booking.payment_status === 'paid' ? (
@@ -1048,7 +1053,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                     <div className="flex items-center gap-2 pt-1 flex-wrap">
                                                                         {booking.inspections.find(i => i.type === 'pickup')?.photos?.[0] && (
                                                                             <a
-                                                                                href={`/storage/${booking.inspections.find(i => i.type === 'pickup').photos[0]}`}
+                                                                                href={resolvePhotoUrl(booking.inspections.find(i => i.type === 'pickup').photos[0])}
                                                                                 target="_blank"
                                                                                 rel="noreferrer"
                                                                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
@@ -1059,7 +1064,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                         )}
                                                                         {booking.inspections.find(i => i.type === 'return')?.photos?.[0] && (
                                                                             <a
-                                                                                href={`/storage/${booking.inspections.find(i => i.type === 'return').photos[0]}`}
+                                                                                href={resolvePhotoUrl(booking.inspections.find(i => i.type === 'return').photos[0])}
                                                                                 target="_blank"
                                                                                 rel="noreferrer"
                                                                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"

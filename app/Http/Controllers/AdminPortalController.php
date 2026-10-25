@@ -21,6 +21,8 @@ use App\Services\DocumentVerification\DocumentVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Http\Controllers\GpsTrackerController;
 use Inertia\Inertia;
@@ -205,7 +207,8 @@ class AdminPortalController extends Controller
     }
 
     /**
-     * Unlock a user account (Admin Only) — restores access.
+     * Unlock a user account (Admin Only) — restores access and resets brute-force rate limiter.
+     * Can be invoked when a customer calls support after getting locked out.
      */
     public function unlockUser(User $user)
     {
@@ -215,7 +218,19 @@ class AdminPortalController extends Controller
 
         $user->update(['status' => 'active']);
 
-        return redirect()->route('admin.dashboard')->with('success', "User account \"{$user->name}\" has been unlocked and restored to active.");
+        // 1. Clear account email rate limiters
+        $normalizedEmail = Str::transliterate(Str::lower($user->email));
+        RateLimiter::clear('login:email:' . $normalizedEmail);
+        RateLimiter::clear($normalizedEmail);
+
+        // 2. Clear customer IP rate limiter if cached during brute-force lockout
+        $lastIp = Cache::pull('locked_user_ip:' . $user->id);
+        if ($lastIp) {
+            RateLimiter::clear($normalizedEmail . '|' . $lastIp);
+            RateLimiter::clear('login:ip:' . $lastIp);
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', "User account \"{$user->name}\" ({$user->email}) has been unlocked and login rate limiter cleared. The customer can sign in immediately.");
     }
 
     /**

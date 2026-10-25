@@ -167,7 +167,7 @@ class MfaChallengeController extends Controller
             return redirect()->intended(route('admin.dashboard'));
         }
 
-        return redirect()->intended(route('client.dashboard'));
+        return redirect()->intended(route('client.dashboard', ['tab' => 'fleet']));
     }
 
     /**

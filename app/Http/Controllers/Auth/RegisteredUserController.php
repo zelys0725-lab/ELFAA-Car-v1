@@ -57,6 +57,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('client.dashboard');
+        return redirect()->route('client.dashboard', ['tab' => 'fleet']);
     }
 }

@@ -26,7 +26,11 @@ import {
     ChevronDown,
     ChevronsUpDown,
     Radio,
-    CheckSquare
+    CheckSquare,
+    Mail,
+    Phone,
+    MapPin,
+    Clock
 } from 'lucide-react';
 
 export default function PortalLayout({ role, header, children, sidebarTabs = [], activeTab = '', setActiveTab = null }) {
@@ -121,16 +125,20 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                 <aside className="hidden md:flex flex-col w-64 bg-zinc-100 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 flex-shrink-0 h-screen sticky top-0 transition-colors">
                     {/* Header Brand */}
                     <div className="h-16 px-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                        {settings?.site_logo_image ? (
-                            <img src={settings.site_logo_image} className="h-8 max-w-[150px] object-contain rounded" alt={settings?.site_logo || 'Logo'} />
-                        ) : (
-                            <div className="flex items-center space-x-2.5">
+                        <div className="flex items-center space-x-2.5 overflow-hidden">
+                            {settings?.site_logo_image ? (
+                                <img 
+                                    src={settings.site_logo_image} 
+                                    className="h-8 w-auto max-w-[80px] object-contain rounded shrink-0" 
+                                    alt={settings?.site_logo || 'Logo'} 
+                                />
+                            ) : (
                                 <ApplicationLogo className="w-7 h-7 fill-[#FF3B30] text-[#FF3B30] shrink-0" />
-                                <span className="text-sm font-black tracking-widest text-zinc-900 dark:text-white uppercase">
-                                    {settings?.site_logo || 'ELFAA CARS'}
-                                </span>
-                            </div>
-                        )}
+                            )}
+                            <span className="text-sm font-black tracking-widest text-zinc-900 dark:text-white uppercase truncate">
+                                {settings?.site_logo || 'ELFAA CARS'}
+                            </span>
+                        </div>
                         <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer" />
                     </div>
 
@@ -168,13 +176,32 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
             <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
                 {/* Header Navbar */}
                 <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-6 transition-colors">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
                         {/* Sidebar toggle graphic placeholder / columns icon */}
                         {isAdminOrStaff && (
                             <div className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer select-none">
                                 <SlidersHorizontal className="w-4 h-4" />
                             </div>
                         )}
+                        {!isAdminOrStaff && (
+                            <Link href="/" className="flex items-center gap-2 mr-1 group">
+                                {settings?.site_logo_image ? (
+                                    <img 
+                                        src={settings.site_logo_image} 
+                                        className="h-7 w-auto max-w-[90px] object-contain rounded shrink-0" 
+                                        alt={settings?.site_logo || 'Logo'} 
+                                    />
+                                ) : (
+                                    <div className="h-7 w-7 rounded-lg bg-[#FF3B30] flex items-center justify-center p-1 shrink-0">
+                                        <ApplicationLogo className="w-full h-full fill-white" />
+                                    </div>
+                                )}
+                                <span className="text-xs font-black tracking-widest text-zinc-900 dark:text-white uppercase truncate">
+                                    {settings?.site_logo || 'ELFAA'}
+                                </span>
+                            </Link>
+                        )}
+                        <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">|</span>
                         <h1 className="text-sm font-bold text-zinc-900 dark:text-white tracking-wide uppercase">
                             {header || (role === 'client' ? 'Customer portal' : 'Workspace')}
                         </h1>
@@ -298,11 +325,140 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                 )}
 
                 {/* Main Content Area */}
-                <main className="flex-1 p-6 md:p-8 bg-zinc-50 dark:bg-zinc-950 overflow-y-auto transition-colors">
+                <main className="flex-1 p-6 md:p-8 bg-zinc-50 dark:bg-zinc-950 transition-colors">
                     <div className="max-w-7xl mx-auto">
                         {children}
                     </div>
                 </main>
+
+                {/* 3. Customer UI Footer */}
+                {!isAdminOrStaff && (
+                    <footer className="mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 py-8 px-6 transition-colors">
+                        <div className="max-w-7xl mx-auto space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                                {/* Col 1: Brand & Identity */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2.5">
+                                        {settings?.site_logo_image ? (
+                                            <img 
+                                                src={settings.site_logo_image} 
+                                                className="h-8 w-auto max-w-[110px] object-contain rounded shrink-0" 
+                                                alt={settings?.site_logo || 'Logo'} 
+                                            />
+                                        ) : (
+                                            <div className="h-8 w-8 rounded-lg bg-[#FF3B30] flex items-center justify-center p-1.5 shrink-0 shadow-sm">
+                                                <ApplicationLogo className="w-full h-full fill-white" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <span className="font-black text-sm tracking-tight text-zinc-900 dark:text-white uppercase block leading-none">
+                                                {settings?.site_logo || 'ELFAA CAR RENTAL'}
+                                            </span>
+                                            <span className="text-[9px] uppercase font-bold text-[#FF3B30] tracking-wider block mt-0.5">
+                                                Premium Self-Drive Fleet
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
+                                        Reliable, clean, and fully-insured self-drive car rentals serving Batangas, Laguna, and surrounding areas.
+                                    </p>
+                                </div>
+
+                                {/* Col 2: Customer Support & Contact Info */}
+                                <div className="space-y-2.5">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-[#FF3B30] block">
+                                        Customer Support & Hotlines
+                                    </span>
+                                    <div className="space-y-2 text-xs">
+                                        {/* Contact Email */}
+                                        <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+                                            <div className="w-6 h-6 rounded-md bg-red-500/10 text-[#FF3B30] flex items-center justify-center shrink-0">
+                                                <Mail className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-zinc-400 block font-semibold">Support Email</span>
+                                                <a 
+                                                    href={`mailto:${settings?.contact_email || 'elfaacarrental@gmail.com'}`}
+                                                    className="font-bold hover:text-[#FF3B30] transition-colors"
+                                                >
+                                                    {settings?.contact_email || 'elfaacarrental@gmail.com'}
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        {/* Contact Phone / Hotline */}
+                                        <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+                                            <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                <Phone className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-zinc-400 block font-semibold">Direct Phone / Hotline</span>
+                                                <a 
+                                                    href={`tel:${settings?.contact_phone || '0917-888-9999'}`}
+                                                    className="font-mono font-bold hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                                >
+                                                    {settings?.contact_phone || '0917-888-9999'}
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        {/* Operating Hours */}
+                                        <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 pt-0.5">
+                                            <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                            <span className="text-[11px]">Operating: Daily 8:00 AM – 8:00 PM (24/7 Roadside Assistance)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Col 3: Garage HQ & Service Quicklinks */}
+                                <div className="space-y-2.5">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                                        Garage Dispatch & Quick Access
+                                    </span>
+                                    <div className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                                        <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+                                        <span className="text-[11px] leading-relaxed">
+                                            Main HQ: Mercedes Homes Padre Pio, Sto. Tomas, Batangas (Pick-up Hubs at SM Sto. Tomas, Tanauan & Calamba)
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab?.('fleet')}
+                                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-[#FF3B30] transition-colors"
+                                        >
+                                            Browse Fleet
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab?.('dashboard')}
+                                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-[#FF3B30] transition-colors"
+                                        >
+                                            Reservation Hub
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab?.('promos')}
+                                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-[#FF3B30] transition-colors"
+                                        >
+                                            Promos
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bottom Note & Copyright */}
+                            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-zinc-400">
+                                <span>
+                                    © {new Date().getFullYear()} {settings?.site_logo || 'ELFAA CAR RENTAL'}. All rights reserved.
+                                </span>
+                                <span className="text-[10px] font-medium text-zinc-500">
+                                    Need urgent assistance? Call our direct hotline anytime at <strong className="text-zinc-700 dark:text-zinc-300 font-mono">{settings?.contact_phone || '0917-888-9999'}</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </footer>
+                )}
             </div>
         </div>
     );

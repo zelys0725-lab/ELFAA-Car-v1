@@ -34,7 +34,7 @@ Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
         if ($user->role === 'client') {
-            return redirect()->route('client.dashboard');
+            return redirect()->route('client.dashboard', ['tab' => 'fleet']);
         } elseif (in_array($user->role, ['admin', 'staff'])) {
             return redirect()->route('admin.dashboard');
         }
