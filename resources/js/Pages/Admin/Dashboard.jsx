@@ -18,7 +18,7 @@ import PaymentSettingsTab from '@/Components/Admin/PaymentSettingsTab';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import MfaSettingsSection from '@/Components/Admin/MfaSettingsSection';
 import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt } from 'lucide-react';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt, AlertTriangle, TrendingUp, DollarSign, Car, Activity, Calendar, CreditCard, Users, CheckCircle2, Layers, Fuel, Navigation, ChevronRight, Bell, Gauge, ArrowUpRight, BarChart3, AlertCircle as AlertCircleIcon } from 'lucide-react';
 import { resolvePhotoUrl } from '@/utils/photoHelper';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
@@ -80,6 +80,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     // User Accounts search & status filter
     const [userSearch, setUserSearch] = useState('');
     const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'locked' | 'active'
+    const [bookingPulseTab, setBookingPulseTab] = useState('pickups'); // 'pickups' | 'returns' | 'overdue' | 'active'
+    const [showAlertsExpanded, setShowAlertsExpanded] = useState(true);
 
     const lockedUsersCount = users.filter(u => u.status === 'locked').length;
     const filteredUsers = users.filter(u => {
@@ -91,6 +93,129 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                (u.email && u.email.toLowerCase().includes(q)) ||
                (u.phone && u.phone.toLowerCase().includes(q));
     });
+
+    // -------------------------------------------------------------------------
+    // REAL-TIME OPERATIONAL METRICS & ANALYTICS COMPUTATIONS
+    // -------------------------------------------------------------------------
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // 1. Pickups scheduled today
+    const todayPickups = bookings.filter(b => {
+        if (!b.start_datetime) return false;
+        const sStr = new Date(b.start_datetime).toISOString().split('T')[0];
+        return sStr === todayStr && (b.status === 'confirmed' || b.status === 'pending');
+    });
+
+    // 2. Returns scheduled today
+    const todayReturns = bookings.filter(b => {
+        if (!b.end_datetime) return false;
+        const eStr = new Date(b.end_datetime).toISOString().split('T')[0];
+        return eStr === todayStr && b.status === 'confirmed';
+    });
+
+    // 3. Overdue vehicle returns (past scheduled end time and not completed)
+    const overdueReturns = bookings.filter(b => {
+        if (!b.end_datetime) return false;
+        const eDate = new Date(b.end_datetime);
+        return eDate < now && b.status === 'confirmed';
+    });
+
+    // 4. Currently on-road active bookings
+    const activeOnRoadBookings = bookings.filter(b => {
+        if (!b.start_datetime || !b.end_datetime) return false;
+        const sDate = new Date(b.start_datetime);
+        const eDate = new Date(b.end_datetime);
+        return b.status === 'confirmed' && sDate <= now && eDate >= now;
+    });
+
+    // 5. Financial & Payment insights
+    let totalCashCollected = 0;
+    let pendingReceivables = 0;
+    let onlinePaymentsCount = 0;
+    let cashPaymentsCount = 0;
+    let fullyPaidCount = 0;
+    let partialPaidCount = 0;
+    let unpaidCount = 0;
+    let totalLocationFees = 0;
+
+    bookings.forEach(b => {
+        const total = parseFloat(b.total_price) || 0;
+        const paid = parseFloat(b.amount_paid) || (b.payment_status === 'paid' ? total : 0);
+        const fee = parseFloat(b.location_fee) || 0;
+
+        totalCashCollected += paid;
+        totalLocationFees += fee;
+
+        if (b.status === 'confirmed' || b.status === 'completed') {
+            const balance = Math.max(0, total - paid);
+            if (b.payment_status !== 'paid') {
+                pendingReceivables += balance;
+            }
+        }
+
+        if (b.payment_status === 'paid') fullyPaidCount++;
+        else if (b.payment_status === 'partial') partialPaidCount++;
+        else unpaidCount++;
+
+        const method = (b.payment_method || '').toLowerCase();
+        if (method === 'online' || method === 'gcash' || method === 'card' || method === 'stripe' || b.payment_gateway) {
+            onlinePaymentsCount++;
+        } else {
+            cashPaymentsCount++;
+        }
+    });
+
+    // 6. Fleet Health & Availability Status
+    const availableVehiclesCount = vehicles.filter(v => v.status === 'available').length;
+    const rentedVehiclesCount = vehicles.filter(v => v.status === 'rented').length;
+    const reservedVehiclesCount = vehicles.filter(v => v.status === 'reserved').length;
+    const maintenanceVehiclesCount = vehicles.filter(v => v.status === 'maintenance').length;
+    const unavailableVehiclesCount = vehicles.filter(v => v.status === 'unavailable').length;
+    const vehiclesWithGpsCount = vehicles.filter(v => v.gps_enabled && v.gps_tracker_key).length;
+
+    const totalFleet = vehicles.length;
+    const fleetUtilizationRate = totalFleet > 0
+        ? Math.round(((rentedVehiclesCount + reservedVehiclesCount) / totalFleet) * 100)
+        : 0;
+
+    const gpsCoverageRate = totalFleet > 0
+        ? Math.round((vehiclesWithGpsCount / totalFleet) * 100)
+        : 0;
+
+    const avgDailyRate = totalFleet > 0
+        ? Math.round(vehicles.reduce((sum, v) => sum + (parseFloat(v.price_per_day) || 0), 0) / totalFleet)
+        : 0;
+
+    // 7. Conversion rate
+    const totalBookingsCount = stats.total_bookings || bookings.length;
+    const successfulBookingsCount = (stats.confirmed_bookings || 0) + (stats.completed_bookings || 0);
+    const conversionRate = totalBookingsCount > 0
+        ? Math.round((successfulBookingsCount / totalBookingsCount) * 100)
+        : 0;
+
+    // 8. Actionable Operational Alerts
+    const pendingDocumentsCount = stats.pending_documents || documents.filter(d => d.status === 'pending').length;
+    const pendingRequestsCountReal = stats.pending_bookings || bookings.filter(b => b.status === 'pending').length;
+    const overdueReturnsCount = overdueReturns.length;
+    const urgentTasksCount = operationalTasks.filter(t => t.status !== 'completed' && t.due_datetime && new Date(t.due_datetime) <= now).length;
+    const upcomingBillsCount = billRecords.filter(b => {
+        if (b.status === 'paid' || !b.due_date) return false;
+        const diffDays = Math.ceil((new Date(b.due_date) - now) / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 3;
+    }).length;
+
+    const totalUrgentAlerts = pendingRequestsCountReal + overdueReturnsCount + pendingDocumentsCount + lockedUsersCount + upcomingBillsCount;
+
+    const formatTimeOnly = (dtStr) => {
+        if (!dtStr) return 'N/A';
+        try {
+            const d = new Date(dtStr);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return dtStr;
+        }
+    };
 
     // Styled Confirmation Dialog States
     const [confirmDialog, setConfirmDialog] = useState({
@@ -594,29 +719,603 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
             <div className="space-y-8 select-none">
                 {activeTab === 'analytics' && (
                     <>
-                        {/* 1. FINANCIAL PERFORMANCE METRICS GRID */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                            {[
-                                { title: 'Total Sales Revenue', value: `PHP ${parseFloat(stats.total_earnings).toLocaleString()}`, desc: `${stats.completed_bookings} Completed bookings`, color: 'text-red-500' },
-                                { title: 'Pending Bookings', value: `${stats.pending_bookings} Requests`, desc: `${stats.confirmed_bookings} Confirmed pick-ups`, color: 'text-amber-550 dark:text-amber-500' },
-                                { title: 'Fleet Vehicles', value: `${stats.total_vehicles} Active Cars`, desc: `${stats.active_promos} Promo ads running`, color: 'text-zinc-900 dark:text-white' },
-                                { title: 'Average Order Value', value: `PHP ${(stats.completed_bookings > 0 ? Math.round(stats.total_earnings / stats.completed_bookings) : 0).toLocaleString()}`, desc: 'Per completed reservation', color: 'text-green-500' }
-                            ].map((card, i) => (
-                                <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-lg flex flex-col justify-between transition-colors">
-                                    <span className="text-[10px] font-black text-zinc-550 uppercase tracking-widest">{card.title}</span>
-                                    <span className={`text-2xl font-black mt-2 tracking-tight ${card.color}`}>{card.value}</span>
-                                    <span className="text-[10px] text-zinc-650 dark:text-zinc-400 mt-2 font-medium">{card.desc}</span>
+                        {/* ========================================================================= */}
+                        {/* 1. REAL-TIME OPERATIONAL NOTIFICATIONS & ACTION CENTER */}
+                        {/* ========================================================================= */}
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-lg transition-colors text-left animate-in fade-in duration-200">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800/80">
+                                <div className="flex items-center gap-2.5">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${totalUrgentAlerts > 0 ? 'bg-red-500/15 text-[#FF3B30]' : 'bg-emerald-500/15 text-emerald-500'}`}>
+                                        <Bell className="w-4 h-4 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-white">
+                                                Operational Action Center & Live Alerts
+                                            </h3>
+                                            {totalUrgentAlerts > 0 ? (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-500/15 text-[#FF3B30] border border-red-500/30 animate-pulse">
+                                                    {totalUrgentAlerts} Action{totalUrgentAlerts === 1 ? '' : 's'} Required
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                                    All Nominal
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium">
+                                            {totalUrgentAlerts > 0
+                                                ? 'Real-time items requiring staff verification, dispatch, customer unlock, or return settlement.'
+                                                : 'All reservations, returns, identity verifications, and fleet operations are up to date.'}
+                                        </p>
+                                    </div>
                                 </div>
-                            ))}
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAlertsExpanded(!showAlertsExpanded)}
+                                        className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-colors cursor-pointer"
+                                    >
+                                        {showAlertsExpanded ? 'Collapse' : 'Expand'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {showAlertsExpanded && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-4">
+                                    {/* Alert 1: Pending Booking Requests */}
+                                    <div
+                                        onClick={() => setActiveTab('booking_requests')}
+                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                            pendingRequestsCountReal > 0
+                                                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/15'
+                                                : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Booking Requests</span>
+                                            <span className={`w-2 h-2 rounded-full ${pendingRequestsCountReal > 0 ? 'bg-amber-500 animate-ping' : 'bg-zinc-400'}`} />
+                                        </div>
+                                        <div className="my-2">
+                                            <span className={`text-xl font-black ${pendingRequestsCountReal > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                                {pendingRequestsCountReal} Pending
+                                            </span>
+                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                                {pendingRequestsCountReal > 0 ? 'Awaiting staff approval' : 'All requests decided'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                            <span>Review Requests</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </div>
+                                    </div>
+
+                                    {/* Alert 2: Overdue Returns */}
+                                    <div
+                                        onClick={() => { setActiveTab('bookings'); setSubFilter('confirmed'); }}
+                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                            overdueReturnsCount > 0
+                                                ? 'bg-red-500/10 border-red-500/40 hover:border-red-500/60 hover:bg-red-500/15'
+                                                : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Overdue Returns</span>
+                                            <span className={`w-2 h-2 rounded-full ${overdueReturnsCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                        </div>
+                                        <div className="my-2">
+                                            <span className={`text-xl font-black ${overdueReturnsCount > 0 ? 'text-[#FF3B30]' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                {overdueReturnsCount} Overdue
+                                            </span>
+                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                                {overdueReturnsCount > 0 ? 'Past scheduled return time' : 'Zero overdue units on road'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                            <span>Inspect Returns</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </div>
+                                    </div>
+
+                                    {/* Alert 3: Driver KYC ID Verifications */}
+                                    <div
+                                        onClick={() => setActiveTab('verifications')}
+                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                            pendingDocumentsCount > 0
+                                                ? 'bg-sky-500/10 border-sky-500/30 hover:border-sky-500/50 hover:bg-sky-500/15'
+                                                : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Driver Verification</span>
+                                            <span className={`w-2 h-2 rounded-full ${pendingDocumentsCount > 0 ? 'bg-sky-500 animate-pulse' : 'bg-zinc-400'}`} />
+                                        </div>
+                                        <div className="my-2">
+                                            <span className={`text-xl font-black ${pendingDocumentsCount > 0 ? 'text-sky-600 dark:text-sky-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                                {pendingDocumentsCount} Documents
+                                            </span>
+                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                                {pendingDocumentsCount > 0 ? 'Pending license/ID verification' : 'All driver KYC verified'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                            <span>Open Verifications</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </div>
+                                    </div>
+
+                                    {/* Alert 4: Locked Customer Accounts (Call-In) / Utility Bills */}
+                                    <div
+                                        onClick={() => {
+                                            if (lockedUsersCount > 0) {
+                                                setActiveTab('users');
+                                                setUserStatusFilter('locked');
+                                            } else {
+                                                setActiveTab('bill_records');
+                                            }
+                                        }}
+                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                            lockedUsersCount > 0
+                                                ? 'bg-purple-500/10 border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/15'
+                                                : upcomingBillsCount > 0
+                                                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/15'
+                                                : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                                {lockedUsersCount > 0 ? 'Locked Accounts' : 'Bills & Utilities'}
+                                            </span>
+                                            <span className={`w-2 h-2 rounded-full ${lockedUsersCount > 0 ? 'bg-purple-500 animate-pulse' : upcomingBillsCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                        </div>
+                                        <div className="my-2">
+                                            {lockedUsersCount > 0 ? (
+                                                <>
+                                                    <span className="text-xl font-black text-purple-600 dark:text-purple-400">
+                                                        {lockedUsersCount} Locked
+                                                    </span>
+                                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                                        Limiter triggered (Call-in unlock)
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className={`text-xl font-black ${upcomingBillsCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                                        {upcomingBillsCount} Bills Due
+                                                    </span>
+                                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                                        {upcomingBillsCount > 0 ? 'Due within 3 days' : 'All utilities in good standing'}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                            <span>{lockedUsersCount > 0 ? 'Unlock Customer' : 'View Bills'}</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* 2. DOUBLE COLUMN DETAILED ANALYTICS (MONTHLY INCOME TREND & CATEGORY SHARE) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Monthly revenue bar chart tracker */}
+                        {/* ========================================================================= */}
+                        {/* 2. EXECUTIVE KPI PERFORMANCE MATRIX (6 METRICS) */}
+                        {/* ========================================================================= */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 text-left">
+                            {/* Card 1: Total Sales Revenue */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-lg flex flex-col justify-between transition-colors">
+                                <div className="flex items-center justify-between text-zinc-500">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Total Revenue</span>
+                                    <TrendingUp className="w-3.5 h-3.5 text-[#FF3B30]" />
+                                </div>
+                                <div className="my-1.5">
+                                    <span className="text-xl font-black text-[#FF3B30] tracking-tight block">
+                                        PHP {parseFloat(stats.total_earnings).toLocaleString()}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                    {stats.completed_bookings} Completed • PHP {(stats.completed_bookings > 0 ? Math.round(stats.total_earnings / stats.completed_bookings) : 0).toLocaleString()} AOV
+                                </span>
+                            </div>
+
+                            {/* Card 2: Cash Collected vs Receivables */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-lg flex flex-col justify-between transition-colors">
+                                <div className="flex items-center justify-between text-zinc-500">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Cash Collected</span>
+                                    <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                                </div>
+                                <div className="my-1.5">
+                                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight block">
+                                        PHP {totalCashCollected.toLocaleString()}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                    PHP {pendingReceivables.toLocaleString()} Pending Balance
+                                </span>
+                            </div>
+
+                            {/* Card 3: Fleet Utilization */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-lg flex flex-col justify-between transition-colors">
+                                <div className="flex items-center justify-between text-zinc-500">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Fleet Utilization</span>
+                                    <Gauge className="w-3.5 h-3.5 text-sky-500" />
+                                </div>
+                                <div className="my-1.5">
+                                    <span className="text-xl font-black text-zinc-900 dark:text-white tracking-tight block">
+                                        {fleetUtilizationRate}%
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                    {rentedVehiclesCount} on road • {reservedVehiclesCount} reserved of {totalFleet}
+                                </span>
+                            </div>
+
+                            {/* Card 4: Active On-Road Fleet */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-lg flex flex-col justify-between transition-colors">
+                                <div className="flex items-center justify-between text-zinc-500">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Active On-Road</span>
+                                    <Car className="w-3.5 h-3.5 text-blue-500" />
+                                </div>
+                                <div className="my-1.5">
+                                    <span className="text-xl font-black text-zinc-900 dark:text-white tracking-tight block">
+                                        {activeOnRoadBookings.length || rentedVehiclesCount} Units
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                    {vehiclesWithGpsCount} GPS Transmitters live ({gpsCoverageRate}%)
+                                </span>
+                            </div>
+
+                            {/* Card 5: Booking Conversion */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-lg flex flex-col justify-between transition-colors">
+                                <div className="flex items-center justify-between text-zinc-500">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Conversion Rate</span>
+                                    <Activity className="w-3.5 h-3.5 text-purple-500" />
+                                </div>
+                                <div className="my-1.5">
+                                    <span className="text-xl font-black text-zinc-900 dark:text-white tracking-tight block">
+                                        {conversionRate}%
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                    {stats.confirmed_bookings} Confirmed • {stats.pending_bookings} Pending
+                                </span>
+                            </div>
+
+                            {/* Card 6: Average Daily Rental Rate */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-lg flex flex-col justify-between transition-colors">
+                                <div className="flex items-center justify-between text-zinc-500">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Average Daily Rate</span>
+                                    <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+                                </div>
+                                <div className="my-1.5">
+                                    <span className="text-xl font-black text-zinc-900 dark:text-white tracking-tight block">
+                                        PHP {avgDailyRate.toLocaleString()}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                    Across {totalFleet} available fleet units
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* ========================================================================= */}
+                        {/* 3. TODAY'S OPERATIONAL PULSE & FLEET STATUS DISTRIBUTION */}
+                        {/* ========================================================================= */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+                            {/* Card 3A: Today's Dispatch & Return Schedule Pulse */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-lg transition-colors flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                                        <div>
+                                            <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">Operational Pulse</span>
+                                            <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-0.5">Today's Dispatch & Returns</h3>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('daily_schedule')}
+                                            className="text-[10px] font-black uppercase text-[#FF3B30] hover:text-red-700 flex items-center gap-1 cursor-pointer transition-colors"
+                                        >
+                                            <span>Full Schedule</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    </div>
+
+                                    {/* Pulse Tab Buttons */}
+                                    <div className="flex items-center gap-1.5 mt-3.5 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                        <button
+                                            type="button"
+                                            onClick={() => setBookingPulseTab('pickups')}
+                                            className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                                bookingPulseTab === 'pickups'
+                                                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                            }`}
+                                        >
+                                            Pickups ({todayPickups.length})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setBookingPulseTab('returns')}
+                                            className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                                bookingPulseTab === 'returns'
+                                                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                            }`}
+                                        >
+                                            Returns ({todayReturns.length})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setBookingPulseTab('overdue')}
+                                            className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                                                bookingPulseTab === 'overdue'
+                                                    ? 'bg-red-500/20 text-[#FF3B30] border border-red-500/30 shadow-sm'
+                                                    : overdueReturns.length > 0
+                                                    ? 'text-red-500 font-bold'
+                                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                            }`}
+                                        >
+                                            <span>Overdue</span>
+                                            {overdueReturns.length > 0 && (
+                                                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-500 text-white font-black animate-pulse">
+                                                    {overdueReturns.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setBookingPulseTab('active')}
+                                            className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                                bookingPulseTab === 'active'
+                                                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                            }`}
+                                        >
+                                            On Road ({activeOnRoadBookings.length})
+                                        </button>
+                                    </div>
+
+                                    {/* List Display */}
+                                    <div className="mt-3.5 space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                        {bookingPulseTab === 'pickups' && (
+                                            todayPickups.length === 0 ? (
+                                                <div className="py-8 text-center text-zinc-400 text-xs font-semibold border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                                    No vehicle pickups scheduled for today.
+                                                </div>
+                                            ) : (
+                                                todayPickups.map((b) => (
+                                                    <div
+                                                        key={b.id}
+                                                        onClick={() => setBreakdownBooking(b)}
+                                                        className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950/40 transition-colors flex items-center justify-between gap-3 cursor-pointer"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-extrabold text-xs text-zinc-900 dark:text-white truncate">{b.vehicle?.name}</span>
+                                                                <span className="text-[10px] font-mono text-zinc-400">({b.vehicle?.plate_number || 'N/A'})</span>
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                                                                {b.user?.name} • Pickup: {formatTimeOnly(b.start_datetime)} ({b.pickup_location})
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className="text-xs font-black text-[#FF3B30] block">PHP {parseFloat(b.total_price).toLocaleString()}</span>
+                                                            <span className="text-[9px] font-black uppercase text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                                                {b.status}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )
+                                        )}
+
+                                        {bookingPulseTab === 'returns' && (
+                                            todayReturns.length === 0 ? (
+                                                <div className="py-8 text-center text-zinc-400 text-xs font-semibold border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                                    No vehicle returns scheduled for today.
+                                                </div>
+                                            ) : (
+                                                todayReturns.map((b) => (
+                                                    <div
+                                                        key={b.id}
+                                                        onClick={() => setBreakdownBooking(b)}
+                                                        className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950/40 transition-colors flex items-center justify-between gap-3 cursor-pointer"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-extrabold text-xs text-zinc-900 dark:text-white truncate">{b.vehicle?.name}</span>
+                                                                <span className="text-[10px] font-mono text-zinc-400">({b.vehicle?.plate_number || 'N/A'})</span>
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                                                                {b.user?.name} • Due: {formatTimeOnly(b.end_datetime)} ({b.dropoff_location || b.pickup_location})
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">Return</span>
+                                                            <span className="text-[9px] font-black uppercase text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                                                                Confirmed
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )
+                                        )}
+
+                                        {bookingPulseTab === 'overdue' && (
+                                            overdueReturns.length === 0 ? (
+                                                <div className="py-8 text-center text-emerald-500 text-xs font-bold border border-dashed border-emerald-500/30 bg-emerald-500/5 rounded-xl">
+                                                    ✓ Perfect Fleet Return Record: Zero overdue vehicles on road!
+                                                </div>
+                                            ) : (
+                                                overdueReturns.map((b) => (
+                                                    <div
+                                                        key={b.id}
+                                                        onClick={() => setBreakdownBooking(b)}
+                                                        className="p-2.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:border-red-500/50 transition-colors flex items-center justify-between gap-3 cursor-pointer"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-extrabold text-xs text-[#FF3B30] truncate">{b.vehicle?.name}</span>
+                                                                <span className="text-[10px] font-mono text-zinc-400">({b.vehicle?.plate_number || 'N/A'})</span>
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-600 dark:text-zinc-300 mt-0.5 truncate">
+                                                                {b.user?.name} ({b.user?.phone || b.user?.email}) • Due: {new Date(b.end_datetime).toLocaleDateString()} {formatTimeOnly(b.end_datetime)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className="text-[9px] font-black uppercase text-red-600 bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 animate-pulse">
+                                                                Overdue
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )
+                                        )}
+
+                                        {bookingPulseTab === 'active' && (
+                                            activeOnRoadBookings.length === 0 ? (
+                                                <div className="py-8 text-center text-zinc-400 text-xs font-semibold border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                                    No vehicles currently checked out on the road.
+                                                </div>
+                                            ) : (
+                                                activeOnRoadBookings.map((b) => (
+                                                    <div
+                                                        key={b.id}
+                                                        onClick={() => setBreakdownBooking(b)}
+                                                        className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950/40 transition-colors flex items-center justify-between gap-3 cursor-pointer"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-extrabold text-xs text-zinc-900 dark:text-white truncate">{b.vehicle?.name}</span>
+                                                                <span className="text-[10px] font-mono text-zinc-400">({b.vehicle?.plate_number || 'N/A'})</span>
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                                                                {b.user?.name} • Return: {new Date(b.end_datetime).toLocaleDateString()}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className="text-xs font-black text-sky-500 block">Active Ride</span>
+                                                            <span className="text-[9px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                                                In Progress
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card 3B: Fleet Health & Real-Time Availability Breakdown */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-lg transition-colors flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                                        <div>
+                                            <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">Fleet Status</span>
+                                            <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-0.5">Inventory & Health Distribution</h3>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('vehicles')}
+                                            className="text-[10px] font-black uppercase text-[#FF3B30] hover:text-red-700 flex items-center gap-1 cursor-pointer transition-colors"
+                                        >
+                                            <span>Fleet Grid</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    </div>
+
+                                    {/* Multi-Segment Horizontal Status Track */}
+                                    <div className="mt-4">
+                                        <div className="flex items-center justify-between text-xs font-bold text-zinc-600 dark:text-zinc-400 mb-1.5">
+                                            <span>Fleet Availability Track</span>
+                                            <span className="font-extrabold text-zinc-900 dark:text-white">{availableVehiclesCount} of {totalFleet} Available ({totalFleet > 0 ? Math.round((availableVehiclesCount / totalFleet) * 100) : 0}%)</span>
+                                        </div>
+                                        <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-950 overflow-hidden flex border border-zinc-200 dark:border-zinc-800">
+                                            <div style={{ width: `${totalFleet > 0 ? (availableVehiclesCount / totalFleet) * 100 : 0}%` }} className="bg-emerald-500 transition-all duration-500" title={`Available: ${availableVehiclesCount}`} />
+                                            <div style={{ width: `${totalFleet > 0 ? (rentedVehiclesCount / totalFleet) * 100 : 0}%` }} className="bg-blue-500 transition-all duration-500" title={`Rented: ${rentedVehiclesCount}`} />
+                                            <div style={{ width: `${totalFleet > 0 ? (reservedVehiclesCount / totalFleet) * 100 : 0}%` }} className="bg-amber-500 transition-all duration-500" title={`Reserved: ${reservedVehiclesCount}`} />
+                                            <div style={{ width: `${totalFleet > 0 ? (maintenanceVehiclesCount / totalFleet) * 100 : 0}%` }} className="bg-orange-500 transition-all duration-500" title={`Maintenance: ${maintenanceVehiclesCount}`} />
+                                            <div style={{ width: `${totalFleet > 0 ? (unavailableVehiclesCount / totalFleet) * 100 : 0}%` }} className="bg-rose-500 transition-all duration-500" title={`Unavailable: ${unavailableVehiclesCount}`} />
+                                        </div>
+                                    </div>
+
+                                    {/* 5 Status Badges Grid */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-4">
+                                        <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-left">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Available</span>
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                            </div>
+                                            <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 block mt-1">{availableVehiclesCount} Units</span>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Ready to dispatch</span>
+                                        </div>
+
+                                        <div className="p-2.5 rounded-xl border border-blue-500/20 bg-blue-500/10 text-left">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">On Rent</span>
+                                                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                            </div>
+                                            <span className="text-lg font-black text-blue-600 dark:text-blue-400 block mt-1">{rentedVehiclesCount} Units</span>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Client driving</span>
+                                        </div>
+
+                                        <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-left">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Reserved</span>
+                                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                            </div>
+                                            <span className="text-lg font-black text-amber-600 dark:text-amber-400 block mt-1">{reservedVehiclesCount} Units</span>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Upcoming trip</span>
+                                        </div>
+
+                                        <div className="p-2.5 rounded-xl border border-orange-500/20 bg-orange-500/10 text-left">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">Maintenance</span>
+                                                <span className="w-2 h-2 rounded-full bg-orange-500" />
+                                            </div>
+                                            <span className="text-lg font-black text-orange-600 dark:text-orange-400 block mt-1">{maintenanceVehiclesCount} Units</span>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Service / Wash</span>
+                                        </div>
+
+                                        <div className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-left sm:col-span-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">GPS Transmitter Coverage</span>
+                                                <Radio className="w-3.5 h-3.5 text-[#FF3B30] animate-pulse" />
+                                            </div>
+                                            <div className="flex items-center justify-between mt-1">
+                                                <span className="text-base font-black text-zinc-900 dark:text-white">{vehiclesWithGpsCount} of {totalFleet} GPS Enabled</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('gps_fleet')}
+                                                    className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline"
+                                                >
+                                                    Open Live Map →
+                                                </button>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">Real-time smartphone & hardware telemetry transmitters</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ========================================================================= */}
+                        {/* 4. FINANCIAL TREND & PAYMENT INSIGHTS BREAKDOWN */}
+                        {/* ========================================================================= */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
+                            {/* Monthly revenue bar chart tracker (2 cols) */}
                             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-lg transition-colors lg:col-span-2 text-left">
-                                <div className="flex flex-col mb-6">
-                                    <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">Financial Trend</span>
-                                    <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-1">Monthly Earnings</h3>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                                    <div>
+                                        <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">Financial Trend</span>
+                                        <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-1">Monthly Gross Earnings</h3>
+                                    </div>
+                                    <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mt-1 sm:mt-0">
+                                        Total Billed: <strong className="text-[#FF3B30]">PHP {parseFloat(stats.total_earnings).toLocaleString()}</strong>
+                                    </span>
                                 </div>
 
                                 {monthlyEarnings.length === 0 ? (
@@ -665,10 +1364,101 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                 )}
                             </div>
 
-                            {/* Category Share Distribution */}
-                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-lg transition-colors text-left flex flex-col justify-between">
+                            {/* Payment Insights & Settlement Breakdown (1 col) */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-lg transition-colors flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                                        <div>
+                                            <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">Payment Intelligence</span>
+                                            <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-0.5">Settlement & Channels</h3>
+                                        </div>
+                                        {isAdmin && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab('payment_settings')}
+                                                className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline"
+                                            >
+                                                Gateways →
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Payment Method Channels Track */}
+                                    <div className="mt-4 space-y-2">
+                                        <div className="flex justify-between text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                            <span>Online vs Cash Checkout</span>
+                                            <span className="text-[10px] font-mono text-zinc-500">
+                                                {onlinePaymentsCount + cashPaymentsCount > 0
+                                                    ? Math.round((onlinePaymentsCount / (onlinePaymentsCount + cashPaymentsCount)) * 100)
+                                                    : 0}% Online
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-950 overflow-hidden flex border border-zinc-200 dark:border-zinc-800">
+                                            <div
+                                                style={{ width: `${onlinePaymentsCount + cashPaymentsCount > 0 ? (onlinePaymentsCount / (onlinePaymentsCount + cashPaymentsCount)) * 100 : 50}%` }}
+                                                className="bg-[#FF3B30]"
+                                                title={`Online: ${onlinePaymentsCount}`}
+                                            />
+                                            <div
+                                                style={{ width: `${onlinePaymentsCount + cashPaymentsCount > 0 ? (cashPaymentsCount / (onlinePaymentsCount + cashPaymentsCount)) * 100 : 50}%` }}
+                                                className="bg-zinc-400 dark:bg-zinc-600"
+                                                title={`Cash / Meetup: ${cashPaymentsCount}`}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between text-[10px] font-bold text-zinc-500">
+                                            <span className="flex items-center gap-1">
+                                                <span className="w-2 h-2 rounded-full bg-[#FF3B30]" />
+                                                Online (Card / GCash): {onlinePaymentsCount}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
+                                                Cash / Meetup: {cashPaymentsCount}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Settlement Progress Breakdown */}
+                                    <div className="mt-5 space-y-2.5 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block">Settlement Status</span>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                                                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">{fullyPaidCount}</span>
+                                                <span className="text-[9px] uppercase font-bold text-zinc-500">Fully Paid</span>
+                                            </div>
+                                            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+                                                <span className="text-xs font-black text-amber-600 dark:text-amber-400 block">{partialPaidCount}</span>
+                                                <span className="text-[9px] uppercase font-bold text-zinc-500">Partial</span>
+                                            </div>
+                                            <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-center">
+                                                <span className="text-xs font-black text-zinc-700 dark:text-zinc-300 block">{unpaidCount}</span>
+                                                <span className="text-[9px] uppercase font-bold text-zinc-500">Unpaid</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Ancillary Location & Surcharge Revenue */}
+                                    <div className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800">
+                                        <div className="flex items-center justify-between text-[11px] font-bold">
+                                            <span className="text-zinc-500">Delivery Location Fees:</span>
+                                            <span className="text-zinc-900 dark:text-white font-black">PHP {totalLocationFees.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[11px] font-bold mt-1">
+                                            <span className="text-zinc-500">Active Outstanding:</span>
+                                            <span className="text-[#FF3B30] font-black">PHP {pendingReceivables.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ========================================================================= */}
+                        {/* 5. PERFORMANCE LEADERBOARD & MODEL POPULARITY */}
+                        {/* ========================================================================= */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
+                            {/* Category Share Distribution (1 col) */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-lg transition-colors flex flex-col justify-between">
                                 <div className="mb-4">
-                                    <span className="text-[10px] font-black text-zinc-550 uppercase tracking-widest block font-bold">Model Popularity</span>
+                                    <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block font-bold">Model Popularity</span>
                                     <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-1">Category Revenue</h3>
                                 </div>
 
@@ -690,7 +1480,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-950 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800/60">
                                                         <div
                                                             style={{ width: `${categoryPct}%` }}
-                                                            className="h-full bg-red-500 dark:bg-red-650 transition-all duration-500"
+                                                            className="h-full bg-red-500 dark:bg-[#FF3B30] transition-all duration-500"
                                                         />
                                                     </div>
                                                 </div>
@@ -699,43 +1489,52 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     </div>
                                 )}
                             </div>
-                        </div>
 
-                        {/* 3. PERFORMANCE LEADERBOARD: TOP PERFORMING FLEET UNITS */}
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-lg transition-colors text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="mb-5">
-                                <span className="text-[10px] font-black text-zinc-550 dark:text-zinc-500 uppercase tracking-widest block">Units Leaderboard</span>
-                                <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-1">Top Performing Vehicles</h3>
-                            </div>
-
-                            {topVehicles.length === 0 ? (
-                                <div className="text-center py-6 text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-                                    No completed booking transactions to construct performance leaderboard.
+                            {/* Performance Leaderboard: Top Performing Fleet Units (2 cols) */}
+                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-lg transition-colors text-left lg:col-span-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="mb-5 flex items-center justify-between">
+                                    <div>
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Units Leaderboard</span>
+                                        <h3 className="text-base font-extrabold text-zinc-900 dark:text-white mt-1">Top Performing Vehicles</h3>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('profit_analytics')}
+                                        className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline"
+                                    >
+                                        Per-Car Profit Analytics →
+                                    </button>
                                 </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse text-left">
-                                        <thead>
-                                            <tr className="border-b border-zinc-200 dark:border-zinc-800/80 text-[10px] font-black uppercase text-zinc-500 tracking-wider">
-                                                <th className="py-2.5 px-3">Vehicle Model</th>
-                                                <th className="py-2.5 px-3">Vehicle Type</th>
-                                                <th className="py-2.5 px-3 text-center">Completed Rides</th>
-                                                <th className="py-2.5 px-3 text-right">Gross Income</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-xs text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            {topVehicles.map((vehicle, idx) => (
-                                                <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-950/20">
-                                                    <td className="py-3.5 px-3 font-extrabold text-zinc-900 dark:text-white">{vehicle.name}</td>
-                                                    <td className="py-3.5 px-3 text-zinc-500">{vehicle.type}</td>
-                                                    <td className="py-3.5 px-3 text-center font-bold">{vehicle.bookings_count} completed</td>
-                                                    <td className="py-3.5 px-3 text-right font-black text-[#FF3B30] dark:text-[#FF453A]">PHP {parseInt(vehicle.revenue).toLocaleString()}</td>
+
+                                {topVehicles.length === 0 ? (
+                                    <div className="text-center py-6 text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                        No completed booking transactions to construct performance leaderboard.
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full border-collapse text-left">
+                                            <thead>
+                                                <tr className="border-b border-zinc-200 dark:border-zinc-800/80 text-[10px] font-black uppercase text-zinc-500 tracking-wider">
+                                                    <th className="py-2.5 px-3">Vehicle Model</th>
+                                                    <th className="py-2.5 px-3">Vehicle Type</th>
+                                                    <th className="py-2.5 px-3 text-center">Completed Rides</th>
+                                                    <th className="py-2.5 px-3 text-right">Gross Income</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-xs text-zinc-700 dark:text-zinc-300 font-semibold">
+                                                {topVehicles.map((vehicle, idx) => (
+                                                    <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-950/20">
+                                                        <td className="py-3.5 px-3 font-extrabold text-zinc-900 dark:text-white">{vehicle.name}</td>
+                                                        <td className="py-3.5 px-3 text-zinc-500">{vehicle.type}</td>
+                                                        <td className="py-3.5 px-3 text-center font-bold">{vehicle.bookings_count} completed</td>
+                                                        <td className="py-3.5 px-3 text-right font-black text-[#FF3B30] dark:text-[#FF453A]">PHP {parseInt(vehicle.revenue).toLocaleString()}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </>
                 )}
@@ -1058,9 +1857,15 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 </span>
                                             </td>
                                             <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">
-                                                <div className="font-bold text-zinc-700 dark:text-zinc-300">{booking.start_date} to {booking.end_date}</div>
+                                                <div className="font-bold text-zinc-700 dark:text-zinc-300">
+                                                    {booking.start_datetime ? new Date(booking.start_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                                    {' → '}
+                                                    {booking.end_datetime ? new Date(booking.end_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                                </div>
                                                 <span className="text-[10px] text-zinc-400 block font-mono">
-                                                    {Math.max(1, Math.ceil((new Date(booking.end_date) - new Date(booking.start_date)) / (1000 * 60 * 60 * 24)))} Days
+                                                    {booking.start_datetime && booking.end_datetime
+                                                        ? Math.max(1, Math.ceil((new Date(booking.end_datetime) - new Date(booking.start_datetime)) / (1000 * 60 * 60 * 24))) + ' Days'
+                                                        : '—'}
                                                 </span>
                                             </td>
                                             <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 text-xs">
@@ -1133,7 +1938,18 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     <div className="text-[10px] text-zinc-400 font-mono">{booking.vehicle?.plate_number || 'N/A'}</div>
                                                 </td>
                                                 <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-white">PHP {parseFloat(booking.total_price).toLocaleString()}</td>
-                                                <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">{booking.start_date} to {booking.end_date}</td>
+                                                <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-450">
+                                                    <div className="font-medium">
+                                                        {booking.start_datetime ? new Date(booking.start_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                                        {' → '}
+                                                        {booking.end_datetime ? new Date(booking.end_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                                                        {booking.start_datetime && booking.end_datetime
+                                                            ? Math.max(1, Math.ceil((new Date(booking.end_datetime) - new Date(booking.start_datetime)) / (1000 * 60 * 60 * 24))) + ' Days'
+                                                            : '—'}
+                                                    </div>
+                                                </td>
                                                 <td className="py-3.5 px-4">
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${booking.status === 'confirmed' ? 'text-green-600 dark:text-green-500' :
                                                             booking.status === 'completed' ? 'text-sky-600 dark:text-sky-400' :
