@@ -18,7 +18,7 @@ import PaymentSettingsTab from '@/Components/Admin/PaymentSettingsTab';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import MfaSettingsSection from '@/Components/Admin/MfaSettingsSection';
 import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt, AlertTriangle, TrendingUp, DollarSign, Car, Activity, Calendar, CreditCard, Users, CheckCircle2, Layers, Fuel, Navigation, ChevronRight, Bell, Gauge, ArrowUpRight, BarChart3, AlertCircle as AlertCircleIcon } from 'lucide-react';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, Unlock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt, AlertTriangle, TrendingUp, DollarSign, Car, Activity, Calendar, CreditCard, Users, CheckCircle2, Layers, Fuel, Navigation, ChevronRight, Bell, Gauge, ArrowUpRight, BarChart3, AlertCircle as AlertCircleIcon } from 'lucide-react';
 import { resolvePhotoUrl } from '@/utils/photoHelper';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
@@ -479,7 +479,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const handleLockUser = (userId, userName) => {
         if (!isAdmin) return;
         showConfirm({
-            title: '🔒 Lock User Account',
+            title: 'Lock User Account',
             message: `Lock "${userName}"? They will be immediately logged out and cannot sign in. Their active sessions will be terminated.`,
             actionLabel: 'Lock Account',
             actionClass: 'bg-amber-600 hover:bg-amber-700 text-white',
@@ -490,7 +490,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const handleUnlockUser = (userId, userName, userEmail) => {
         if (!isAdmin) return;
         showConfirm({
-            title: '🔓 Unlock Customer Account & Reset Limiter',
+            title: 'Unlock Customer Account & Reset Limiter',
             message: `Unlock account and reset login limiter for "${userName}"${userEmail ? ` (${userEmail})` : ''}? The customer will immediately regain access to sign in without waiting for the lockout timer.`,
             actionLabel: 'Unlock & Reset Limiter',
             actionClass: 'bg-green-600 hover:bg-green-700 text-white',
@@ -521,7 +521,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const handleResetUserMfa = (userId, userName) => {
         if (!isAdmin) return;
         showConfirm({
-            title: '🛡️ Emergency Reset User MFA',
+            title: 'Emergency Reset User MFA',
             message: `Are you sure you want to reset Multi-Factor Authentication for "${userName}"? Their Authenticator app secret and Email OTP requirements will be cleared, allowing emergency recovery access.`,
             actionLabel: 'Reset MFA Access',
             actionClass: 'bg-amber-600 hover:bg-amber-700 text-white',
@@ -1145,8 +1145,9 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
                                         {bookingPulseTab === 'overdue' && (
                                             overdueReturns.length === 0 ? (
-                                                <div className="py-8 text-center text-emerald-500 text-xs font-bold border border-dashed border-emerald-500/30 bg-emerald-500/5 rounded-xl">
-                                                    ✓ Perfect Fleet Return Record: Zero overdue vehicles on road!
+                                                <div className="py-8 text-center text-emerald-500 text-xs font-bold border border-dashed border-emerald-500/30 bg-emerald-500/5 rounded-xl flex flex-col items-center gap-1.5">
+                                                    <CheckCircle className="w-5 h-5 mx-auto" />
+                                                    Perfect Fleet Return Record: Zero overdue vehicles on road!
                                                 </div>
                                             ) : (
                                                 overdueReturns.map((b) => (
@@ -1292,7 +1293,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     onClick={() => setActiveTab('gps_fleet')}
                                                     className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline"
                                                 >
-                                                    Open Live Map →
+                                                    Open Live Map <ArrowRight className="w-3 h-3 inline ml-0.5" />
                                                 </button>
                                             </div>
                                             <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">Real-time smartphone & hardware telemetry transmitters</span>
@@ -1378,7 +1379,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 onClick={() => setActiveTab('payment_settings')}
                                                 className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline"
                                             >
-                                                Gateways →
+                                                <span className="flex items-center gap-1">Gateways <ArrowRight className="w-3 h-3" /></span>
                                             </button>
                                         )}
                                     </div>
@@ -1502,7 +1503,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         onClick={() => setActiveTab('profit_analytics')}
                                         className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline"
                                     >
-                                        Per-Car Profit Analytics →
+                                        <span className="flex items-center gap-1">Per-Car Profit Analytics <ArrowRight className="w-3 h-3" /></span>
                                     </button>
                                 </div>
 
@@ -1641,7 +1642,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             onClick={() => setUserStatusFilter('locked')}
                                             className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${userStatusFilter === 'locked' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                         >
-                                            <span>🔒 Locked / Call-in</span>
+                                            <Lock className="w-3 h-3" />
+                                            <span>Locked / Call-in</span>
                                             {lockedUsersCount > 0 && (
                                                 <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-500 text-white font-black animate-pulse">
                                                     {lockedUsersCount}
@@ -1658,7 +1660,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     </div>
                                     {lockedUsersCount > 0 && (
                                         <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                                            <span>⚠️ {lockedUsersCount} customer account{lockedUsersCount === 1 ? '' : 's'} locked by login limiter. Click "Unlock" to restore access immediately.</span>
+                                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                                        <span>{lockedUsersCount} customer account{lockedUsersCount === 1 ? '' : 's'} locked by login limiter. Click "Unlock" to restore access immediately.</span>
                                         </span>
                                     )}
                                 </div>
@@ -1978,8 +1981,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                                     <Eye className="w-3.5 h-3.5 text-white opacity-90" />
                                                                 </div>
                                                             </button>
-                                                            <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400">
-                                                                ✓ Pickup ({pickup.photos.length})
+                                                            <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-0.5">
+                                                                <Check className="w-2.5 h-2.5" /> Pickup ({pickup.photos.length})
                                                             </span>
                                                         </div>
                                                     ) : (
@@ -2010,8 +2013,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                                     <Eye className="w-3.5 h-3.5 text-white opacity-90" />
                                                                 </div>
                                                             </button>
-                                                            <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400">
-                                                                ✓ Return ({returnInsp.photos.length})
+                                                            <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                                                                <Check className="w-2.5 h-2.5" /> Return ({returnInsp.photos.length})
                                                             </span>
                                                         </div>
                                                     ) : (
@@ -2359,20 +2362,20 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                         ) : (
                                                             <button
                                                                 onClick={() => handleChangeRole(u.id, u.role)}
-                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer"
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer inline-flex items-center gap-1"
                                                                 title="Change system role"
                                                             >
-                                                                ✏️ Role
+                                                                <Key className="w-3 h-3" /> Role
                                                             </button>
                                                         )}
                                                         {/* Emergency Reset MFA */}
                                                         {u.mfa_enabled && (
                                                             <button
                                                                 onClick={() => handleResetUserMfa(u.id, u.name)}
-                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                                                                className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer inline-flex items-center gap-1"
                                                                 title="Emergency Reset User MFA"
                                                             >
-                                                                🛡️ Reset MFA
+                                                                <Shield className="w-3 h-3" /> Reset MFA
                                                             </button>
                                                         )}
                                                         {/* LOCKED: only show Unlock */}
@@ -2382,7 +2385,8 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                                 className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-green-500/15 border-green-500/30 hover:bg-green-500/25 text-green-700 dark:text-green-400 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
                                                                 title="Customer called? Unlock account and reset rate limiter immediately"
                                                             >
-                                                                <span>🔓 Unlock & Reset Limiter</span>
+                                                                <Unlock className="w-3 h-3" />
+                                                                <span>Unlock & Reset Limiter</span>
                                                             </button>
                                                         )}
                                                         {/* ACTIVE: show Deactivate + Lock */}
@@ -2397,9 +2401,9 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                                 {u.role !== 'admin' && (
                                                                     <button
                                                                         onClick={() => handleLockUser(u.id, u.name)}
-                                                                        className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                                                                        className="px-2.5 py-1 rounded text-[10px] font-black uppercase border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer inline-flex items-center gap-1"
                                                                     >
-                                                                        🔒 Lock
+                                                                        <Lock className="w-3 h-3" /> Lock
                                                                     </button>
                                                                 )}
                                                             </>
