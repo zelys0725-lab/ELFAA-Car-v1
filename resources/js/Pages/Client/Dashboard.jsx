@@ -44,6 +44,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     // Online Payment Modals State
     const [onlinePaymentBooking, setOnlinePaymentBooking] = useState(null);
     const [viewHistoryBooking, setViewHistoryBooking] = useState(null);
+    const [showTermsModal, setShowTermsModal] = useState(false);
 
     // Booking form
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
@@ -56,6 +57,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         custom_dropoff_address: '',
         payment_method: 'online',
         promo_code: '',
+        terms_agreed: false,
     });
 
     // Identity update form
@@ -183,6 +185,16 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     const handleBookingSubmit = (e) => {
         e.preventDefault();
         clearErrors();
+
+        if (!data.terms_agreed) {
+            setAlert({ 
+                type: 'error', 
+                title: 'Terms Agreement Required', 
+                message: 'You must read and agree to the ELFAA Car Rental Agreement Terms & Conditions before renting.' 
+            });
+            return;
+        }
+
         post(route('client.bookings.store'), {
             onSuccess: () => {
                 reset();
@@ -973,10 +985,67 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 </div>
                                             )}
 
+                                            {/* Terms and Conditions for Every Car Rented */}
+                                            <div className="w-full p-3.5 bg-zinc-50 dark:bg-zinc-950/70 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2.5 text-left">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-black text-xs uppercase tracking-wider">
+                                                        <ShieldCheck className="w-4 h-4 text-[#FF3B30]" />
+                                                        <span>Rental Terms & Conditions</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowTermsModal(true)}
+                                                        className="text-[10px] font-bold text-[#FF3B30] hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                                                    >
+                                                        <span>Read Full Agreement</span>
+                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                    </button>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-2 text-[10px] text-zinc-600 dark:text-zinc-400">
+                                                    <div className="flex items-start gap-1">
+                                                        <span className="text-red-500 font-bold">•</span>
+                                                        <span>Strict <strong>NO SMOKING</strong> in vehicle</span>
+                                                    </div>
+                                                    <div className="flex items-start gap-1">
+                                                        <span className="text-red-500 font-bold">•</span>
+                                                        <span>Flat <strong>₱4,500/panel</strong> scratch fee</span>
+                                                    </div>
+                                                    <div className="flex items-start gap-1">
+                                                        <span className="text-red-500 font-bold">•</span>
+                                                        <span>Late return fee: <strong>₱200/hr</strong></span>
+                                                    </div>
+                                                    <div className="flex items-start gap-1">
+                                                        <span className="text-red-500 font-bold">•</span>
+                                                        <span>Non-refundable excess fuel/RFID</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                                                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={data.terms_agreed}
+                                                            onChange={(e) => setData('terms_agreed', e.target.checked)}
+                                                            className="mt-0.5 rounded border-zinc-300 dark:border-zinc-700 text-[#FF3B30] focus:ring-[#FF3B30] h-4 w-4 shrink-0"
+                                                            required
+                                                        />
+                                                        <span className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 leading-tight">
+                                                            I have read, understood, and agree to the <button type="button" onClick={() => setShowTermsModal(true)} className="text-[#FF3B30] underline font-bold">ELFAA Car Rental Agreement Terms & Conditions</button> and Prohibited Activities for this vehicle reservation.
+                                                        </span>
+                                                    </label>
+                                                    {errors.terms_agreed && <p className="text-xs text-red-500 mt-1 font-bold">{errors.terms_agreed}</p>}
+                                                </div>
+                                            </div>
+
                                             <Button 
                                                 type="submit" 
-                                                disabled={processing} 
-                                                className="w-full bg-[#FF3B30] hover:bg-red-700 text-white font-black uppercase text-xs tracking-wider h-11 rounded-lg"
+                                                disabled={processing || !data.terms_agreed} 
+                                                className={`w-full font-black uppercase text-xs tracking-wider h-11 rounded-lg transition-all ${
+                                                    data.terms_agreed 
+                                                        ? 'bg-[#FF3B30] hover:bg-red-700 text-white shadow-lg shadow-red-500/20 cursor-pointer' 
+                                                        : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
+                                                }`}
                                             >
                                                 {processing ? 'Submitting Reservation...' : 'Submit Booking Request'}
                                             </Button>
@@ -1099,6 +1168,17 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                                         Receipt
                                                                     </button>
                                                                 )}
+
+                                                                <a 
+                                                                    href={route('client.bookings.contract', booking.id)}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="px-3 h-8 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-zinc-200 dark:border-zinc-700"
+                                                                    title="View or print official ELFAA Rental Contract & Condition Report"
+                                                                >
+                                                                    <FileText className="w-3.5 h-3.5 text-[#FF3B30]" />
+                                                                    Contract
+                                                                </a>
 
                                                                 {booking.status === 'pending' && (
                                                                     <button 
@@ -1458,6 +1538,109 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                     isOpen={!!viewHistoryBooking}
                     onClose={() => setViewHistoryBooking(null)}
                 />
+            )}
+
+            {/* Official ELFAA Car Rental Terms and Conditions Modal */}
+            {showTermsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-left">
+                        {/* Header */}
+                        <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#FF3B30]">
+                                    <ShieldCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+                                        ELFAA Car Rental Agreement
+                                    </h3>
+                                    <p className="text-[11px] text-zinc-500 font-medium">
+                                        Official Rental Policies & Prohibited Activities • Sto. Tomas, Batangas
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowTermsModal(false)}
+                                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Scrollable Policy Content (from PDF) */}
+                        <div className="p-6 overflow-y-auto space-y-4 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[#FF3B30] text-[11px] font-bold">
+                                ⚠️ By submitting a reservation for any vehicle in the ELFAA fleet, you acknowledge and agree to comply strictly with the terms outlined below.
+                            </div>
+
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-red-600 dark:text-red-400 border-b border-red-500/20 pb-1">
+                                    2. Prohibited Activities & Non-Refundable Policies
+                                </h4>
+
+                                <div className="space-y-2.5">
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Prohibitions:</strong>
+                                        Strict NO SMOKING policy inside the vehicle at any time. The vehicle must not be used for any illegal transactions, transport of contraband, criminal activity, sub-leasing, or off-road/improper usage outside its original design.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Non-Refundable Policy:</strong>
+                                        No refunds/credits will be issued for excess fuel remaining in the tank, unused pre-loaded RFID balances, early vehicle returns, or unused hours. Cancellations must be made at least 2 days prior to the start date, or a 50% rental charge will apply.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Destination Deviation & Late Fees:</strong>
+                                        A penalty of ₱500.00 applies for driving beyond agreed limits. Unauthorized extensions incur ₱200.00 per hour; delays exceeding 6 hours trigger a full daily rental charge. A cleaning fee of ₱200.00 applies for excessive dirt.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Keys & Tires:</strong>
+                                        Renter covers all tire vulcanizing/replacement costs and a minimum fee of ₱7,500.00 and up for lost or damaged keys.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Body Damage Penalty:</strong>
+                                        Any scratch, dent, scrape, or damage to the unit body—regardless of how minor or small it may be—will automatically be charged at a flat rate of ₱4,500.00 per affected panel.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Full Damage Liability:</strong>
+                                        Renter assumes all financial risk for theft, collision, loss, or destruction. Renter agrees to pay 100% of the actual repair costs or the current full market value of the vehicle if it is deemed a total loss.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Shop Participation & Negligence Fee:</strong>
+                                        The Renter must pay 100% of the daily rental rate for every single day the vehicle remains in the repair shop. In case of damage, Renter must secure a police report and provide a driver's license photocopy within 24 hours. Failure to do so makes the Renter entirely liable for 100% of parts and labor out-of-pocket, plus the standard daily rate during down-time.
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                        <strong className="text-zinc-900 dark:text-white block mb-0.5">• Vehicle Condition Inspection:</strong>
+                                        All vehicles undergo joint pre-rental inspection. Pre-existing marks are recorded as [X] Scratch/Scrape, [D] Dent, or [M] Missing. Any new unrecorded defects are subject to the ₱4,500/panel fee.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-between">
+                            <span className="text-[11px] text-zinc-500 font-medium">
+                                Lessor: Mika Jane A. Aranzanso • Sto. Tomas, Batangas
+                            </span>
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    setData('terms_agreed', true);
+                                    setShowTermsModal(false);
+                                }}
+                                className="bg-[#FF3B30] hover:bg-red-700 text-white font-black text-xs uppercase px-5 h-9 rounded-lg"
+                            >
+                                I Accept & Agree
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </PortalLayout>
 

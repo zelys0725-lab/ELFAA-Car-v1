@@ -222,12 +222,16 @@ class AdminPortalController extends Controller
         $normalizedEmail = Str::transliterate(Str::lower($user->email));
         RateLimiter::clear('login:email:' . $normalizedEmail);
         RateLimiter::clear($normalizedEmail);
+        Cache::forget('login:attempts:email:' . $normalizedEmail);
+        Cache::forget('login:lockout_until:email:' . $normalizedEmail);
 
         // 2. Clear customer IP rate limiter if cached during brute-force lockout
         $lastIp = Cache::pull('locked_user_ip:' . $user->id);
         if ($lastIp) {
             RateLimiter::clear($normalizedEmail . '|' . $lastIp);
             RateLimiter::clear('login:ip:' . $lastIp);
+            Cache::forget('login:attempts:' . $normalizedEmail . '|' . $lastIp);
+            Cache::forget('login:lockout_until:' . $normalizedEmail . '|' . $lastIp);
         }
 
         return redirect()->route('admin.dashboard')->with('success', "User account \"{$user->name}\" ({$user->email}) has been unlocked and login rate limiter cleared. The customer can sign in immediately.");
@@ -1147,6 +1151,16 @@ class AdminPortalController extends Controller
         $booking->load(['user', 'vehicle', 'inspections', 'inspectionCharges', 'priceHistories.changedBy', 'payments.collector']);
 
         return view('invoice', compact('booking'));
+    }
+
+    /**
+     * Generate Official Printable Car Rental Agreement Contract (Admin & Staff)
+     */
+    public function getContract(Booking $booking)
+    {
+        $booking->load(['user', 'vehicle', 'inspections.charges', 'payments.collector']);
+
+        return view('contract', compact('booking'));
     }
 
     /**

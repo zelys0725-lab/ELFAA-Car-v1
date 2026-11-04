@@ -188,7 +188,12 @@ export default function Login({ status, canResetPassword }) {
                                 </div>
 
                                 <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                                    You have exceeded <strong>3 failed login attempts</strong>. To protect your account against unauthorized brute-force attacks, signing in has been temporarily suspended for <strong>15 minutes</strong>.
+                                    {displayEmailError || (
+                                        <>
+                                            To protect your account against unauthorized brute-force attempts, signing in has been temporarily suspended for{' '}
+                                            <strong>{Math.max(1, Math.ceil(countdown / 60))} minute{Math.ceil(countdown / 60) > 1 ? 's' : ''}</strong>.
+                                        </>
+                                    )}
                                 </p>
 
                                 {/* Countdown visualizer inside modal */}

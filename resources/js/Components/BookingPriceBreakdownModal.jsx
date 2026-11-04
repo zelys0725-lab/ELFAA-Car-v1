@@ -93,6 +93,15 @@ export default function BookingPriceBreakdownModal({ booking, isAdmin = false, o
                     
                     <div className="flex items-center gap-2">
                         <a
+                            href={route('admin.bookings.contract', booking.id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 px-3 py-1.5 bg-[#FF3B30] text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shadow-sm"
+                            title="Generate and print ELFAA Rental Agreement Contract"
+                        >
+                            <FileText size={13} /> Rental Contract
+                        </a>
+                        <a
                             href={route('admin.bookings.invoice', booking.id)}
                             target="_blank"
                             rel="noopener noreferrer"

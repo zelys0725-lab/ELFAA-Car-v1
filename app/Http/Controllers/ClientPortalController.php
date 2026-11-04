@@ -61,6 +61,10 @@ class ClientPortalController extends Controller
             'payment_method' => 'required|in:cash,online',
             'promo_code' => 'nullable|string|exists:promos,promo_code',
             'custom_location_fee' => 'nullable|numeric|min:0',
+            'terms_agreed' => 'required|accepted',
+        ], [
+            'terms_agreed.accepted' => 'You must read and agree to the ELFAA Car Rental Agreement Terms & Conditions before renting.',
+            'terms_agreed.required' => 'You must read and agree to the ELFAA Car Rental Agreement Terms & Conditions before renting.',
         ]);
 
         $vehicleId = $request->vehicle_id;
@@ -372,5 +376,19 @@ class ClientPortalController extends Controller
         ]);
 
         return redirect()->route('client.dashboard')->with('success', 'Identity information updated successfully.');
+    }
+
+    /**
+     * View or print car rental contract for client's own booking.
+     */
+    public function getContract(Booking $booking)
+    {
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to rental contract.');
+        }
+
+        $booking->load(['user', 'vehicle', 'inspections.charges', 'payments.collector']);
+
+        return view('contract', compact('booking'));
     }
 }

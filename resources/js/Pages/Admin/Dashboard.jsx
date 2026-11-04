@@ -18,7 +18,7 @@ import PaymentSettingsTab from '@/Components/Admin/PaymentSettingsTab';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import MfaSettingsSection from '@/Components/Admin/MfaSettingsSection';
 import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
-import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, Unlock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt, AlertTriangle, TrendingUp, DollarSign, Car, Activity, Calendar, CreditCard, Users, CheckCircle2, Layers, Fuel, Navigation, ChevronRight, Bell, Gauge, ArrowUpRight, BarChart3, AlertCircle as AlertCircleIcon } from 'lucide-react';
+import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, Unlock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt, AlertTriangle, TrendingUp, DollarSign, Car, Activity, Calendar, CreditCard, Users, CheckCircle2, Layers, Fuel, Navigation, ChevronRight, Bell, Gauge, ArrowUpRight, BarChart3, AlertCircle as AlertCircleIcon, FileText } from 'lucide-react';
 import { resolvePhotoUrl } from '@/utils/photoHelper';
 
 export default function Dashboard({ auth, stats, bookings = [], archivedBookings = [], vehicles = [], promos = [], extraGoods = [], documents = [], users = [], monthlyEarnings = [], categoryEarnings = [], topVehicles = [], billRecords = [], operationalTasks = [], staffUsers = [] }) {
@@ -1901,6 +1901,16 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 >
                                                     Details
                                                 </button>
+                                                <a
+                                                    href={route('admin.bookings.contract', booking.id)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-2 py-1 bg-red-600/10 hover:bg-red-600/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors inline-flex items-center gap-1"
+                                                    title="Generate and print ELFAA Rental Agreement Contract"
+                                                >
+                                                    <FileText className="w-3 h-3" />
+                                                    <span>Contract</span>
+                                                </a>
                                             </td>
                                         </tr>
                                     ))}
@@ -2061,6 +2071,17 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                             >
                                                                 Payments
                                                             </button>
+
+                                                            <a
+                                                                href={route('admin.bookings.contract', booking.id)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-[#FF3B30] text-[10px] font-black uppercase rounded transition-colors inline-flex items-center gap-1"
+                                                                title="Generate and print ELFAA Rental Agreement Contract"
+                                                            >
+                                                                <FileText className="w-2.5 h-2.5" />
+                                                                <span>Contract</span>
+                                                            </a>
 
                                                             <button onClick={() => handleArchiveBooking(booking.id)} className="px-2 py-0.5 bg-zinc-500/10 border border-zinc-500/20 hover:bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase rounded transition-colors cursor-pointer">Archive</button>
                                                         </>

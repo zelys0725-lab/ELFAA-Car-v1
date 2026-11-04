@@ -60,6 +60,7 @@ Route::middleware(['auth', 'nocache', 'role:client'])->prefix('client')->name('c
     Route::post('/bookings/{booking}/payment-proof', [App\Http\Controllers\ClientPortalController::class, 'uploadPaymentProof'])->name('bookings.payment_proof');
     Route::post('/documents', [App\Http\Controllers\ClientPortalController::class, 'storeDocument'])->name('documents.store')->middleware('throttle:15,1');
     Route::post('/identity', [App\Http\Controllers\ClientPortalController::class, 'updateIdentityDetails'])->name('identity.update');
+    Route::get('/bookings/{booking}/contract', [App\Http\Controllers\ClientPortalController::class, 'getContract'])->name('bookings.contract');
 });
 
 // ================= ADMIN & STAFF PORTAL =================
@@ -128,6 +129,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])->prefix('admin')->nam
     // Price Breakdown & Adjustment Routes (Feature #7)
     Route::post('/bookings/{booking}/adjust-price', [App\Http\Controllers\AdminPortalController::class, 'adjustBookingPrice'])->name('bookings.adjust_price');
     Route::get('/bookings/{booking}/invoice', [App\Http\Controllers\AdminPortalController::class, 'getInvoice'])->name('bookings.invoice');
+    Route::get('/bookings/{booking}/contract', [App\Http\Controllers\AdminPortalController::class, 'getContract'])->name('bookings.contract');
 
     // Site Settings Configurations & Notification Testing
     Route::post('/settings', [App\Http\Controllers\AdminPortalController::class, 'updateSettings'])->name('settings.update');

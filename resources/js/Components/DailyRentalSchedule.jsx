@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/Components/Shadcn';
-import { CalendarDays, ChevronLeft, ChevronRight, Calendar, Search, Filter, Clock, MapPin, AlertTriangle, User, DollarSign, X, CheckCircle } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Calendar, Search, Filter, Clock, MapPin, AlertTriangle, User, DollarSign, X, CheckCircle, FileText } from 'lucide-react';
 
 export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
     const [startDate, setStartDate] = useState(() => {
@@ -563,7 +563,19 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
                         </div>
 
                         {/* Footer */}
-                        <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex justify-end">
+                        <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-between">
+                            {inspectingCell?.statusInfo?.booking ? (
+                                <a
+                                    href={route('admin.bookings.contract', inspectingCell.statusInfo.booking.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF3B30] text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm"
+                                    title="Generate and print ELFAA Rental Agreement Contract"
+                                >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>Rental Contract</span>
+                                </a>
+                            ) : <div />}
                             <Button size="sm" onClick={() => setInspectingCell(null)} className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold text-xs">
                                 Close Inspector
                             </Button>
