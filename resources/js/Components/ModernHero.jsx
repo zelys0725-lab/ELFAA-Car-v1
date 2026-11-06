@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Link } from '@inertiajs/react';
-import { ArrowRight, CheckCircle2, MapPin } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MapPin, Mic } from 'lucide-react';
 
-export default function ModernHero({ settings, setLightboxImage }) {
+export default function ModernHero({ settings, setLightboxImage, vehicles = [] }) {
+    const firstCar = vehicles[0]?.name?.split(' 20')[0] || 'Toyota Vios';
+    const secondCar = vehicles[1]?.name?.split(' 20')[0] || 'Innova';
     return (
         <section id="home" className="relative overflow-hidden py-16 sm:py-24 transition-colors duration-300 bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100">
             {/* Ambient Background Glow Mesh */}
@@ -73,6 +75,29 @@ export default function ModernHero({ settings, setLightboxImage }) {
                                 View Active Promos
                             </motion.button>
                         </a>
+                    </motion.div>
+
+                    {/* Free Voice Booking CTA */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.35 }}
+                        className="pt-1"
+                    >
+                        <button
+                            type="button"
+                            onClick={() => {
+                                window.dispatchEvent(new CustomEvent('elfaa:open-voice-assistant', { detail: { triggerMic: true } }));
+                            }}
+                            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-[#FF3B30]/30 hover:border-[#FF3B30] bg-[#FF3B30]/10 hover:bg-[#FF3B30]/15 text-[#FF3B30] dark:text-red-400 font-bold text-xs transition-all shadow-sm cursor-pointer group"
+                        >
+                            <span className="w-6 h-6 rounded-full bg-[#FF3B30] text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                <Mic className="w-3.5 h-3.5 animate-pulse" />
+                            </span>
+                            <span>
+                                AI Voice Booking: Say <strong className="underline underline-offset-2">"Book {firstCar}"</strong> or <strong className="underline underline-offset-2">"Rent {secondCar} this weekend"</strong>
+                            </span>
+                        </button>
                     </motion.div>
 
                     {/* Highlights pill */}

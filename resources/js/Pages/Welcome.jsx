@@ -179,7 +179,7 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
             </header>
 
             {/* Hero Section */}
-            <ModernHero settings={settings} setLightboxImage={setLightboxImage} />
+            <ModernHero settings={settings} setLightboxImage={setLightboxImage} vehicles={vehicles} />
 
             {/* Promos Section */}
             <section id="promos" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -539,8 +539,8 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
             )}
         </div>
 
-        {/* Floating AI Chatbot */}
-        <ElfaaChatbot vehicles={vehicles} promos={promos} addOns={addOns} />
+        {/* Floating AI Voice Booking Assistant */}
+        <ElfaaChatbot vehicles={vehicles} promos={promos} addOns={addOns} auth={auth} />
         </>
     );
 }

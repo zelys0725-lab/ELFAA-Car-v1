@@ -5,10 +5,17 @@ import Checkbox from '@/Components/Checkbox';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { Sun, Moon, Eye, EyeOff, CheckCircle2, Circle, X } from 'lucide-react';
+import { Sun, Moon, Eye, EyeOff, CheckCircle2, Circle, X, Mic } from 'lucide-react';
+import ElfaaChatbot from '@/Components/ElfaaChatbot';
 
-export default function Register() {
+export default function Register({ redirect = '', selectedVehicle = null, vehicles = [], promos = [] }) {
     const { settings } = usePage().props;
+
+    const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const redirectParam = redirect || queryParams?.get('redirect') || '';
+    const vehicleIdParam = selectedVehicle?.id || queryParams?.get('select_vehicle') || '';
+    const targetVehicle = selectedVehicle || vehicles.find(v => v.id.toString() === vehicleIdParam.toString());
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -17,6 +24,8 @@ export default function Register() {
         password: '',
         password_confirmation: '',
         terms: false,
+        redirect: redirectParam,
+        select_vehicle: targetVehicle?.id || vehicleIdParam,
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -90,6 +99,39 @@ export default function Register() {
                             Join ELFAA Car Rental to manage bookings and cruise in comfort.
                         </p>
                     </div>
+
+                    {/* Voice Booking Active Target Banner */}
+                    {targetVehicle && (
+                        <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-r from-red-500/15 via-[#FF3B30]/10 to-transparent border border-[#FF3B30]/30 text-left flex items-center justify-between gap-3 shadow-lg">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-12 h-10 rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-white/10">
+                                    <img
+                                        src={targetVehicle.images?.[0] || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=200'}
+                                        alt={targetVehicle.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-black uppercase tracking-wider text-[#FF3B30] flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF3B30] animate-ping" />
+                                        Voice Booking Target
+                                    </span>
+                                    <h4 className="text-xs font-black text-zinc-900 dark:text-white truncate">{targetVehicle.name}</h4>
+                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                                        Register to complete prefilled reservation
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => window.dispatchEvent(new CustomEvent('elfaa:open-voice-assistant', { detail: { triggerMic: true } }))}
+                                className="px-2.5 py-1 rounded-lg bg-[#FF3B30] hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 cursor-pointer shadow-sm"
+                            >
+                                <Mic className="w-3 h-3" />
+                                <span>Voice</span>
+                            </button>
+                        </div>
+                    )}
 
                     <div className="mt-6">
                         <form onSubmit={submit} className="space-y-4">
@@ -377,6 +419,14 @@ export default function Register() {
                     </div>
                 </div>
             )}
+
+            {/* Floating AI Voice Booking Assistant on Register */}
+            <ElfaaChatbot 
+                vehicles={vehicles} 
+                promos={promos} 
+                auth={null}
+                initialOpen={!!targetVehicle}
+            />
         </div>
     );
 }

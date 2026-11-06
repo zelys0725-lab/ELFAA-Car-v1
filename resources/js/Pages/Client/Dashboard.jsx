@@ -26,7 +26,8 @@ import {
     ExternalLink,
     Smartphone,
     Zap,
-    Lock
+    Lock,
+    Mic
 } from 'lucide-react';
 import { resolvePhotoUrl } from '@/utils/photoHelper';
 
@@ -1243,6 +1244,19 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                     <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-[#FF3B30]"></span> {vehicles.length} Total Vehicles</span>
                                     <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-amber-400"></span> PHP {Math.min(...vehicles.map(v => parseFloat(v.price_per_day))).toLocaleString()}/day from</span>
                                 </div>
+
+                                <div className="flex justify-center mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            window.dispatchEvent(new CustomEvent('elfaa:open-voice-assistant', { detail: { triggerMic: true } }));
+                                        }}
+                                        className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF3B30] to-red-600 hover:from-red-600 hover:to-red-700 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF3B30]/30 hover:scale-105 cursor-pointer"
+                                    >
+                                        <Mic className="w-4 h-4 animate-pulse" />
+                                        <span>AI Voice Booking: Speak to Book</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -1644,8 +1658,34 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
             )}
         </PortalLayout>
 
-        {/* Floating AI Chatbot — booking-aware */}
-        <ElfaaChatbot vehicles={vehicles} promos={promos} addOns={addOns} bookings={bookings} />
+        {/* Floating AI Voice Booking Assistant — integrated with booking workflow */}
+        <ElfaaChatbot 
+            vehicles={vehicles} 
+            promos={promos} 
+            addOns={addOns} 
+            bookings={bookings}
+            documents={documents}
+            auth={auth}
+            bookingData={data}
+            setBookingData={setData}
+            onNavigateTab={setActiveTab}
+            triggerSubmitBooking={() => {
+                const formEl = document.getElementById('booking-request-form');
+                if (formEl) {
+                    formEl.requestSubmit ? formEl.requestSubmit() : formEl.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }}
+            onSelectVehicle={(vehicle) => {
+                setData('vehicle_id', vehicle.id.toString());
+                setActiveTab('dashboard');
+                setTimeout(() => {
+                    const formEl = document.getElementById('booking-request-form');
+                    if (formEl) {
+                        formEl.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 150);
+            }}
+        />
         </>
     );
 }

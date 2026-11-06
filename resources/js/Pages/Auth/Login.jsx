@@ -5,7 +5,8 @@ import TextInput from '@/Components/TextInput';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2, ShieldAlert, Clock, PhoneCall } from 'lucide-react';
+import { Sun, Moon, Car, AlertCircle, Lock, UserX, Mail, Eye, EyeOff, Loader2, ShieldAlert, Clock, PhoneCall, Mic, Sparkles } from 'lucide-react';
+import ElfaaChatbot from '@/Components/ElfaaChatbot';
 
 const CAROUSEL_IMAGES = [
     {
@@ -25,12 +26,21 @@ const CAROUSEL_IMAGES = [
     }
 ];
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, redirect = '', selectedVehicle = null, vehicles = [], promos = [] }) {
     const { settings } = usePage().props;
+
+    // Resolve vehicle & redirect from props or URL query parameters
+    const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const redirectParam = redirect || queryParams?.get('redirect') || '';
+    const vehicleIdParam = selectedVehicle?.id || queryParams?.get('select_vehicle') || '';
+    const targetVehicle = selectedVehicle || vehicles.find(v => v.id.toString() === vehicleIdParam.toString());
+
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
         remember: false,
+        redirect: redirectParam,
+        select_vehicle: targetVehicle?.id || vehicleIdParam,
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -153,7 +163,7 @@ export default function Login({ status, canResetPassword }) {
                     </div>
 
                     {/* Headline & Cleaned Subtitle */}
-                    <div className="text-center mb-8">
+                    <div className="text-center mb-6">
                         <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                             Welcome Back
                         </h2>
@@ -161,6 +171,55 @@ export default function Login({ status, canResetPassword }) {
                             Access your ELFAA rental portal and vehicle reservations.
                         </p>
                     </div>
+
+                    {/* Voice Booking Active Target Banner */}
+                    {targetVehicle ? (
+                        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-red-500/15 via-[#FF3B30]/10 to-transparent border border-[#FF3B30]/30 text-left flex items-center justify-between gap-3 shadow-lg">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-14 h-12 rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-white/10">
+                                    <img
+                                        src={targetVehicle.images?.[0] || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=200'}
+                                        alt={targetVehicle.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-[#FF3B30] flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF3B30] animate-ping" />
+                                        Voice Booking Target
+                                    </span>
+                                    <h4 className="text-xs font-black text-zinc-900 dark:text-white truncate">{targetVehicle.name}</h4>
+                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                                        Customer account needed for license verification & rental release
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => window.dispatchEvent(new CustomEvent('elfaa:open-voice-assistant', { detail: { triggerMic: true } }))}
+                                className="px-3 py-1.5 rounded-lg bg-[#FF3B30] hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 cursor-pointer shadow-sm"
+                            >
+                                <Mic className="w-3.5 h-3.5" />
+                                <span>Voice Help</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="mb-6 p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-left">
+                            <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300 min-w-0">
+                                <Mic className="w-4 h-4 text-[#FF3B30] shrink-0 animate-pulse" />
+                                <span className="font-semibold text-[11px] truncate">
+                                    Voice Booking: Say "Book {vehicles[0]?.name?.split(' 20')[0] || 'Vios'}" or "Rent {vehicles[1]?.name?.split(' 20')[0] || 'Innova'} this weekend"
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => window.dispatchEvent(new CustomEvent('elfaa:open-voice-assistant', { detail: { triggerMic: true } }))}
+                                className="text-[10px] font-black uppercase text-[#FF3B30] hover:underline shrink-0 cursor-pointer"
+                            >
+                                Try Voice
+                            </button>
+                        </div>
+                    )}
 
                     {status && (
                         <div className="mb-6 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400 flex items-center gap-2">
@@ -431,7 +490,7 @@ export default function Login({ status, canResetPassword }) {
                     <div className="mt-8 text-center pt-4 border-t border-zinc-200/50 dark:border-zinc-800/60">
                         <span className={`text-xs font-medium ${isDarkMode ? 'text-zinc-500' : 'text-slate-500'}`}>Don't have an account yet? </span>
                         <Link
-                            href={route('register')}
+                            href={targetVehicle ? `${route('register')}?redirect=${encodeURIComponent(redirectParam || '')}&select_vehicle=${targetVehicle.id}` : route('register')}
                             className="text-xs font-extrabold text-[#FF3B30] hover:text-red-500 transition-colors ml-1 underline underline-offset-4"
                         >
                             Register here
@@ -489,6 +548,14 @@ export default function Login({ status, canResetPassword }) {
                     </div>
                 ))}
             </div>
+
+            {/* Floating AI Voice Booking Assistant on Login */}
+            <ElfaaChatbot 
+                vehicles={vehicles} 
+                promos={promos} 
+                auth={null}
+                initialOpen={!!targetVehicle}
+            />
         </div>
     );
 }

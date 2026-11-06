@@ -16,11 +16,22 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $redirect = $request->query('redirect');
+        $selectVehicleId = $request->query('select_vehicle');
+        $selectedVehicle = null;
+        if ($selectVehicleId) {
+            $selectedVehicle = \App\Models\Vehicle::find($selectVehicleId);
+        }
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'redirect' => $redirect,
+            'selectedVehicle' => $selectedVehicle,
+            'vehicles' => \App\Models\Vehicle::whereIn('status', ['available', 'rented', 'reserved'])->get(),
+            'promos' => \App\Models\Promo::where('status', 'active')->get(),
         ]);
     }
 
@@ -84,6 +95,18 @@ class AuthenticatedSessionController extends Controller
         // Redirect based on role
         if ($user->isAdmin() || $user->isStaff()) {
             return redirect()->route('admin.dashboard');
+        }
+
+        if ($request->filled('redirect')) {
+            return redirect($request->input('redirect'));
+        }
+
+        if ($request->filled('select_vehicle')) {
+            return redirect()->route('client.dashboard', [
+                'tab' => 'dashboard',
+                'select_vehicle' => $request->input('select_vehicle'),
+                'voice_guide' => 1,
+            ]);
         }
 
         return redirect()->route('client.dashboard', ['tab' => 'fleet']);
