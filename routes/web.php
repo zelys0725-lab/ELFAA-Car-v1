@@ -167,7 +167,6 @@ Route::get('/payment/success', [App\Http\Controllers\PaymentController::class, '
 Route::get('/payment/cancel', [App\Http\Controllers\PaymentController::class, 'paymentCancel'])->name('payment.cancel');
 
 // Payment Webhooks (CSRF exempt under /api/*)
-Route::post('/api/webhooks/stripe', [App\Http\Controllers\PaymentController::class, 'stripeWebhook'])->name('webhooks.stripe');
 Route::post('/api/webhooks/paymongo', [App\Http\Controllers\PaymentController::class, 'paymongoWebhook'])->name('webhooks.paymongo');
 
 // Public GPS Phone Transmitter & Traccar Ingestion Endpoints

@@ -38,8 +38,8 @@ export default function PaymentHistoryModal({ booking, isOpen, onClose }) {
     }, [booking.id]);
 
     const getGatewayIcon = (gateway) => {
-        if (gateway === 'stripe' || gateway === 'credit_card') {
-            return <CreditCard className="w-4 h-4 text-blue-500" />;
+        if (gateway === 'stripe' || gateway === 'credit_card' || gateway === 'card' || gateway === 'card_paymongo') {
+            return <CreditCard className="w-4 h-4 text-indigo-500" />;
         }
         if (gateway === 'gcash' || gateway === 'gcash_paymongo') {
             return <Smartphone className="w-4 h-4 text-sky-500" />;
@@ -132,7 +132,7 @@ export default function PaymentHistoryModal({ booking, isOpen, onClose }) {
                     <div className="space-y-3">
                         <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-1.5">
                             <ShieldCheck className="w-4 h-4 text-blue-500" />
-                            Online Gateway Transactions (Stripe & GCash)
+                            Online Gateway Transactions (GCash & Cards)
                         </h4>
 
                         {loading ? (
@@ -155,7 +155,7 @@ export default function PaymentHistoryModal({ booking, isOpen, onClose }) {
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-extrabold uppercase text-zinc-900 dark:text-white">
-                                                        {tx.gateway === 'stripe' ? 'Stripe Card Pay' : 'GCash (PayMongo)'}
+                                                        {tx.gateway === 'card' || tx.gateway === 'card_paymongo' || tx.gateway === 'stripe' || tx.payment_method_type === 'card' ? 'Credit / Debit Card' : 'GCash'}
                                                     </span>
                                                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase">
                                                         {tx.mode || 'test'}

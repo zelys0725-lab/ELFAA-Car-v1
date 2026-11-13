@@ -20,38 +20,42 @@ class GcashGateway implements PaymentGatewayInterface
 
     public function getDisplayName(): string
     {
-        return 'GCash (PayMongo)';
+        return 'GCash';
     }
 
     public function isEnabled(): bool
     {
-        return (bool) Setting::where('key', 'payment_gcash_enabled')->value('value') ?: false;
+        return (bool) (Setting::where('key', 'payment_gcash_enabled')->value('value') ?: false);
     }
 
     public function getMode(): string
     {
-        return Setting::where('key', 'payment_gcash_mode')->value('value') ?: 'test';
+        return Setting::where('key', 'payment_paymongo_mode')->value('value')
+            ?: (Setting::where('key', 'payment_gcash_mode')->value('value') ?: 'test');
     }
 
     protected function getSecretKey(): ?string
     {
         $mode = $this->getMode();
-        $keyName = $mode === 'live' ? 'payment_gcash_live_sk' : 'payment_gcash_test_sk';
-        return Setting::where('key', $keyName)->value('value') ?: config("services.paymongo.{$mode}_sk");
+        return Setting::where('key', "payment_paymongo_{$mode}_sk")->value('value')
+            ?: (Setting::where('key', "payment_gcash_{$mode}_sk")->value('value')
+            ?: config("services.paymongo.{$mode}_sk"));
     }
 
     public function getPublicKey(): ?string
     {
         $mode = $this->getMode();
-        $keyName = $mode === 'live' ? 'payment_gcash_live_pk' : 'payment_gcash_test_pk';
-        return Setting::where('key', $keyName)->value('value') ?: config("services.paymongo.{$mode}_pk");
+        return Setting::where('key', "payment_paymongo_{$mode}_pk")->value('value')
+            ?: (Setting::where('key', "payment_gcash_{$mode}_pk")->value('value')
+            ?: config("services.paymongo.{$mode}_pk"));
     }
 
     protected function getWebhookSecret(): ?string
     {
         $mode = $this->getMode();
-        $keyName = $mode === 'live' ? 'payment_gcash_live_webhook_secret' : 'payment_gcash_test_webhook_secret';
-        return Setting::where('key', $keyName)->value('value') ?: config("services.paymongo.{$mode}_webhook_secret");
+        return Setting::where('key', "payment_paymongo_{$mode}_webhook_secret")->value('value')
+            ?: (Setting::where('key', "payment_gcash_{$mode}_webhook_secret")->value('value')
+            ?: config("services.paymongo.{$mode}_webhook_secret"));
     }
 
     public function isConfigured(): bool

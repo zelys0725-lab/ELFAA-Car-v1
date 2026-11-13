@@ -671,23 +671,53 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         );
     });
 
-    // Sidebar Config
+    // Sidebar Config with dynamic warning highlight badges
     const tabsConfig = [
-        { id: 'analytics', label: 'Dashboard' },
-        { id: 'booking_requests', label: `Booking Requests${pendingRequestsCount > 0 ? ` (${pendingRequestsCount})` : ''}` },
-        { id: 'bookings', label: 'Bookings Log' },
+        { 
+            id: 'analytics', 
+            label: 'Dashboard',
+            badge: totalUrgentAlerts > 0 ? `${totalUrgentAlerts}!` : null,
+            badgeColor: 'bg-red-600 text-white animate-pulse shadow-sm shadow-red-600/40'
+        },
+        { 
+            id: 'booking_requests', 
+            label: 'Booking Requests',
+            badge: pendingRequestsCountReal > 0 ? pendingRequestsCountReal : null,
+            badgeColor: 'bg-amber-500 text-white font-black shadow-sm'
+        },
+        { 
+            id: 'bookings', 
+            label: 'Bookings Log',
+            badge: overdueReturnsCount > 0 ? `${overdueReturnsCount} Overdue` : null,
+            badgeColor: 'bg-red-600 text-white animate-pulse font-black shadow-sm shadow-red-600/40'
+        },
         { id: 'gps_fleet', label: 'Fleet Live GPS Tracking' },
         { id: 'daily_schedule', label: 'Daily Rental Schedule' },
         { id: 'calendar', label: 'Availability Calendar' },
-        { id: 'verifications', label: 'Identity Verifications' },
-        { id: 'bill_records', label: 'Utility & Bill Records' },
+        { 
+            id: 'verifications', 
+            label: 'Identity Verifications',
+            badge: pendingDocumentsCount > 0 ? pendingDocumentsCount : null,
+            badgeColor: 'bg-sky-600 text-white font-black shadow-sm'
+        },
+        { 
+            id: 'bill_records', 
+            label: 'Utility & Bill Records',
+            badge: upcomingBillsCount > 0 ? upcomingBillsCount : null,
+            badgeColor: 'bg-amber-600 text-white font-black shadow-sm'
+        },
         { id: 'vehicles', label: 'Fleet Inventory' },
         { id: 'promos', label: 'Promo Campaigns' },
         { id: 'reports', label: 'Smart Reports & AI Insights' },
         { id: 'profit_analytics', label: 'Per-Car Profit Analytics' }
     ];
     if (isAdmin) {
-        tabsConfig.push({ id: 'users', label: 'User Accounts' });
+        tabsConfig.push({ 
+            id: 'users', 
+            label: 'User Accounts',
+            badge: lockedUsersCount > 0 ? `${lockedUsersCount} Locked` : null,
+            badgeColor: 'bg-rose-600 text-white animate-pulse font-black shadow-sm shadow-rose-600/40'
+        });
         tabsConfig.push({ id: 'payment_settings', label: 'Payment Settings' });
         tabsConfig.push({ id: 'settings', label: 'Site Settings' });
     }
@@ -722,19 +752,52 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         {/* ========================================================================= */}
                         {/* 1. REAL-TIME OPERATIONAL NOTIFICATIONS & ACTION CENTER */}
                         {/* ========================================================================= */}
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-lg transition-colors text-left animate-in fade-in duration-200">
+                        <div className={`rounded-xl p-5 shadow-xl transition-all text-left animate-in fade-in duration-200 ${
+                            totalUrgentAlerts > 0
+                                ? 'bg-gradient-to-br from-red-500/10 via-white dark:via-zinc-900 to-amber-500/10 border-2 border-red-500/50 shadow-red-500/10'
+                                : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800'
+                        }`}>
+                            {/* Urgent Alert Banner Bar (Top notice if actions are needed) */}
+                            {totalUrgentAlerts > 0 && (
+                                <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-red-600 via-[#FF3B30] to-rose-600 text-white font-black text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-lg shadow-red-600/30">
+                                    <div className="flex items-center gap-2.5">
+                                        <AlertTriangle className="w-5 h-5 text-white animate-bounce shrink-0" />
+                                        <span className="tracking-wide">
+                                            CRITICAL ATTENTION REQUIRED: {totalUrgentAlerts} urgent operational item{totalUrgentAlerts === 1 ? '' : 's'} need staff resolution.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {overdueReturnsCount > 0 && (
+                                            <span className="px-2 py-0.5 rounded bg-black/30 text-white text-[10px] font-black uppercase">
+                                                {overdueReturnsCount} Overdue
+                                            </span>
+                                        )}
+                                        {lockedUsersCount > 0 && (
+                                            <span className="px-2 py-0.5 rounded bg-black/30 text-white text-[10px] font-black uppercase">
+                                                {lockedUsersCount} Locked
+                                            </span>
+                                        )}
+                                        {pendingRequestsCountReal > 0 && (
+                                            <span className="px-2 py-0.5 rounded bg-black/30 text-white text-[10px] font-black uppercase">
+                                                {pendingRequestsCountReal} Requests
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800/80">
                                 <div className="flex items-center gap-2.5">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${totalUrgentAlerts > 0 ? 'bg-red-500/15 text-[#FF3B30]' : 'bg-emerald-500/15 text-emerald-500'}`}>
-                                        <Bell className="w-4 h-4 animate-pulse" />
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${totalUrgentAlerts > 0 ? 'bg-red-600 text-white animate-pulse' : 'bg-emerald-500/15 text-emerald-500'}`}>
+                                        <Bell className="w-4 h-4" />
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <h3 className="text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-white">
+                                            <h3 className="text-sm font-black uppercase tracking-wide text-zinc-900 dark:text-white">
                                                 Operational Action Center & Live Alerts
                                             </h3>
                                             {totalUrgentAlerts > 0 ? (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-500/15 text-[#FF3B30] border border-red-500/30 animate-pulse">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white shadow-sm shadow-red-600/40 animate-pulse">
                                                     {totalUrgentAlerts} Action{totalUrgentAlerts === 1 ? '' : 's'} Required
                                                 </span>
                                             ) : (
@@ -767,81 +830,81 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     {/* Alert 1: Pending Booking Requests */}
                                     <div
                                         onClick={() => setActiveTab('booking_requests')}
-                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                        className={`p-4 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
                                             pendingRequestsCountReal > 0
-                                                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/15'
+                                                ? 'bg-amber-500/15 border-2 border-amber-500 dark:border-amber-500 shadow-lg shadow-amber-500/15 hover:bg-amber-500/20'
                                                 : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Booking Requests</span>
-                                            <span className={`w-2 h-2 rounded-full ${pendingRequestsCountReal > 0 ? 'bg-amber-500 animate-ping' : 'bg-zinc-400'}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-600 dark:text-zinc-300">Booking Requests</span>
+                                            <span className={`w-2.5 h-2.5 rounded-full ${pendingRequestsCountReal > 0 ? 'bg-amber-500 animate-ping' : 'bg-zinc-400'}`} />
                                         </div>
-                                        <div className="my-2">
-                                            <span className={`text-xl font-black ${pendingRequestsCountReal > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                        <div className="my-2.5">
+                                            <span className={`text-2xl font-black ${pendingRequestsCountReal > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
                                                 {pendingRequestsCountReal} Pending
                                             </span>
-                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                                {pendingRequestsCountReal > 0 ? 'Awaiting staff approval' : 'All requests decided'}
+                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium">
+                                                {pendingRequestsCountReal > 0 ? '⚠️ Awaiting staff review & approval' : 'All requests decided'}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform">
                                             <span>Review Requests</span>
-                                            <ArrowRight className="w-3 h-3" />
+                                            <ArrowRight className="w-3.5 h-3.5" />
                                         </div>
                                     </div>
 
                                     {/* Alert 2: Overdue Returns */}
                                     <div
                                         onClick={() => { setActiveTab('bookings'); setSubFilter('confirmed'); }}
-                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                        className={`p-4 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
                                             overdueReturnsCount > 0
-                                                ? 'bg-red-500/10 border-red-500/40 hover:border-red-500/60 hover:bg-red-500/15'
+                                                ? 'bg-red-500/15 border-2 border-red-600 dark:border-red-500 shadow-xl shadow-red-600/20 hover:bg-red-500/20'
                                                 : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Overdue Returns</span>
-                                            <span className={`w-2 h-2 rounded-full ${overdueReturnsCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-red-700 dark:text-red-300">Overdue Returns</span>
+                                            <span className={`w-2.5 h-2.5 rounded-full ${overdueReturnsCount > 0 ? 'bg-red-600 animate-pulse' : 'bg-emerald-500'}`} />
                                         </div>
-                                        <div className="my-2">
-                                            <span className={`text-xl font-black ${overdueReturnsCount > 0 ? 'text-[#FF3B30]' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                        <div className="my-2.5">
+                                            <span className={`text-2xl font-black ${overdueReturnsCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                                 {overdueReturnsCount} Overdue
                                             </span>
-                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                                {overdueReturnsCount > 0 ? 'Past scheduled return time' : 'Zero overdue units on road'}
+                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium">
+                                                {overdueReturnsCount > 0 ? '🚨 Past scheduled return deadline' : 'Zero overdue units on road'}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase text-red-600 dark:text-red-400 group-hover:translate-x-0.5 transition-transform">
                                             <span>Inspect Returns</span>
-                                            <ArrowRight className="w-3 h-3" />
+                                            <ArrowRight className="w-3.5 h-3.5" />
                                         </div>
                                     </div>
 
                                     {/* Alert 3: Driver KYC ID Verifications */}
                                     <div
                                         onClick={() => setActiveTab('verifications')}
-                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                        className={`p-4 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
                                             pendingDocumentsCount > 0
-                                                ? 'bg-sky-500/10 border-sky-500/30 hover:border-sky-500/50 hover:bg-sky-500/15'
+                                                ? 'bg-sky-500/15 border-2 border-sky-500 dark:border-sky-500 shadow-lg shadow-sky-500/15 hover:bg-sky-500/20'
                                                 : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Driver Verification</span>
-                                            <span className={`w-2 h-2 rounded-full ${pendingDocumentsCount > 0 ? 'bg-sky-500 animate-pulse' : 'bg-zinc-400'}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-600 dark:text-zinc-300">Driver Verification</span>
+                                            <span className={`w-2.5 h-2.5 rounded-full ${pendingDocumentsCount > 0 ? 'bg-sky-500 animate-pulse' : 'bg-zinc-400'}`} />
                                         </div>
-                                        <div className="my-2">
-                                            <span className={`text-xl font-black ${pendingDocumentsCount > 0 ? 'text-sky-600 dark:text-sky-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                        <div className="my-2.5">
+                                            <span className={`text-2xl font-black ${pendingDocumentsCount > 0 ? 'text-sky-600 dark:text-sky-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
                                                 {pendingDocumentsCount} Documents
                                             </span>
-                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                                {pendingDocumentsCount > 0 ? 'Pending license/ID verification' : 'All driver KYC verified'}
+                                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium">
+                                                {pendingDocumentsCount > 0 ? '📄 Pending license/ID verification' : 'All driver KYC verified'}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase text-[#FF3B30] group-hover:translate-x-0.5 transition-transform">
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase text-sky-600 dark:text-sky-400 group-hover:translate-x-0.5 transition-transform">
                                             <span>Open Verifications</span>
-                                            <ArrowRight className="w-3 h-3" />
+                                            <ArrowRight className="w-3.5 h-3.5" />
                                         </div>
                                     </div>
 
@@ -855,11 +918,11 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 setActiveTab('bill_records');
                                             }
                                         }}
-                                        className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+                                        className={`p-4 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
                                             lockedUsersCount > 0
-                                                ? 'bg-purple-500/10 border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/15'
+                                                ? 'bg-rose-500/15 border-2 border-rose-500 dark:border-rose-500 shadow-lg shadow-rose-500/15 hover:bg-rose-500/20'
                                                 : upcomingBillsCount > 0
-                                                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/15'
+                                                ? 'bg-amber-500/15 border-2 border-amber-500 dark:border-amber-500 shadow-lg shadow-amber-500/15 hover:bg-amber-500/20'
                                                 : 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                                         }`}
                                     >
@@ -867,25 +930,25 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                                                 {lockedUsersCount > 0 ? 'Locked Accounts' : 'Bills & Utilities'}
                                             </span>
-                                            <span className={`w-2 h-2 rounded-full ${lockedUsersCount > 0 ? 'bg-purple-500 animate-pulse' : upcomingBillsCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                            <span className={`w-2.5 h-2.5 rounded-full ${lockedUsersCount > 0 ? 'bg-rose-500 animate-pulse' : upcomingBillsCount > 0 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
                                         </div>
                                         <div className="my-2">
                                             {lockedUsersCount > 0 ? (
                                                 <>
-                                                    <span className="text-xl font-black text-purple-600 dark:text-purple-400">
-                                                        {lockedUsersCount} Locked
+                                                    <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
+                                                        🔒 {lockedUsersCount} Locked
                                                     </span>
-                                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                                        Limiter triggered (Call-in unlock)
+                                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium">
+                                                        Customer accounts locked — call-in to unlock
                                                     </span>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <span className={`text-xl font-black ${upcomingBillsCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                                    <span className={`text-2xl font-black ${upcomingBillsCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
                                                         {upcomingBillsCount} Bills Due
                                                     </span>
-                                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                                        {upcomingBillsCount > 0 ? 'Due within 3 days' : 'All utilities in good standing'}
+                                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium">
+                                                        {upcomingBillsCount > 0 ? '⚡ Due within 3 days' : 'All utilities in good standing'}
                                                     </span>
                                                 </>
                                             )}
@@ -1930,7 +1993,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         const returnPhoto = returnInsp?.photos?.[0];
 
                                         return (
-                                            <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
+                                            <tr key={booking.id} className={`hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors ${overdueReturns.some(o => o.id === booking.id) ? 'bg-red-500/5 border-l-4 border-red-500' : ''}`}>
                                                 <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
                                                     <GripVertical className="w-3.5 h-3.5" />
                                                 </td>
@@ -1964,14 +2027,20 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     </div>
                                                 </td>
                                                 <td className="py-3.5 px-4">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 ${booking.status === 'confirmed' ? 'text-green-600 dark:text-green-500' :
-                                                            booking.status === 'completed' ? 'text-sky-600 dark:text-sky-400' :
-                                                                booking.status === 'rejected' ? 'text-rose-600 dark:text-rose-500' : 'text-amber-600 dark:text-amber-500'
-                                                        }`}>
-                                                        <span className={`h-1.5 w-1.5 rounded-full ${booking.status === 'confirmed' ? 'bg-green-600 dark:bg-green-500' :
-                                                                booking.status === 'completed' ? 'bg-sky-600 dark:bg-sky-400' :
-                                                                    booking.status === 'rejected' ? 'bg-rose-600 dark:bg-rose-500' : 'bg-amber-600 dark:bg-amber-500'
-                                                            }`}></span>
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black border ${
+                                                        booking.status === 'confirmed'
+                                                            ? 'bg-green-500/10 border-green-500/40 text-green-700 dark:text-green-400'
+                                                            : booking.status === 'completed'
+                                                            ? 'bg-sky-500/10 border-sky-500/40 text-sky-700 dark:text-sky-400'
+                                                            : booking.status === 'rejected'
+                                                            ? 'bg-rose-500/10 border-rose-500/40 text-rose-700 dark:text-rose-400'
+                                                            : 'bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400'
+                                                    }`}>
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${
+                                                            booking.status === 'confirmed' ? 'bg-green-500' :
+                                                            booking.status === 'completed' ? 'bg-sky-500' :
+                                                            booking.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500 animate-pulse'
+                                                        }`}></span>
                                                         {booking.status}
                                                     </span>
                                                 </td>
@@ -2328,7 +2397,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     </span>
                                                 )}
                                                 {u.status === 'locked' && (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-red-500/15 border-2 border-red-500/50 text-red-600 dark:text-red-400 shadow-sm shadow-red-500/20 animate-pulse">
                                                         <Lock className="w-3 h-3" />
                                                         Locked
                                                     </span>

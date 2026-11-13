@@ -6,12 +6,12 @@ use App\Models\Booking;
 use App\Models\PaymentTransaction;
 use App\Models\Setting;
 use App\Services\Payments\GcashGateway;
+use App\Services\Payments\CardGateway;
 use App\Services\Payments\PaymentManager;
-use App\Services\Payments\StripeGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Stripe\StripeClient;
 
 class PaymentController extends Controller
 {
@@ -34,7 +34,7 @@ class PaymentController extends Controller
         }
 
         $request->validate([
-            'gateway' => 'required|string|in:stripe,gcash,gcash_paymongo',
+            'gateway' => 'required|string|in:gcash,gcash_paymongo,card,card_paymongo',
         ]);
 
         $gatewayName = $request->gateway;
@@ -99,49 +99,20 @@ class PaymentController extends Controller
 
         $booking = $bookingId ? Booking::with('vehicle')->find($bookingId) : null;
 
-        // Immediate verification for Stripe Checkout Session
-        if ($booking && $gateway === 'stripe' && $sessionId) {
-            try {
-                $stripeGateway = $this->paymentManager->getGateway('stripe');
-                $mode = $stripeGateway ? $stripeGateway->getMode() : 'test';
-                $keyName = $mode === 'live' ? 'payment_stripe_live_sk' : 'payment_stripe_test_sk';
-                $sk = Setting::where('key', $keyName)->value('value') ?: config("services.stripe.{$mode}_sk");
-
-                if ($sk) {
-                    $stripe = new StripeClient($sk);
-                    $session = $stripe->checkout->sessions->retrieve($sessionId, []);
-
-                    if ($session && $session->payment_status === 'paid' && $booking->payment_status !== 'paid') {
-                        $amount = ($session->amount_total ?? 0) / 100.0;
-                        $this->paymentManager->processSuccessfulPayment(
-                            $booking,
-                            'stripe',
-                            $session->id,
-                            $amount > 0 ? $amount : (float) $booking->total_price,
-                            (array) $session,
-                            $session->customer_details->email ?? null,
-                            $session->customer_details->name ?? null,
-                            $transactionId ? (int) $transactionId : null
-                        );
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning("Immediate Stripe session check on return failed: " . $e->getMessage());
-            }
-        }
-
-        // Immediate verification for PayMongo Checkout Session
-        if ($booking && ($gateway === 'gcash' || $gateway === 'gcash_paymongo') && $transactionId) {
+        // Immediate verification for PayMongo Checkout Session (GCash or Card)
+        if ($booking && in_array($gateway, ['gcash', 'gcash_paymongo', 'card', 'card_paymongo']) && $transactionId) {
             $tx = PaymentTransaction::find($transactionId);
             if ($tx && $tx->gateway_transaction_id && $booking->payment_status !== 'paid') {
                 try {
-                    $gcashGateway = $this->paymentManager->getGateway('gcash_paymongo');
-                    $mode = $gcashGateway ? $gcashGateway->getMode() : 'test';
-                    $keyName = $mode === 'live' ? 'payment_gcash_live_sk' : 'payment_gcash_test_sk';
-                    $sk = Setting::where('key', $keyName)->value('value');
+                    $activeGateway = $this->paymentManager->getGateway($gateway);
+                    $mode = $activeGateway ? $activeGateway->getMode() : 'test';
+                    $sk = Setting::where('key', "payment_paymongo_{$mode}_sk")->value('value')
+                        ?: (Setting::where('key', "payment_{$gateway}_{$mode}_sk")->value('value')
+                        ?: (Setting::where('key', "payment_gcash_{$mode}_sk")->value('value')
+                        ?: config("services.paymongo.{$mode}_sk")));
 
                     if ($sk) {
-                        $res = \Illuminate\Support\Facades\Http::withBasicAuth($sk, '')
+                        $res = Http::withBasicAuth($sk, '')
                             ->timeout(10)
                             ->get("https://api.paymongo.com/v1/checkout_sessions/{$tx->gateway_transaction_id}");
 
@@ -158,9 +129,10 @@ class PaymentController extends Controller
                             }
 
                             if ($hasPaid) {
+                                $gatewayId = $tx->gateway ?: (in_array($gateway, ['card', 'card_paymongo']) ? 'card_paymongo' : 'gcash_paymongo');
                                 $this->paymentManager->processSuccessfulPayment(
                                     $booking,
-                                    'gcash_paymongo',
+                                    $gatewayId,
                                     $tx->gateway_transaction_id,
                                     $amountPaid > 0 ? $amountPaid : (float) $booking->total_price,
                                     $res->json(),
@@ -204,50 +176,15 @@ class PaymentController extends Controller
     }
 
     /**
-     * Stripe Webhook Endpoint (CSRF exempt).
-     */
-    public function stripeWebhook(Request $request)
-    {
-        $gateway = $this->paymentManager->getGateway('stripe');
-        if (!$gateway) {
-            return response()->json(['error' => 'Gateway not registered'], 500);
-        }
-
-        $result = $gateway->handleWebhook($request);
-
-        if (!$result['success']) {
-            Log::warning('Stripe webhook processing rejected: ' . ($result['message'] ?? 'Unknown error'));
-            return response()->json(['received' => false, 'error' => $result['message'] ?? 'Invalid payload'], 400);
-        }
-
-        $bookingId = $result['booking_id'] ?? null;
-        if ($bookingId) {
-            $booking = Booking::find($bookingId);
-            if ($booking) {
-                $this->paymentManager->processSuccessfulPayment(
-                    $booking,
-                    'stripe',
-                    $result['gateway_transaction_id'] ?? 'stripe_evt_' . time(),
-                    (float) ($result['amount'] ?? $booking->total_price),
-                    $result['raw'] ?? [],
-                    $result['payer_email'] ?? null,
-                    $result['payer_name'] ?? null,
-                    $result['payment_transaction_id'] ?? null
-                );
-            }
-        }
-
-        return response()->json(['received' => true]);
-    }
-
-    /**
-     * PayMongo / GCash Webhook Endpoint (CSRF exempt).
+     * PayMongo Webhook Endpoint for both GCash and Card payments (CSRF exempt).
      */
     public function paymongoWebhook(Request $request)
     {
-        $gateway = $this->paymentManager->getGateway('gcash_paymongo');
+        $gateway = $this->paymentManager->getGateway('gcash_paymongo') 
+            ?: $this->paymentManager->getGateway('card_paymongo');
+
         if (!$gateway) {
-            return response()->json(['error' => 'Gateway not registered'], 500);
+            return response()->json(['error' => 'No PayMongo gateway registered'], 500);
         }
 
         $result = $gateway->handleWebhook($request);
@@ -261,9 +198,14 @@ class PaymentController extends Controller
         if ($bookingId) {
             $booking = Booking::find($bookingId);
             if ($booking) {
+                $tx = !empty($result['payment_transaction_id']) ? PaymentTransaction::find($result['payment_transaction_id']) : null;
+                $paymentType = $result['raw']['data']['attributes']['data']['attributes']['metadata']['payment_type'] ?? '';
+                $gatewayIdentifier = $tx?->gateway 
+                    ?: ($paymentType === 'card' ? 'card_paymongo' : 'gcash_paymongo');
+
                 $this->paymentManager->processSuccessfulPayment(
                     $booking,
-                    'gcash_paymongo',
+                    $gatewayIdentifier,
                     $result['gateway_transaction_id'] ?? 'paymongo_evt_' . time(),
                     (float) ($result['amount'] ?? $booking->total_price),
                     $result['raw'] ?? [],
@@ -287,10 +229,15 @@ class PaymentController extends Controller
         }
 
         $request->validate([
-            'gateway' => 'required|string|in:stripe,gcash,gcash_paymongo',
+            'gateway' => 'required|string|in:gcash,gcash_paymongo,card,card_paymongo,paymongo',
         ]);
 
-        $gateway = $this->paymentManager->getGateway($request->gateway);
+        $gatewayKey = $request->gateway === 'paymongo' ? 'gcash_paymongo' : $request->gateway;
+        $gateway = $this->paymentManager->getGateway($gatewayKey);
+        if (!$gateway) {
+            $gateway = $this->paymentManager->getGateway('card_paymongo');
+        }
+
         if (!$gateway) {
             return response()->json([
                 'success' => false,
@@ -312,14 +259,13 @@ class PaymentController extends Controller
         }
 
         $request->validate([
-            'payment_stripe_enabled' => 'nullable|in:0,1',
-            'payment_stripe_mode' => 'nullable|in:test,live',
-            'payment_stripe_test_pk' => 'nullable|string|max:500',
-            'payment_stripe_test_sk' => 'nullable|string|max:500',
-            'payment_stripe_test_webhook_secret' => 'nullable|string|max:500',
-            'payment_stripe_live_pk' => 'nullable|string|max:500',
-            'payment_stripe_live_sk' => 'nullable|string|max:500',
-            'payment_stripe_live_webhook_secret' => 'nullable|string|max:500',
+            'payment_paymongo_mode' => 'nullable|in:test,live',
+            'payment_paymongo_test_pk' => 'nullable|string|max:500',
+            'payment_paymongo_test_sk' => 'nullable|string|max:500',
+            'payment_paymongo_test_webhook_secret' => 'nullable|string|max:500',
+            'payment_paymongo_live_pk' => 'nullable|string|max:500',
+            'payment_paymongo_live_sk' => 'nullable|string|max:500',
+            'payment_paymongo_live_webhook_secret' => 'nullable|string|max:500',
 
             'payment_gcash_enabled' => 'nullable|in:0,1',
             'payment_gcash_mode' => 'nullable|in:test,live',
@@ -330,19 +276,27 @@ class PaymentController extends Controller
             'payment_gcash_live_sk' => 'nullable|string|max:500',
             'payment_gcash_live_webhook_secret' => 'nullable|string|max:500',
 
+            'payment_card_enabled' => 'nullable|in:0,1',
+            'payment_card_mode' => 'nullable|in:test,live',
+            'payment_card_test_pk' => 'nullable|string|max:500',
+            'payment_card_test_sk' => 'nullable|string|max:500',
+            'payment_card_test_webhook_secret' => 'nullable|string|max:500',
+            'payment_card_live_pk' => 'nullable|string|max:500',
+            'payment_card_live_sk' => 'nullable|string|max:500',
+            'payment_card_live_webhook_secret' => 'nullable|string|max:500',
+
             'payment_auto_confirm' => 'nullable|in:0,1',
             'payment_currency' => 'nullable|string|max:10',
         ]);
 
         $keys = [
-            'payment_stripe_enabled',
-            'payment_stripe_mode',
-            'payment_stripe_test_pk',
-            'payment_stripe_test_sk',
-            'payment_stripe_test_webhook_secret',
-            'payment_stripe_live_pk',
-            'payment_stripe_live_sk',
-            'payment_stripe_live_webhook_secret',
+            'payment_paymongo_mode',
+            'payment_paymongo_test_pk',
+            'payment_paymongo_test_sk',
+            'payment_paymongo_test_webhook_secret',
+            'payment_paymongo_live_pk',
+            'payment_paymongo_live_sk',
+            'payment_paymongo_live_webhook_secret',
 
             'payment_gcash_enabled',
             'payment_gcash_mode',
@@ -352,6 +306,15 @@ class PaymentController extends Controller
             'payment_gcash_live_pk',
             'payment_gcash_live_sk',
             'payment_gcash_live_webhook_secret',
+
+            'payment_card_enabled',
+            'payment_card_mode',
+            'payment_card_test_pk',
+            'payment_card_test_sk',
+            'payment_card_test_webhook_secret',
+            'payment_card_live_pk',
+            'payment_card_live_sk',
+            'payment_card_live_webhook_secret',
 
             'payment_auto_confirm',
             'payment_currency',
@@ -364,7 +327,14 @@ class PaymentController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Payment Settings updated successfully! API keys and modes have been saved.');
+        // If payment_paymongo_mode was updated, sync payment_gcash_mode and payment_card_mode
+        if ($request->has('payment_paymongo_mode')) {
+            $mode = $request->input('payment_paymongo_mode');
+            Setting::updateOrCreate(['key' => 'payment_gcash_mode'], ['value' => $mode]);
+            Setting::updateOrCreate(['key' => 'payment_card_mode'], ['value' => $mode]);
+        }
+
+        return redirect()->back()->with('success', 'Payment Settings updated successfully! PayMongo API keys and payment method configurations have been saved.');
     }
 
     /**

@@ -49,17 +49,13 @@ class OnlinePaymentIntegrationTest extends TestCase
     public function test_admin_can_update_payment_settings_and_persist_to_database(): void
     {
         $response = $this->actingAs($this->admin)->post(route('admin.payment_settings.update'), [
-            'payment_stripe_enabled' => '1',
-            'payment_stripe_mode' => 'test',
-            'payment_stripe_test_pk' => 'pk_test_sample_stripe_pk_123',
-            'payment_stripe_test_sk' => 'sk_test_sample_stripe_sk_123',
-            'payment_stripe_test_webhook_secret' => 'whsec_sample_stripe_webhook_123',
+            'payment_paymongo_mode' => 'test',
+            'payment_paymongo_test_pk' => 'pk_test_sample_pm_pk_123',
+            'payment_paymongo_test_sk' => 'sk_test_sample_pm_sk_123',
+            'payment_paymongo_test_webhook_secret' => 'whsec_sample_pm_webhook_123',
 
             'payment_gcash_enabled' => '1',
-            'payment_gcash_mode' => 'test',
-            'payment_gcash_test_pk' => 'pk_test_sample_gcash_pk_123',
-            'payment_gcash_test_sk' => 'sk_test_sample_gcash_sk_123',
-            'payment_gcash_test_webhook_secret' => 'whsec_sample_gcash_webhook_123',
+            'payment_card_enabled' => '1',
 
             'payment_auto_confirm' => '1',
             'payment_currency' => 'PHP',
@@ -68,13 +64,13 @@ class OnlinePaymentIntegrationTest extends TestCase
         $response->assertStatus(302);
 
         $this->assertDatabaseHas('settings', [
-            'key' => 'payment_stripe_enabled',
-            'value' => '1',
+            'key' => 'payment_paymongo_mode',
+            'value' => 'test',
         ]);
 
         $this->assertDatabaseHas('settings', [
-            'key' => 'payment_stripe_test_pk',
-            'value' => 'pk_test_sample_stripe_pk_123',
+            'key' => 'payment_paymongo_test_pk',
+            'value' => 'pk_test_sample_pm_pk_123',
         ]);
 
         $this->assertDatabaseHas('settings', [
@@ -83,15 +79,15 @@ class OnlinePaymentIntegrationTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('settings', [
-            'key' => 'payment_gcash_test_sk',
-            'value' => 'sk_test_sample_gcash_sk_123',
+            'key' => 'payment_card_enabled',
+            'value' => '1',
         ]);
     }
 
     public function test_unauthorized_user_cannot_update_payment_settings(): void
     {
         $response = $this->actingAs($this->client)->post(route('admin.payment_settings.update'), [
-            'payment_stripe_enabled' => '1',
+            'payment_paymongo_mode' => 'live',
         ]);
 
         $response->assertStatus(403);
@@ -115,7 +111,7 @@ class OnlinePaymentIntegrationTest extends TestCase
 
         $transaction = $manager->processSuccessfulPayment(
             $booking,
-            'stripe',
+            'card_paymongo',
             'cs_test_sample_checkout_session_999',
             3600.00,
             ['id' => 'cs_test_sample_checkout_session_999'],

@@ -143,16 +143,8 @@ export default function CustomerAvailabilityPicker({ vehicle, startDate, endDate
                     <span>Available</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    <span>Reserved</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                    <span>Rented</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                    <span>Maintenance</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-400" />
+                    <span>Unavailable</span>
                 </div>
             </div>
 
@@ -183,11 +175,9 @@ export default function CustomerAvailabilityPicker({ vehicle, startDate, endDate
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
                         const { status } = getDateStatus(dateStr);
 
+                        // For client-facing calendar: only show available vs unavailable
                         let bgClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
-                        if (status === 'reserved') bgClass = "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30";
-                        if (status === 'rented') bgClass = "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30";
-                        if (status === 'maintenance') bgClass = "bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30";
-                        if (status === 'unavailable') bgClass = "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 opacity-60";
+                        if (status !== 'available') bgClass = "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 opacity-60";
 
                         const isSelected = (startDate && dateStr === startDate.split('T')[0]) || (endDate && dateStr === endDate.split('T')[0]);
 
@@ -197,7 +187,7 @@ export default function CustomerAvailabilityPicker({ vehicle, startDate, endDate
                                 className={`h-8 rounded-lg border flex items-center justify-center text-xs font-bold transition-all ${bgClass} ${
                                     isSelected ? 'ring-2 ring-red-500 shadow-md font-black scale-105' : ''
                                 }`}
-                                title={`${dateStr}: ${status.toUpperCase()}`}
+                                title={`${dateStr}: ${status === 'available' ? 'AVAILABLE' : 'UNAVAILABLE'}`}
                             >
                                 {dayNum}
                             </div>

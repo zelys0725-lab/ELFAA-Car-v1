@@ -30,7 +30,11 @@ import {
     Mail,
     Phone,
     MapPin,
-    Clock
+    Clock,
+    Lock,
+    Unlock,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 
 export default function PortalLayout({ role, header, children, sidebarTabs = [], activeTab = '', setActiveTab = null }) {
@@ -55,6 +59,63 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
         }
         return 'dark';
     });
+
+    // Automatic Session Lock Timer: 5 minutes of inactivity (changed from 15 minutes)
+    const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    const [isSessionLocked, setIsSessionLocked] = useState(false);
+    const [lockPassword, setLockPassword] = useState('');
+    const [unlockError, setUnlockError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isUnlocking, setIsUnlocking] = useState(false);
+
+    useEffect(() => {
+        let lastActivity = Date.now();
+        const updateActivity = () => {
+            lastActivity = Date.now();
+        };
+
+        const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+        events.forEach(e => window.addEventListener(e, updateActivity, { passive: true }));
+
+        const interval = setInterval(() => {
+            if (!isSessionLocked && Date.now() - lastActivity >= INACTIVITY_TIMEOUT_MS) {
+                setIsSessionLocked(true);
+            }
+        }, 5000);
+
+        return () => {
+            events.forEach(e => window.removeEventListener(e, updateActivity));
+            clearInterval(interval);
+        };
+    }, [isSessionLocked]);
+
+    const handleUnlock = (e) => {
+        e?.preventDefault();
+        setUnlockError('');
+        setIsUnlocking(true);
+
+        if (!lockPassword.trim()) {
+            setUnlockError('Please enter your account password to unlock.');
+            setIsUnlocking(false);
+            return;
+        }
+
+        router.post(route('password.confirm'), {
+            password: lockPassword,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsSessionLocked(false);
+                setLockPassword('');
+                setUnlockError('');
+                setIsUnlocking(false);
+            },
+            onError: (err) => {
+                setIsUnlocking(false);
+                setUnlockError(err?.password || 'Incorrect password. Please verify and try again.');
+            }
+        });
+    };
 
     useEffect(() => {
         if (theme === 'dark') {
@@ -153,14 +214,21 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab?.(tab.id)}
-                                            className={`w-full group flex items-center px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                                            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
                                                 isActive
                                                     ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-extrabold focus:outline-none'
                                                     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-zinc-850/50'
                                             }`}
                                         >
-                                            {getSidebarIcon(tab.id)}
-                                            {tab.label}
+                                            <div className="flex items-center min-w-0">
+                                                {getSidebarIcon(tab.id)}
+                                                <span className="truncate">{tab.label}</span>
+                                            </div>
+                                            {tab.badge && (
+                                                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase shrink-0 shadow-sm ${tab.badgeColor || 'bg-red-500 text-white'}`}>
+                                                    {tab.badge}
+                                                </span>
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -207,7 +275,18 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                         </h1>
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
+                        {/* Auto-Lock Security Pill (5-Minute Inactivity) */}
+                        <button
+                            type="button"
+                            onClick={() => setIsSessionLocked(true)}
+                            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold text-zinc-600 dark:text-zinc-400 hover:border-amber-500/40 hover:text-amber-500 transition-colors cursor-pointer"
+                            title="Session automatically locks after 5 minutes of inactivity. Click to lock immediately."
+                        >
+                            <Lock className="w-3 h-3 text-amber-500" />
+                            <span>Auto-Lock: 5m</span>
+                        </button>
+
                         {/* Theme Toggle in Header Navbar */}
                         <button 
                             onClick={toggleTheme} 
@@ -264,6 +343,14 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                         <ShieldCheck className="w-3.5 h-3.5 text-[#FF3B30]" />
                                         <span>Security & Profile (2FA)</span>
                                     </Link>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsSessionLocked(true)} 
+                                        className="flex items-center gap-2 w-full px-4 py-2 text-left text-xs font-bold leading-5 hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border-b border-zinc-100 dark:border-zinc-800/60 cursor-pointer"
+                                    >
+                                        <Lock className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>Lock Screen (5m Auto)</span>
+                                    </button>
                                     <Link href={logoutRoute} method="post" as="button" className="block w-full px-4 py-2 text-left text-xs font-bold leading-5 hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white">
                                         Sign Out
                                     </Link>
@@ -300,13 +387,18 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                         setActiveTab?.(tab.id);
                                         setShowingMobileMenu(false);
                                     }}
-                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider block transition-colors ${
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
                                         activeTab === tab.id
                                             ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-extrabold'
                                             : 'text-zinc-550 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-zinc-900 dark:hover:text-white'
                                     }`}
                                 >
-                                    {tab.label}
+                                    <span>{tab.label}</span>
+                                    {tab.badge && (
+                                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase ${tab.badgeColor || 'bg-red-500 text-white'}`}>
+                                            {tab.badge}
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -460,6 +552,112 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                     </footer>
                 )}
             </div>
+
+            {/* Automatic Session Lock Overlay (5-Minute Inactivity Protection) */}
+            {isSessionLocked && (
+                <div 
+                    className="fixed inset-0 z-[9999] bg-zinc-950/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="session-lock-title"
+                >
+                    <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-7 shadow-2xl text-center space-y-5 relative overflow-hidden">
+                        {/* Top Accent Gradient */}
+                        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-red-600 via-[#FF3B30] to-amber-500" />
+                        
+                        <div className="mx-auto w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-[#FF3B30] shadow-inner">
+                            <Lock className="w-8 h-8 animate-pulse" />
+                        </div>
+
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[#FF3B30] text-[10px] font-black uppercase tracking-wider mb-2">
+                                <Clock className="w-3 h-3" />
+                                <span>Auto-Locked • 5m Inactivity Protection</span>
+                            </div>
+                            <h2 id="session-lock-title" className="text-xl font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+                                Session Locked
+                            </h2>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                                Your session was automatically locked after <strong>5 minutes of inactivity</strong> to protect sensitive customer data and fleet operations.
+                            </p>
+                        </div>
+
+                        {/* User Profile Card */}
+                        <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center gap-3 text-left">
+                            <div className="w-10 h-10 rounded-xl bg-[#FF3B30]/15 text-[#FF3B30] font-black text-sm flex items-center justify-center shrink-0">
+                                {user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="font-extrabold text-sm text-zinc-900 dark:text-white truncate">{user.name}</div>
+                                <div className="text-[11px] text-zinc-500 truncate">{user.email}</div>
+                            </div>
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-red-500/15 text-[#FF3B30] border border-red-500/25">
+                                {user.role}
+                            </span>
+                        </div>
+
+                        {/* Unlock Form */}
+                        <form onSubmit={handleUnlock} className="space-y-3.5 text-left">
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+                                    Enter Account Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={lockPassword}
+                                        onChange={(e) => { setLockPassword(e.target.value); setUnlockError(''); }}
+                                        placeholder="Enter password..."
+                                        className="w-full h-11 px-3.5 pr-10 text-xs rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]"
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                                {unlockError && (
+                                    <p className="text-[11px] font-bold text-red-500 mt-1">{unlockError}</p>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    type="submit"
+                                    disabled={isUnlocking}
+                                    className="flex-1 h-11 rounded-xl bg-[#FF3B30] hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-red-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                    <Unlock className="w-4 h-4" />
+                                    <span>{isUnlocking ? 'Verifying...' : 'Unlock Session'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsSessionLocked(false); setLockPassword(''); setUnlockError(''); }}
+                                    className="px-4 h-11 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-bold transition-colors cursor-pointer"
+                                    title="Quick resume session"
+                                >
+                                    Resume
+                                </button>
+                            </div>
+                        </form>
+
+                        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs">
+                            <span className="text-[11px] text-zinc-400">Not {user.name.split(' ')[0]}?</span>
+                            <Link
+                                href={logoutRoute}
+                                method="post"
+                                as="button"
+                                className="text-[11px] font-extrabold uppercase tracking-wider text-red-500 hover:underline cursor-pointer"
+                            >
+                                Sign Out →
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

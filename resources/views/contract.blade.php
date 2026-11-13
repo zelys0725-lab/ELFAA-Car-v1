@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ELFAA Car Rental Agreement - Booking #{{ $booking->id }}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico">
     <style>
         @page {
             size: A4 portrait;
@@ -351,12 +355,13 @@
 
         .sig-block {
             text-align: center;
+            position: relative;
         }
 
         .sig-line {
             border-bottom: 1.5px solid #09090b;
             width: 85%;
-            margin: 24px auto 4px;
+            margin: 18px auto 4px;
         }
 
         .sig-name {
@@ -373,6 +378,82 @@
             font-weight: 600;
         }
 
+        /* Digital Signature Pad Styles */
+        .sig-canvas-container {
+            border: 1.5px dashed #FF3B30;
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 8px 10px;
+            margin: 10px auto 4px;
+            max-width: 320px;
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.08);
+            text-align: center;
+        }
+
+        .sig-canvas {
+            border: 1px solid #d4d4d8;
+            border-radius: 6px;
+            background: #fafafa;
+            cursor: crosshair;
+            touch-action: none;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .sig-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .btn-sig {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 5px;
+            border: 1px solid #d4d4d8;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-sig-save {
+            background: #FF3B30;
+            color: #ffffff;
+            border-color: #FF3B30;
+        }
+
+        .btn-sig-save:hover {
+            background: #dc2626;
+        }
+
+        .btn-sig-clear {
+            background: #f4f4f5;
+            color: #52525b;
+        }
+
+        .btn-sig-clear:hover {
+            background: #e4e4e7;
+            color: #18181b;
+        }
+
+        .rendered-signature {
+            max-height: 52px;
+            max-width: 220px;
+            margin: 0 auto -6px;
+            display: block;
+            object-fit: contain;
+        }
+
+        .sig-stamp {
+            font-size: 8.5px;
+            color: #16a34a;
+            font-weight: 800;
+            margin-top: 3px;
+            letter-spacing: 0.3px;
+        }
+
         .footer-note {
             text-align: center;
             font-size: 8.5px;
@@ -383,7 +464,7 @@
         }
 
         @media print {
-            .no-print-bar {
+            .no-print, .no-print-bar {
                 display: none !important;
             }
             body {
@@ -430,6 +511,9 @@
             <span style="font-size: 11px; color: #71717a; margin-left: 8px;">Reservation #{{ $booking->id }}</span>
         </div>
         <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="scrollToSignature()" class="btn" style="background: #FF3B30; color: #ffffff;">
+                ✍️ Sign Electronically
+            </button>
             <button onclick="window.print()" class="btn btn-print">
                 🖨️ Print Agreement / Save PDF
             </button>
@@ -702,17 +786,52 @@
         @endif
 
         <!-- SIGNATURES -->
-        <div class="signatures-grid">
+        <div class="signatures-grid" id="signature-section">
             <div class="sig-block">
+                <!-- Lessor Signature with official cursive mark -->
+                <div style="height: 44px; display: flex; align-items: flex-end; justify-content: center;">
+                    <div style="font-family: 'Brush Script MT', 'Segoe Script', cursive; font-size: 24px; color: #1e3a8a; transform: rotate(-3deg);">
+                        Mika Jane Aranzanso
+                    </div>
+                </div>
                 <div class="sig-line"></div>
                 <div class="sig-name">MIKA JANE A. ARANZANSO</div>
                 <div class="sig-role">Lessor Signature | Date: {{ now()->format('M d, Y') }}</div>
             </div>
 
-            <div class="sig-block">
+            <div class="sig-block" id="renter-sig-block">
+                <!-- Dynamic Electronic Signature Preview -->
+                <div id="sig-preview-container" style="min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;">
+                    <img id="rendered-sig-img" class="rendered-signature" src="" alt="Digital Signature" style="display: none;" />
+                    <div id="sig-placeholder" class="no-print" style="color: #a1a1aa; font-size: 9px; font-style: italic; margin-bottom: 2px;">
+                        (Electronic Signature Required)
+                    </div>
+                </div>
+
                 <div class="sig-line"></div>
                 <div class="sig-name">{{ $primaryDriver }}</div>
                 <div class="sig-role">Renter Signature over Printed Name / Lessee | Date: {{ now()->format('M d, Y') }}</div>
+                <div id="sig-status-stamp" class="sig-stamp" style="display: none;">
+                    ✓ Digitally Signed & Timestamped
+                </div>
+
+                <!-- Digital Signature Pad Box (Interactive on Screen) -->
+                <div id="sig-pad-box" class="sig-canvas-container no-print">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-weight: 800; font-size: 9.5px; color: #FF3B30; text-transform: uppercase;">
+                            ✍️ Digital Signature Pad
+                        </span>
+                        <span style="font-size: 8.5px; color: #71717a;">Draw with finger or mouse</span>
+                    </div>
+                    <canvas id="signatureCanvas" class="sig-canvas" width="280" height="80"></canvas>
+                    <div class="sig-controls">
+                        <button type="button" id="btnClearSig" class="btn-sig btn-sig-clear">Clear</button>
+                        <button type="button" id="btnSaveSig" class="btn-sig btn-sig-save">Adopt & Sign Contract</button>
+                    </div>
+                </div>
+                <button type="button" id="btnToggleResign" class="btn-sig no-print" style="display: none; margin: 4px auto 0;">
+                    ✎ Redraw Signature
+                </button>
             </div>
         </div>
 
@@ -722,6 +841,136 @@
         </div>
 
     </div>
+
+    <!-- Interactive Signature Pad Script -->
+    <script>
+        function scrollToSignature() {
+            const sigEl = document.getElementById('signature-section');
+            if (sigEl) {
+                sigEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        (function() {
+            const bookingId = {{ $booking->id }};
+            const storageKey = 'elfaa_contract_sig_' + bookingId;
+            const canvas = document.getElementById('signatureCanvas');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            const clearBtn = document.getElementById('btnClearSig');
+            const saveBtn = document.getElementById('btnSaveSig');
+            const padBox = document.getElementById('sig-pad-box');
+            const resignBtn = document.getElementById('btnToggleResign');
+            const previewImg = document.getElementById('rendered-sig-img');
+            const placeholder = document.getElementById('sig-placeholder');
+            const stamp = document.getElementById('sig-status-stamp');
+
+            if (!canvas || !ctx) return;
+
+            let isDrawing = false;
+            let hasDrawn = false;
+
+            function setupCanvas() {
+                ctx.lineWidth = 2.2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#0f172a';
+            }
+            setupCanvas();
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (canvas.width / rect.width),
+                    y: (clientY - rect.top) * (canvas.height / rect.height)
+                };
+            }
+
+            function startDraw(e) {
+                e.preventDefault();
+                isDrawing = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                hasDrawn = true;
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+
+            function stopDraw(e) {
+                if (isDrawing) {
+                    e.preventDefault();
+                    isDrawing = false;
+                }
+            }
+
+            // Mouse & Pointer & Touch events
+            canvas.addEventListener('pointerdown', startDraw);
+            canvas.addEventListener('pointermove', draw);
+            window.addEventListener('pointerup', stopDraw);
+
+            canvas.addEventListener('touchstart', startDraw, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            window.addEventListener('touchend', stopDraw, { passive: false });
+
+            clearBtn.addEventListener('click', function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                hasDrawn = false;
+                setupCanvas();
+            });
+
+            function applySavedSignature(dataUrl, dateStr) {
+                previewImg.src = dataUrl;
+                previewImg.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+                padBox.style.display = 'none';
+                resignBtn.style.display = 'inline-block';
+                stamp.style.display = 'block';
+                if (dateStr) {
+                    stamp.textContent = '✓ Digitally Signed on ' + dateStr;
+                }
+            }
+
+            saveBtn.addEventListener('click', function() {
+                if (!hasDrawn) {
+                    alert('Please draw your signature on the pad before clicking Adopt & Sign.');
+                    return;
+                }
+                const dataUrl = canvas.toDataURL('image/png');
+                const nowStr = new Date().toLocaleString();
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify({ sig: dataUrl, date: nowStr }));
+                } catch(e) {}
+                applySavedSignature(dataUrl, nowStr);
+            });
+
+            resignBtn.addEventListener('click', function() {
+                padBox.style.display = 'block';
+                resignBtn.style.display = 'none';
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                hasDrawn = false;
+                setupCanvas();
+            });
+
+            // Restore signature from localStorage if previously signed
+            try {
+                const stored = localStorage.getItem(storageKey);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && parsed.sig) {
+                        applySavedSignature(parsed.sig, parsed.date);
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
 
 </body>
 </html>

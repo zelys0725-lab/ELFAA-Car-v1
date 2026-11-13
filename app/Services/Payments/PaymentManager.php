@@ -21,8 +21,8 @@ class PaymentManager
 
     public function __construct()
     {
-        $this->register(new StripeGateway());
         $this->register(new GcashGateway());
+        $this->register(new CardGateway());
     }
 
     /**
@@ -35,7 +35,7 @@ class PaymentManager
     }
 
     /**
-     * Get a gateway by identifier (supports aliases like 'gcash' => 'gcash_paymongo').
+     * Get a gateway by identifier (supports aliases like 'gcash' => 'gcash_paymongo', 'card' => 'card_paymongo').
      */
     public function getGateway(string $identifier): ?PaymentGatewayInterface
     {
@@ -45,6 +45,10 @@ class PaymentManager
 
         if ($identifier === 'gcash') {
             return $this->gateways['gcash_paymongo'] ?? null;
+        }
+
+        if ($identifier === 'card') {
+            return $this->gateways['card_paymongo'] ?? null;
         }
 
         return null;
@@ -69,9 +73,15 @@ class PaymentManager
 
         foreach ($this->gateways as $gateway) {
             if ($gateway->isEnabled()) {
+                $alias = match ($gateway->getIdentifier()) {
+                    'gcash_paymongo' => 'gcash',
+                    'card_paymongo' => 'card',
+                    default => $gateway->getIdentifier(),
+                };
+
                 $available[] = [
                     'id' => $gateway->getIdentifier(),
-                    'alias' => $gateway->getIdentifier() === 'gcash_paymongo' ? 'gcash' : $gateway->getIdentifier(),
+                    'alias' => $alias,
                     'name' => $gateway->getDisplayName(),
                     'mode' => $gateway->getMode(),
                     'configured' => $gateway->isConfigured(),
@@ -148,7 +158,7 @@ class PaymentManager
 
             // 2. Log in standard BookingPayment table (used by existing reporting & ledger)
             $methodLabel = match ($gatewayIdentifier) {
-                'stripe' => 'credit_card',
+                'card', 'card_paymongo', 'credit_card', 'stripe' => 'credit_card',
                 'gcash', 'gcash_paymongo' => 'gcash',
                 default => 'online',
             };

@@ -17,6 +17,9 @@ import Swal from 'sweetalert2';
 export default function OnlinePaymentModal({ booking, isOpen, onClose, availableGateways = [] }) {
     if (!isOpen || !booking) return null;
 
+    const isGcashAvailable = availableGateways.length === 0 || availableGateways.some(g => g.alias === 'gcash' || g.id === 'gcash_paymongo');
+    const isCardAvailable = availableGateways.length === 0 || availableGateways.some(g => g.alias === 'card' || g.id === 'card_paymongo');
+
     const [selectedGateway, setSelectedGateway] = useState(() => {
         if (availableGateways.length > 0) {
             return availableGateways[0].alias || availableGateways[0].id;
@@ -153,63 +156,73 @@ export default function OnlinePaymentModal({ booking, isOpen, onClose, available
                             Choose Payment Method
                         </label>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* GCash Option */}
-                            <button
-                                type="button"
-                                onClick={() => setSelectedGateway('gcash')}
-                                className={`p-4 rounded-xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
-                                    selectedGateway === 'gcash' || selectedGateway === 'gcash_paymongo'
-                                        ? 'border-sky-500 bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-sky-500/20 shadow-md'
-                                        : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center font-black">
-                                        <Smartphone className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 uppercase">
-                                        Instant
-                                    </span>
-                                </div>
-                                <div>
-                                    <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white">
-                                        GCash (e-Wallet)
-                                    </h4>
-                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">
-                                        Pay via mobile OTP, QR code, or PayMongo checkout.
-                                    </p>
-                                </div>
-                            </button>
+                        {!isGcashAvailable && !isCardAvailable ? (
+                            <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-xs text-amber-700 dark:text-amber-400 text-center">
+                                Online payment methods are currently unavailable. Please contact the administrator or choose cash payment.
+                            </div>
+                        ) : (
+                            <div className={`grid gap-3 ${isGcashAvailable && isCardAvailable ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                                {/* GCash Option */}
+                                {isGcashAvailable && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedGateway('gcash')}
+                                        className={`p-4 rounded-xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
+                                            selectedGateway === 'gcash' || selectedGateway === 'gcash_paymongo'
+                                                ? 'border-sky-500 bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-sky-500/20 shadow-md'
+                                                : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center font-black">
+                                                <Smartphone className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 uppercase">
+                                                Instant
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white">
+                                                GCash
+                                            </h4>
+                                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">
+                                                Pay securely via your GCash mobile wallet and SMS OTP.
+                                            </p>
+                                        </div>
+                                    </button>
+                                )}
 
-                            {/* Stripe Option */}
-                            <button
-                                type="button"
-                                onClick={() => setSelectedGateway('stripe')}
-                                className={`p-4 rounded-xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
-                                    selectedGateway === 'stripe'
-                                        ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/20 ring-2 ring-blue-500/20 shadow-md'
-                                        : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                                        <CreditCard className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 uppercase">
-                                        Card Pay
-                                    </span>
-                                </div>
-                                <div>
-                                    <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white">
-                                        Credit / Debit Card
-                                    </h4>
-                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">
-                                        Visa, Mastercard, American Express via Stripe.
-                                    </p>
-                                </div>
-                            </button>
-                        </div>
+                                {/* Credit/Debit Card Option */}
+                                {isCardAvailable && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedGateway('card')}
+                                        className={`p-4 rounded-xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
+                                            selectedGateway === 'card' || selectedGateway === 'card_paymongo'
+                                                ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/20 ring-2 ring-indigo-500/20 shadow-md'
+                                                : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                                <CreditCard className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 uppercase">
+                                                Secure
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white">
+                                                Credit / Debit Card
+                                            </h4>
+                                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">
+                                                Visa and Mastercard debit or credit cards.
+                                            </p>
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {errorMessage && (
@@ -223,7 +236,7 @@ export default function OnlinePaymentModal({ booking, isOpen, onClose, available
                     <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2.5 text-[11px] text-zinc-500">
                         <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                         <span>
-                            You will be redirected to the secure payment provider to authenticate and authorize this payment. Your card and wallet credentials are never stored on ELFAA servers.
+                            You will be redirected to the secure checkout page to authenticate and authorize this payment. Your card and wallet credentials are never stored on ELFAA servers.
                         </span>
                     </div>
                 </div>
@@ -243,7 +256,7 @@ export default function OnlinePaymentModal({ booking, isOpen, onClose, available
                     <Button
                         type="button"
                         onClick={handleProceedToPayment}
-                        disabled={loading || balanceDue <= 0}
+                        disabled={loading || balanceDue <= 0 || (!isGcashAvailable && !isCardAvailable)}
                         className="bg-[#FF3B30] hover:bg-red-700 text-white font-extrabold text-xs h-10 px-5 shadow-lg gap-2 cursor-pointer"
                     >
                         {loading ? (

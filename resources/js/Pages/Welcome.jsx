@@ -8,12 +8,15 @@ import ElfaaChatbot from '@/Components/ElfaaChatbot';
 import ModernHero from '@/Components/ModernHero';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { showSwal } from '@/Components/AlertModal';
+import TermsAndConditionsModal from '@/Components/TermsAndConditionsModal';
 
 export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] }) {
     const { settings } = usePage().props;
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [availabilityVehicle, setAvailabilityVehicle] = useState(null);
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [termsVehicle, setTermsVehicle] = useState(null);
     const [transmissionFilter, setTransmissionFilter] = useState('All');
     const [typeFilter, setTypeFilter] = useState('All');
     const [activeSection, setActiveSection] = useState('home');
@@ -55,23 +58,32 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const handleBookClick = async (vehicle) => {
+    const handleBookClick = (vehicle) => {
+        setTermsVehicle(vehicle);
+        setShowTermsModal(true);
+    };
+
+    const handleTermsContinue = async () => {
+        const vehicle = termsVehicle;
+        setShowTermsModal(false);
+        if (!vehicle) return;
+
         if (!auth.user) {
-            // Use SweetAlert2 for a premium auth prompt
-            const loginUrl = route('login');
-            const registerUrl = route('register');
-            const result = await import('sweetalert2').then(({ default: Swal }) => {
+            // Unauthenticated: guide user to login/register which brings them straight to the Reservation Hub
+            const loginUrl = `${route('login')}?redirect=${encodeURIComponent('/client/dashboard?tab=dashboard&select_vehicle=' + vehicle.id)}&select_vehicle=${vehicle.id}`;
+            const registerUrl = `${route('register')}?redirect=${encodeURIComponent('/client/dashboard?tab=dashboard&select_vehicle=' + vehicle.id)}&select_vehicle=${vehicle.id}`;
+            await import('sweetalert2').then(({ default: Swal }) => {
                 const isDark = document.documentElement.classList.contains('dark');
                 return Swal.fire({
                     icon: 'info',
-                    title: `Book <strong>${vehicle.name}</strong>?`,
+                    title: `Reserve <strong>${vehicle.name}</strong>`,
                     html: `
                         <p style="font-size:13px;color:${isDark ? '#a1a1aa' : '#52525b'};margin-bottom:16px">
-                            To reserve the <strong style="color:${isDark ? '#fff' : '#18181b'}">${vehicle.name}</strong>, you need an ELFAA customer account.
+                            Terms accepted! Please sign in or create an account to proceed directly to the <strong>Reservation Hub</strong>.
                         </p>
                         <div style="display:flex;flex-direction:column;gap:10px">
-                            <a href="${loginUrl}" style="display:block;padding:10px 0;background:#FF3B30;color:#fff;border-radius:10px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.08em;text-decoration:none">Login to Account</a>
-                            <a href="${registerUrl}" style="display:block;padding:10px 0;background:${isDark ? '#27272a' : '#f4f4f5'};color:${isDark ? '#fff' : '#18181b'};border:1px solid ${isDark ? '#3f3f46' : '#e4e4e7'};border-radius:10px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.08em;text-decoration:none">Create New Account</a>
+                            <a href="${loginUrl}" style="display:block;padding:10px 0;background:#FF3B30;color:#fff;border-radius:10px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.08em;text-decoration:none">Login to Reservation Hub</a>
+                            <a href="${registerUrl}" style="display:block;padding:10px 0;background:${isDark ? '#27272a' : '#f4f4f5'};color:${isDark ? '#fff' : '#18181b'};border:1px solid ${isDark ? '#3f3f46' : '#e4e4e7'};border-radius:10px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.08em;text-decoration:none">Create Account to Reserve</a>
                         </div>`,
                     showConfirmButton: false,
                     showCloseButton: true,
@@ -81,9 +93,10 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                 });
             });
         } else {
-            // Logged in, redirect to renter dashboard browse fleet
-            window.location.href = '/client/dashboard?tab=fleet&select_vehicle=' + vehicle.id;
+            // Logged in: navigate straight to the Reservation Hub
+            window.location.href = `/client/dashboard?tab=dashboard&select_vehicle=${vehicle.id}`;
         }
+        setTermsVehicle(null);
     };
 
     const vehicleTypes = ['All', ...new Set(vehicles.map(v => v.type))];
@@ -541,6 +554,18 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
 
         {/* Floating AI Voice Booking Assistant */}
         <ElfaaChatbot vehicles={vehicles} promos={promos} addOns={addOns} auth={auth} />
+
+        {/* Official ELFAA Car Rental Terms and Conditions Modal */}
+        <TermsAndConditionsModal
+            isOpen={showTermsModal}
+            onClose={() => {
+                setShowTermsModal(false);
+                setTermsVehicle(null);
+            }}
+            onContinue={handleTermsContinue}
+            vehicle={termsVehicle}
+            continueText="Continue"
+        />
         </>
     );
 }

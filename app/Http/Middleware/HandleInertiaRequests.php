@@ -45,14 +45,22 @@ class HandleInertiaRequests extends Middleware
                     $sensitiveKeys = [
                         'mail_password',
                         'sms_api_key',
-                        'payment_stripe_test_sk',
-                        'payment_stripe_live_sk',
-                        'payment_stripe_test_webhook_secret',
-                        'payment_stripe_live_webhook_secret',
+                        'payment_paymongo_test_sk',
+                        'payment_paymongo_live_sk',
+                        'payment_paymongo_test_webhook_secret',
+                        'payment_paymongo_live_webhook_secret',
+                        'payment_card_test_sk',
+                        'payment_card_live_sk',
+                        'payment_card_test_webhook_secret',
+                        'payment_card_live_webhook_secret',
                         'payment_gcash_test_sk',
                         'payment_gcash_live_sk',
                         'payment_gcash_test_webhook_secret',
                         'payment_gcash_live_webhook_secret',
+                        'payment_stripe_test_sk',
+                        'payment_stripe_live_sk',
+                        'payment_stripe_test_webhook_secret',
+                        'payment_stripe_live_webhook_secret',
                     ];
                     foreach ($sensitiveKeys as $key) {
                         unset($all[$key]);
