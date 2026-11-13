@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Input } from '@/Components/Shadcn';
-import VehicleCalendar from '@/Components/VehicleCalendar';
 import SmartReportsDashboard from '@/Components/SmartReportsDashboard';
 import DailyRentalSchedule from '@/Components/DailyRentalSchedule';
 import BillRecordsManager from '@/Components/BillRecordsManager';
@@ -27,7 +26,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const { url } = usePage();
 
     const validTabs = [
-        'analytics', 'gps_fleet', 'bookings', 'daily_schedule', 'calendar',
+        'analytics', 'gps_fleet', 'bookings', 'daily_schedule',
         'verifications', 'bill_records', 'vehicles', 'promos', 'reports',
         'profit_analytics', 'users', 'payment_settings', 'settings'
     ];
@@ -693,7 +692,6 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         },
         { id: 'gps_fleet', label: 'Fleet Live GPS Tracking' },
         { id: 'daily_schedule', label: 'Daily Rental Schedule' },
-        { id: 'calendar', label: 'Availability Calendar' },
         { 
             id: 'verifications', 
             label: 'Identity Verifications',
@@ -1615,7 +1613,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 )}
 
                 {/* 3. MAIN WORKSPACE DATA TABLE CARD */}
-                {!['analytics', 'gps_fleet', 'settings', 'payment_settings', 'calendar', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
+                {!['analytics', 'gps_fleet', 'settings', 'payment_settings', 'reports', 'daily_schedule', 'bill_records', 'profit_analytics'].includes(activeTab) && (
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xl transition-colors">
                         {/* Header Action Section */}
                         <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
@@ -2558,10 +2556,6 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         documents={documents}
                         isAdmin={isAdmin}
                     />
-                )}
-
-                {activeTab === 'calendar' && (
-                    <VehicleCalendar vehicles={vehicles} isAdmin={isAdmin} />
                 )}
 
                 {activeTab === 'gps_fleet' && (

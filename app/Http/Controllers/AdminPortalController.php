@@ -127,7 +127,7 @@ class AdminPortalController extends Controller
             ]);
         }
 
-        $vehicles = Vehicle::orderBy('created_at', 'desc')->get();
+        $vehicles = Vehicle::with('unavailableDates')->orderBy('created_at', 'desc')->get();
         $promos = Promo::orderBy('created_at', 'desc')->get();
         $extraGoods = ExtraGood::orderBy('created_at', 'desc')->get();
         

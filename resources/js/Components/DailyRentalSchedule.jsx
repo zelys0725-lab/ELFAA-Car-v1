@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useForm } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/Components/Shadcn';
-import { CalendarDays, ChevronLeft, ChevronRight, Calendar, Search, Filter, Clock, MapPin, AlertTriangle, User, DollarSign, X, CheckCircle, FileText } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Calendar, Search, Filter, Clock, MapPin, AlertTriangle, User, DollarSign, X, CheckCircle, FileText, Wrench } from 'lucide-react';
 
 export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
     const [startDate, setStartDate] = useState(() => {
@@ -13,6 +14,27 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
     const [inspectingCell, setInspectingCell] = useState(null);
+    const [showBlockModal, setShowBlockModal] = useState(false);
+
+    // Maintenance / Unavailable interval form
+    const { data: blockData, setData: setBlockData, post: postBlock, processing: blockProcessing, reset: resetBlock } = useForm({
+        vehicle_id: '',
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+        reason: '',
+        type: 'maintenance',
+    });
+
+    const handleBlockSubmit = (e) => {
+        e.preventDefault();
+        postBlock(route('admin.unavailable_dates.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowBlockModal(false);
+                resetBlock();
+            },
+        });
+    };
 
     // Generate array of dates starting from startDate
     const datesList = Array.from({ length: numDays }, (_, i) => {
@@ -73,6 +95,26 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
                 badgeClass: 'bg-zinc-700 text-zinc-200 border-zinc-600',
                 dotClass: 'bg-zinc-400',
             };
+        }
+
+        // Check scheduled maintenance / unavailable blocks
+        if (vehicle.unavailable_dates && Array.isArray(vehicle.unavailable_dates)) {
+            const maintenanceBlock = vehicle.unavailable_dates.find(block => {
+                const bStart = block.start_date ? block.start_date.split('T')[0] : '';
+                const bEnd = block.end_date ? block.end_date.split('T')[0] : '';
+                return dateStr >= bStart && dateStr <= bEnd;
+            });
+
+            if (maintenanceBlock) {
+                return {
+                    status: maintenanceBlock.reason ? `Maint: ${maintenanceBlock.reason}` : 'Maintenance Block',
+                    code: 'maintenance',
+                    bgClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40 hover:border-purple-500',
+                    badgeClass: 'bg-purple-600 text-white',
+                    dotClass: 'bg-purple-500',
+                    maintenance: maintenanceBlock,
+                };
+            }
         }
 
         // 2. Find active bookings for this vehicle
@@ -251,6 +293,15 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
                                 <option value={7}>7 Days View</option>
                                 <option value={14}>14 Days View</option>
                             </select>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowBlockModal(true)}
+                                className="h-8 px-3 rounded-md text-xs font-black uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white shadow transition-all cursor-pointer flex items-center gap-1.5"
+                            >
+                                <Wrench className="w-3.5 h-3.5" />
+                                <span>+ Maintenance Block</span>
+                            </button>
                         </div>
                     </div>
 
@@ -553,6 +604,32 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
                                         </span>
                                     </div>
                                 </div>
+                            ) : inspectingCell.statusInfo.maintenance ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Wrench className="w-4 h-4 text-purple-500" />
+                                            <span className="font-extrabold text-zinc-900 dark:text-white text-xs">
+                                                Scheduled Maintenance Block
+                                            </span>
+                                        </div>
+                                        <Badge className="bg-purple-600 text-white uppercase text-[9px]">
+                                            Maintenance
+                                        </Badge>
+                                    </div>
+                                    <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl space-y-2 text-xs">
+                                        <div className="text-zinc-600 dark:text-zinc-400 font-bold">
+                                            Reason / Work Order:
+                                        </div>
+                                        <p className="font-extrabold text-zinc-900 dark:text-white">
+                                            {inspectingCell.statusInfo.maintenance.reason || 'General Fleet Maintenance'}
+                                        </p>
+                                        <div className="pt-2 border-t border-purple-500/20 text-[11px] text-zinc-500 flex justify-between">
+                                            <span>Start: {inspectingCell.statusInfo.maintenance.start_date?.split('T')[0]}</span>
+                                            <span>End: {inspectingCell.statusInfo.maintenance.end_date?.split('T')[0]}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="py-8 text-center text-zinc-500 space-y-2">
                                     <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto" />
@@ -580,6 +657,95 @@ export default function DailyRentalSchedule({ vehicles = [], bookings = [] }) {
                                 Close Inspector
                             </Button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Maintenance Block Modal */}
+            {showBlockModal && (
+                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-md w-full p-6 text-zinc-900 dark:text-white space-y-4 shadow-2xl transition-colors">
+                        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                            <h4 className="text-lg font-black uppercase tracking-wide text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                                <Wrench className="w-5 h-5" />
+                                <span>Add Maintenance Block</span>
+                            </h4>
+                            <button
+                                type="button"
+                                onClick={() => setShowBlockModal(false)}
+                                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white font-black text-lg cursor-pointer"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleBlockSubmit} className="space-y-4 text-xs">
+                            <div>
+                                <label className="block text-zinc-600 dark:text-zinc-400 font-bold mb-1">Select Vehicle</label>
+                                <select
+                                    value={blockData.vehicle_id}
+                                    onChange={(e) => setBlockData('vehicle_id', e.target.value)}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-zinc-900 dark:text-white font-semibold"
+                                    required
+                                >
+                                    <option value="">-- Choose Vehicle --</option>
+                                    {vehicles.map(v => (
+                                        <option key={v.id} value={v.id}>{v.name} ({v.plate_number || 'N/A'})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-zinc-600 dark:text-zinc-400 font-bold mb-1">Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={blockData.start_date}
+                                        onChange={(e) => setBlockData('start_date', e.target.value)}
+                                        className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-zinc-900 dark:text-white font-semibold"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-zinc-600 dark:text-zinc-400 font-bold mb-1">End Date</label>
+                                    <input
+                                        type="date"
+                                        value={blockData.end_date}
+                                        onChange={(e) => setBlockData('end_date', e.target.value)}
+                                        className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-zinc-900 dark:text-white font-semibold"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-zinc-600 dark:text-zinc-400 font-bold mb-1">Reason / Notes</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Engine overhaul, Tire replacement, Detailing"
+                                    value={blockData.reason}
+                                    onChange={(e) => setBlockData('reason', e.target.value)}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-zinc-900 dark:text-white font-semibold"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBlockModal(false)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold uppercase bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={blockProcessing}
+                                    className="px-5 py-2 rounded-xl text-xs font-black uppercase bg-purple-600 hover:bg-purple-700 text-white shadow-lg cursor-pointer"
+                                >
+                                    Save Block Interval
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
