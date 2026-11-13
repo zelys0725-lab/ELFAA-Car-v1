@@ -5,6 +5,7 @@ import {
     Target, ChevronDown, ChevronUp, Plus, Trash2, X, AlertTriangle,
     CheckCircle, MinusCircle, BarChart3, Calendar, Filter
 } from 'lucide-react';
+import TablePagination from '@/Components/TablePagination';
 
 const fmt = (n) => `PHP ${parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const fmtSmall = (n) => parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -50,6 +51,8 @@ export default function VehicleProfitAnalytics({ vehicles: initialVehicles = [] 
     const [dateTo, setDateTo] = useState('');
     const [filterVehicleId, setFilterVehicleId] = useState('');
     const [expandedId, setExpandedId] = useState(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     // Add expense modal state
     const [addExpenseFor, setAddExpenseFor] = useState(null); // vehicle id
@@ -182,14 +185,20 @@ export default function VehicleProfitAnalytics({ vehicles: initialVehicles = [] 
                 </div>
             ) : analytics.length === 0 ? (
                 <div className="flex items-center justify-center py-16 text-zinc-400 text-xs">No vehicle data available.</div>
-            ) : (
-                <div className="space-y-3">
-                    {analytics.map(v => {
-                        const beCfg = BREAK_EVEN_CONFIG[v.break_even_status] || BREAK_EVEN_CONFIG.in_progress;
-                        const BeIcon = beCfg.icon;
-                        const isExpanded = expandedId === v.id;
+            ) : (() => {
+                const totalPages = Math.max(1, Math.ceil(analytics.length / Math.max(1, pageSize)));
+                const safePage = Math.min(page, totalPages);
+                const paginatedAnalytics = analytics.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-                        return (
+                return (
+                    <div className="space-y-4">
+                        <div className="space-y-3">
+                            {paginatedAnalytics.map(v => {
+                                const beCfg = BREAK_EVEN_CONFIG[v.break_even_status] || BREAK_EVEN_CONFIG.in_progress;
+                                const BeIcon = beCfg.icon;
+                                const isExpanded = expandedId === v.id;
+
+                                return (
                             <div key={v.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
                                 {/* Row Header */}
                                 <button
@@ -320,8 +329,20 @@ export default function VehicleProfitAnalytics({ vehicles: initialVehicles = [] 
                             </div>
                         );
                     })}
-                </div>
-            )}
+                        </div>
+
+                        <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <TablePagination
+                                currentPage={safePage}
+                                totalItems={analytics.length}
+                                pageSize={pageSize}
+                                onPageChange={(p) => setPage(p)}
+                                onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+                            />
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Add Expense Modal */}
             {addExpenseFor && (

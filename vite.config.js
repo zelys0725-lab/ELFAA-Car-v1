@@ -10,4 +10,9 @@ export default defineConfig({
         }),
         react(),
     ],
+    build: {
+        minify: true,
+        sourcemap: false,
+        cssMinify: true,
+    },
 });

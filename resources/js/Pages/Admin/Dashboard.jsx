@@ -17,6 +17,7 @@ import PaymentSettingsTab from '@/Components/Admin/PaymentSettingsTab';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import MfaSettingsSection from '@/Components/Admin/MfaSettingsSection';
 import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
+import TablePagination from '@/Components/TablePagination';
 import { Mail, MessageSquare, Globe, Send, Eye, EyeOff, CheckCircle, XCircle, Server, Key, ShieldCheck, Smartphone, Shield, Sparkles, GripVertical, Lock, Unlock, HelpCircle, Radio, Copy, Check, ExternalLink, Camera, CheckSquare, Clock, ArrowRight, X, Zap, Receipt, AlertTriangle, TrendingUp, DollarSign, Car, Activity, Calendar, CreditCard, Users, CheckCircle2, Layers, Fuel, Navigation, ChevronRight, Bell, Gauge, ArrowUpRight, BarChart3, AlertCircle as AlertCircleIcon, FileText } from 'lucide-react';
 import { resolvePhotoUrl } from '@/utils/photoHelper';
 
@@ -55,7 +56,21 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
     const [bookingLogTab, setBookingLogTab] = useState('active'); // 'active' | 'archived'
     const [bookingSearch, setBookingSearch] = useState('');
     const [bookingPage, setBookingPage] = useState(1);
-    const bookingsPerPage = 8;
+    const [bookingsPerPage, setBookingsPerPage] = useState(10);
+
+    // Standardized table pagination states across all tabs
+    const [requestPage, setRequestPage] = useState(1);
+    const [requestsPerPage, setRequestsPerPage] = useState(10);
+    const [verificationPage, setVerificationPage] = useState(1);
+    const [verificationsPerPage, setVerificationsPerPage] = useState(10);
+    const [vehiclePage, setVehiclePage] = useState(1);
+    const [vehiclesPerPage, setVehiclesPerPage] = useState(10);
+    const [promoPage, setPromoPage] = useState(1);
+    const [promosPerPage, setPromosPerPage] = useState(10);
+    const [addonPage, setAddonPage] = useState(1);
+    const [addonsPerPage, setAddonsPerPage] = useState(10);
+    const [userPage, setUserPage] = useState(1);
+    const [usersPerPage, setUsersPerPage] = useState(10);
 
     // Dialog Modal States
     const [modalType, setModalType] = useState(null); // 'add_vehicle' | 'edit_vehicle' | 'add_promo' | 'edit_promo' | 'reject_doc' | 'confirm_action'
@@ -734,11 +749,40 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
         return matchesStatus && matchesSearch;
     });
 
-    const totalBookingPages = Math.max(1, Math.ceil(filteredBookings.length / bookingsPerPage));
+    const totalBookingPages = Math.max(1, Math.ceil(filteredBookings.length / Math.max(1, bookingsPerPage)));
     const currentBookingPage = Math.min(bookingPage, totalBookingPages);
     const paginatedBookings = filteredBookings.slice((currentBookingPage - 1) * bookingsPerPage, currentBookingPage * bookingsPerPage);
 
+    // Booking Requests Pagination
+    const totalRequestPages = Math.max(1, Math.ceil(filteredRequests.length / Math.max(1, requestsPerPage)));
+    const currentRequestPage = Math.min(requestPage, totalRequestPages);
+    const paginatedRequests = filteredRequests.slice((currentRequestPage - 1) * requestsPerPage, currentRequestPage * requestsPerPage);
+
+    // Verifications Pagination
+    const totalVerificationPages = Math.max(1, Math.ceil(documents.length / Math.max(1, verificationsPerPage)));
+    const currentVerificationPage = Math.min(verificationPage, totalVerificationPages);
+    const paginatedDocuments = documents.slice((currentVerificationPage - 1) * verificationsPerPage, currentVerificationPage * verificationsPerPage);
+
+    // Fleet Vehicles Pagination
     const filteredVehicles = vehicles.filter(v => subFilter === 'all' || v.status === subFilter);
+    const totalVehiclePages = Math.max(1, Math.ceil(filteredVehicles.length / Math.max(1, vehiclesPerPage)));
+    const currentVehiclePage = Math.min(vehiclePage, totalVehiclePages);
+    const paginatedVehicles = filteredVehicles.slice((currentVehiclePage - 1) * vehiclesPerPage, currentVehiclePage * vehiclesPerPage);
+
+    // Promos Pagination
+    const totalPromoPages = Math.max(1, Math.ceil(promos.length / Math.max(1, promosPerPage)));
+    const currentPromoPage = Math.min(promoPage, totalPromoPages);
+    const paginatedPromos = promos.slice((currentPromoPage - 1) * promosPerPage, currentPromoPage * promosPerPage);
+
+    // Addons Pagination
+    const totalAddonPages = Math.max(1, Math.ceil(extraGoods.length / Math.max(1, addonsPerPage)));
+    const currentAddonPage = Math.min(addonPage, totalAddonPages);
+    const paginatedAddons = extraGoods.slice((currentAddonPage - 1) * addonsPerPage, currentAddonPage * addonsPerPage);
+
+    // Users Pagination
+    const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / Math.max(1, usersPerPage)));
+    const currentUsersPage = Math.min(userPage, totalUserPages);
+    const paginatedUsers = filteredUsers.slice((currentUsersPage - 1) * usersPerPage, currentUsersPage * usersPerPage);
 
     return (
         <PortalLayout role={auth.user.role} sidebarTabs={tabsConfig} activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t); setSubFilter('all'); }} header={`${auth.user.role === 'admin' ? 'Administrator' : 'Staff'} Workspace`}>
@@ -1682,7 +1726,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         { k: 'maintenance', l: 'Maintenance' },
                                         { k: 'unavailable', l: 'Unavailable' }
                                     ].map(filter => (
-                                        <button key={filter.k} onClick={() => setSubFilter(filter.k)} className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-850 text-zinc-900 dark:text-white' : 'text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}>
+                                        <button key={filter.k} onClick={() => { setSubFilter(filter.k); setVehiclePage(1); }} className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${subFilter === filter.k ? 'bg-zinc-200 dark:bg-zinc-850 text-zinc-900 dark:text-white' : 'text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}>
                                             {filter.l}
                                         </button>
                                     ))}
@@ -1693,14 +1737,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     <div className="flex bg-zinc-200/80 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-300 dark:border-zinc-800">
                                         <button
                                             type="button"
-                                            onClick={() => setUserStatusFilter('all')}
+                                            onClick={() => { setUserStatusFilter('all'); setUserPage(1); }}
                                             className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${userStatusFilter === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                         >
                                             All Users ({users.length})
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setUserStatusFilter('locked')}
+                                            onClick={() => { setUserStatusFilter('locked'); setUserPage(1); }}
                                             className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${userStatusFilter === 'locked' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                         >
                                             <Lock className="w-3 h-3" />
@@ -1713,7 +1757,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setUserStatusFilter('active')}
+                                            onClick={() => { setUserStatusFilter('active'); setUserPage(1); }}
                                             className={`px-3 py-1 rounded-lg text-[10px] uppercase font-black tracking-wider transition-colors cursor-pointer ${userStatusFilter === 'active' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                         >
                                             Active
@@ -1740,7 +1784,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         type="text"
                                         placeholder="Search pending requests..."
                                         value={requestSearch}
-                                        onChange={(e) => setRequestSearch(e.target.value)}
+                                        onChange={(e) => { setRequestSearch(e.target.value); setRequestPage(1); }}
                                         className="h-8 text-xs w-56 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
                                     />
                                 )}
@@ -1773,7 +1817,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                         type="text"
                                         placeholder="Search customer name, email..."
                                         value={userSearch}
-                                        onChange={(e) => setUserSearch(e.target.value)}
+                                        onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }}
                                         className="h-8 text-xs w-56 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
                                     />
                                 )}
@@ -1890,7 +1934,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                             </td>
                                         </tr>
                                     )}
-                                    {activeTab === 'booking_requests' && filteredRequests.map((booking) => (
+                                    {activeTab === 'booking_requests' && paginatedRequests.map((booking) => (
                                         <tr key={booking.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 select-none cursor-grab">
                                                 <GripVertical className="w-3.5 h-3.5" />
@@ -2161,7 +2205,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     })}
 
                                     {/* B. ID VERIFICATION DATA BODY */}
-                                    {activeTab === 'verifications' && documents.map((doc) => {
+                                    {activeTab === 'verifications' && documents.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-12 text-center text-zinc-400 font-bold text-xs">
+                                                No identity verification documents submitted yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {activeTab === 'verifications' && paginatedDocuments.map((doc) => {
                                         const ocrConf = doc.ocr_confidence ? parseFloat(doc.ocr_confidence) : null;
                                         const summary = doc.verification_summary || {};
                                         const issues = summary.issues || [];
@@ -2295,7 +2346,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     })}
 
                                     {/* C. FLEET INVENTORY DATA BODY */}
-                                    {activeTab === 'vehicles' && filteredVehicles.map((vehicle) => (
+                                    {activeTab === 'vehicles' && filteredVehicles.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-12 text-center text-zinc-400 font-bold text-xs">
+                                                No vehicles found matching the selected filter.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {activeTab === 'vehicles' && paginatedVehicles.map((vehicle) => (
                                         <tr key={vehicle.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-600 cursor-grab">
                                                 <GripVertical className="w-3.5 h-3.5" />
@@ -2339,7 +2397,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     ))}
 
                                     {/* D. PROMOS DATA BODY */}
-                                    {activeTab === 'promos' && promos.map((promo) => (
+                                    {activeTab === 'promos' && promos.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-12 text-center text-zinc-400 font-bold text-xs">
+                                                No promo campaigns found. Click &quot;+ Add Campaign&quot; to create one.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {activeTab === 'promos' && paginatedPromos.map((promo) => (
                                         <tr key={promo.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
                                             <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
@@ -2360,7 +2425,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     ))}
 
                                     {/* E. ADDONS DATA BODY */}
-                                    {activeTab === 'addons' && extraGoods.map((addon) => (
+                                    {activeTab === 'addons' && extraGoods.length === 0 && (
+                                        <tr>
+                                            <td colSpan="8" className="py-12 text-center text-zinc-400 font-bold text-xs">
+                                                No accessories or add-on items configured yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {activeTab === 'addons' && paginatedAddons.map((addon) => (
                                         <tr key={addon.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
                                             <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
@@ -2380,7 +2452,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                     ))}
 
                                     {/* F. USERS DATA BODY */}
-                                    {activeTab === 'users' && filteredUsers.map((u) => (
+                                    {activeTab === 'users' && paginatedUsers.map((u) => (
                                         <tr key={u.id} className="hover:bg-zinc-150/30 dark:hover:bg-zinc-850/30 transition-colors">
                                             <td className="py-3.5 px-4 text-zinc-400 dark:text-zinc-650">::</td>
                                             <td className="py-3.5 px-4"><input type="checkbox" className="rounded bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-red-650" /></td>
@@ -2521,29 +2593,69 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                             </table>
                         </div>
 
-                        {/* Pagination Footer for Bookings */}
-                        {activeTab === 'bookings' && totalBookingPages > 1 && (
-                            <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 transition-colors">
-                                <span className="text-xs text-zinc-500 font-medium">
-                                    Page {currentBookingPage} of {totalBookingPages} ({filteredBookings.length} total records)
-                                </span>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setBookingPage(prev => Math.max(1, prev - 1))}
-                                        disabled={currentBookingPage === 1}
-                                        className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                                    >
-                                        Previous
-                                    </button>
-                                    <button
-                                        onClick={() => setBookingPage(prev => Math.min(totalBookingPages, prev + 1))}
-                                        disabled={currentBookingPage === totalBookingPages}
-                                        className="px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            </div>
+                        {/* Standardized Table Pagination Footer */}
+                        {activeTab === 'bookings' && (
+                            <TablePagination
+                                currentPage={currentBookingPage}
+                                totalItems={filteredBookings.length}
+                                pageSize={bookingsPerPage}
+                                onPageChange={(p) => setBookingPage(p)}
+                                onPageSizeChange={(s) => { setBookingsPerPage(s); setBookingPage(1); }}
+                            />
+                        )}
+                        {activeTab === 'booking_requests' && (
+                            <TablePagination
+                                currentPage={currentRequestPage}
+                                totalItems={filteredRequests.length}
+                                pageSize={requestsPerPage}
+                                onPageChange={(p) => setRequestPage(p)}
+                                onPageSizeChange={(s) => { setRequestsPerPage(s); setRequestPage(1); }}
+                            />
+                        )}
+                        {activeTab === 'verifications' && (
+                            <TablePagination
+                                currentPage={currentVerificationPage}
+                                totalItems={documents.length}
+                                pageSize={verificationsPerPage}
+                                onPageChange={(p) => setVerificationPage(p)}
+                                onPageSizeChange={(s) => { setVerificationsPerPage(s); setVerificationPage(1); }}
+                            />
+                        )}
+                        {activeTab === 'vehicles' && (
+                            <TablePagination
+                                currentPage={currentVehiclePage}
+                                totalItems={filteredVehicles.length}
+                                pageSize={vehiclesPerPage}
+                                onPageChange={(p) => setVehiclePage(p)}
+                                onPageSizeChange={(s) => { setVehiclesPerPage(s); setVehiclePage(1); }}
+                            />
+                        )}
+                        {activeTab === 'promos' && (
+                            <TablePagination
+                                currentPage={currentPromoPage}
+                                totalItems={promos.length}
+                                pageSize={promosPerPage}
+                                onPageChange={(p) => setPromoPage(p)}
+                                onPageSizeChange={(s) => { setPromosPerPage(s); setPromoPage(1); }}
+                            />
+                        )}
+                        {activeTab === 'addons' && (
+                            <TablePagination
+                                currentPage={currentAddonPage}
+                                totalItems={extraGoods.length}
+                                pageSize={addonsPerPage}
+                                onPageChange={(p) => setAddonPage(p)}
+                                onPageSizeChange={(s) => { setAddonsPerPage(s); setAddonPage(1); }}
+                            />
+                        )}
+                        {activeTab === 'users' && (
+                            <TablePagination
+                                currentPage={currentUsersPage}
+                                totalItems={filteredUsers.length}
+                                pageSize={usersPerPage}
+                                onPageChange={(p) => setUserPage(p)}
+                                onPageSizeChange={(s) => { setUsersPerPage(s); setUserPage(1); }}
+                            />
                         )}
                     </div>
                 )}

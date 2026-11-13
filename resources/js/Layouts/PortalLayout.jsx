@@ -10,6 +10,7 @@ import {
     FileText, 
     ShieldCheck, 
     Receipt, 
+    CreditCard, 
     Car, 
     Tag, 
     Package, 
@@ -137,7 +138,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
 
     // Default icon helper for sidebar keys
     const getSidebarIcon = (tabId) => {
-        const svgClasses = "w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors mr-3 flex-shrink-0";
+        const svgClasses = "w-4 h-4 text-[#FF3B30] mr-3 flex-shrink-0 transition-all duration-150 group-hover:scale-110";
         switch (tabId) {
             case 'analytics':
                 return <LayoutDashboard className={svgClasses} />;
@@ -168,7 +169,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
             case 'users':
                 return <Users className={svgClasses} />;
             case 'payment_settings':
-                return <Receipt className={svgClasses} />;
+                return <CreditCard className={svgClasses} />;
             case 'settings':
                 return <Settings className={svgClasses} />;
             case 'profile':
@@ -393,7 +394,10 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                             : 'text-zinc-550 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-zinc-900 dark:hover:text-white'
                                     }`}
                                 >
-                                    <span>{tab.label}</span>
+                                    <div className="flex items-center min-w-0">
+                                        {getSidebarIcon(tab.id)}
+                                        <span className="truncate">{tab.label}</span>
+                                    </div>
                                     {tab.badge && (
                                         <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase ${tab.badgeColor || 'bg-red-500 text-white'}`}>
                                             {tab.badge}

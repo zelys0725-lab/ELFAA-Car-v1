@@ -10,6 +10,7 @@ import OnlinePaymentModal from '@/Components/OnlinePaymentModal';
 import PaymentHistoryModal from '@/Components/PaymentHistoryModal';
 import TermsAndConditionsModal from '@/Components/TermsAndConditionsModal';
 import MfaManagementCard from '@/Components/Mfa/MfaManagementCard';
+import TablePagination from '@/Components/TablePagination';
 import { 
     CheckCircle2, 
     AlertTriangle, 
@@ -42,6 +43,12 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     const [ratingStars, setRatingStars] = useState(5);
     const [ratingComment, setRatingComment] = useState('');
     const [alert, setAlert] = useState(null);
+
+    // Standardized pagination states
+    const [bookingLogPage, setBookingLogPage] = useState(1);
+    const [bookingLogPageSize, setBookingLogPageSize] = useState(10);
+    const [fleetPage, setFleetPage] = useState(1);
+    const [fleetPageSize, setFleetPageSize] = useState(10);
 
     // Online Payment Modals State
     const [onlinePaymentBooking, setOnlinePaymentBooking] = useState(null);
@@ -107,6 +114,15 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         const matchesSeats = selectedSeats === 'All' || v.seats.toString() === selectedSeats;
         return matchesType && matchesSeats;
     });
+
+    // Standardized Pagination Slicing
+    const totalBookingLogPages = Math.max(1, Math.ceil(bookings.length / Math.max(1, bookingLogPageSize)));
+    const currentBookingLogPage = Math.min(bookingLogPage, totalBookingLogPages);
+    const paginatedClientBookings = bookings.slice((currentBookingLogPage - 1) * bookingLogPageSize, currentBookingLogPage * bookingLogPageSize);
+
+    const totalFleetPages = Math.max(1, Math.ceil(filteredVehicles.length / Math.max(1, fleetPageSize)));
+    const currentFleetPage = Math.min(fleetPage, totalFleetPages);
+    const paginatedFleet = filteredVehicles.slice((currentFleetPage - 1) * fleetPageSize, currentFleetPage * fleetPageSize);
 
     useEffect(() => {
         if (data.vehicle_id) {
@@ -404,7 +420,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Filter Vehicle Type</label>
                         <select
                             value={selectedType}
-                            onChange={(e) => setSelectedType(e.target.value)}
+                            onChange={(e) => { setSelectedType(e.target.value); setFleetPage(1); }}
                             className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0 focus:outline-none cursor-pointer"
                         >
                             {vehicleTypes.map((t, idx) => (
@@ -416,7 +432,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Filter Seating Capacity</label>
                         <select
                             value={selectedSeats}
-                            onChange={(e) => setSelectedSeats(e.target.value)}
+                            onChange={(e) => { setSelectedSeats(e.target.value); setFleetPage(1); }}
                             className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0 focus:outline-none cursor-pointer"
                         >
                             <option value="All">All Seats</option>
@@ -1099,7 +1115,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
-                                                {bookings.map((booking) => {
+                                                {paginatedClientBookings.map((booking) => {
                                                     const startStr = booking.start_datetime ? new Date(booking.start_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                                                     const endStr = booking.end_datetime ? new Date(booking.end_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                                                     const currentStatus = getStatusBadge(booking.status);
@@ -1242,6 +1258,14 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                             </div>
                                         )}
                                     </CardContent>
+
+                                    <TablePagination
+                                        currentPage={currentBookingLogPage}
+                                        totalItems={bookings.length}
+                                        pageSize={bookingLogPageSize}
+                                        onPageChange={(p) => setBookingLogPage(p)}
+                                        onPageSizeChange={(s) => { setBookingLogPageSize(s); setBookingLogPage(1); }}
+                                    />
                                 </Card>
                             </div>
                         </div>
@@ -1306,7 +1330,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {filteredVehicles.map((car) => (
+                                {paginatedFleet.map((car) => (
                                     <div
                                         key={car.id}
                                         className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-[#FF3B30]/30 dark:hover:border-[#FF3B30]/30 transition-all duration-300 flex flex-col"
@@ -1411,6 +1435,16 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                 ))}
                             </div>
                         )}
+
+                        <div className="mt-6 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <TablePagination
+                                currentPage={currentFleetPage}
+                                totalItems={filteredVehicles.length}
+                                pageSize={fleetPageSize}
+                                onPageChange={(p) => setFleetPage(p)}
+                                onPageSizeChange={(s) => { setFleetPageSize(s); setFleetPage(1); }}
+                            />
+                        </div>
 
                         {/* Fleet Availability Modal */}
                         {availabilityFleetVehicle && (

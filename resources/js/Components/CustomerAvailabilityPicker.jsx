@@ -45,9 +45,6 @@ export default function CustomerAvailabilityPicker({ vehicle, startDate, endDate
             const evEndDay = new Date(evEnd.getFullYear(), evEnd.getMonth(), evEnd.getDate());
 
             if (target >= evStartDay && target <= evEndDay) {
-                if (ev.status === 'maintenance') return { status: 'maintenance', label: 'Maintenance' };
-                if (ev.status === 'rented') return { status: 'rented', label: 'Rented' };
-                if (ev.status === 'reserved' || ev.status === 'confirmed' || ev.status === 'pending') return { status: 'reserved', label: 'Reserved' };
                 return { status: 'unavailable', label: 'Unavailable' };
             }
         }

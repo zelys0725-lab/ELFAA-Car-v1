@@ -9,6 +9,7 @@ import ModernHero from '@/Components/ModernHero';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { showSwal } from '@/Components/AlertModal';
 import TermsAndConditionsModal from '@/Components/TermsAndConditionsModal';
+import TablePagination from '@/Components/TablePagination';
 
 export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] }) {
     const { settings } = usePage().props;
@@ -99,12 +100,19 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
         setTermsVehicle(null);
     };
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(9);
+
     const vehicleTypes = ['All', ...new Set(vehicles.map(v => v.type))];
     const filteredVehicles = vehicles.filter(v => {
         const matchesTransmission = transmissionFilter === 'All' || v.transmission === transmissionFilter;
         const matchesType = typeFilter === 'All' || v.type === typeFilter;
         return matchesTransmission && matchesType;
     });
+
+    const totalFleetPages = Math.max(1, Math.ceil(filteredVehicles.length / Math.max(1, pageSize)));
+    const currentFleetPage = Math.min(page, totalFleetPages);
+    const paginatedVehicles = filteredVehicles.slice((currentFleetPage - 1) * pageSize, currentFleetPage * pageSize);
 
     const currentYear = new Date().getFullYear();
 
@@ -270,7 +278,7 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                             {vehicleTypes.map(type => (
                                 <button
                                     key={type}
-                                    onClick={() => setTypeFilter(type)}
+                                    onClick={() => { setTypeFilter(type); setPage(1); }}
                                     className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                                         typeFilter === type 
                                             ? 'bg-[#FF3B30] text-white border-[#FF3B30]' 
@@ -284,7 +292,12 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {filteredVehicles.map((vehicle) => (
+                        {filteredVehicles.length === 0 ? (
+                            <div className="col-span-full py-16 text-center text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800">
+                                No vehicles found matching the selected filter.
+                            </div>
+                        ) : (
+                            paginatedVehicles.map((vehicle) => (
                             <Card key={vehicle.id} className="overflow-hidden hover:shadow-lg transition-transform duration-300 flex flex-col justify-between bg-white border border-gray-200 dark:border-gray-800 dark:bg-gray-950 text-gray-900 dark:text-white">
                                 <div>
                                     <div 
@@ -372,7 +385,18 @@ export default function Welcome({ auth, vehicles = [], promos = [], addOns = [] 
                                     </div>
                                 </CardFooter>
                             </Card>
-                        ))}
+                        )))}
+                    </div>
+
+                    <div className="mt-8 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <TablePagination
+                            currentPage={currentFleetPage}
+                            totalItems={filteredVehicles.length}
+                            pageSize={pageSize}
+                            pageSizeOptions={[6, 9, 12, 24]}
+                            onPageChange={(p) => setPage(p)}
+                            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+                        />
                     </div>
                 </div>
             </section>

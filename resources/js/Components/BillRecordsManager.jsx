@@ -3,11 +3,14 @@ import { useForm, router } from '@inertiajs/react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button, Input } from '@/Components/Shadcn';
 import { Receipt, Plus, Search, Filter, Trash2, Edit, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import AlertModal from '@/Components/AlertModal';
+import TablePagination from '@/Components/TablePagination';
 
 export default function BillRecordsManager({ billRecords = [], showConfirm }) {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingBill, setEditingBill] = useState(null);
     const [alert, setAlert] = useState(null);
@@ -118,6 +121,10 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
         return matchesCategory && matchesStatus && matchesSearch;
     });
 
+    const totalBillPages = Math.max(1, Math.ceil(filteredRecords.length / Math.max(1, pageSize)));
+    const safeBillPage = Math.min(currentPage, totalBillPages);
+    const paginatedBills = filteredRecords.slice((safeBillPage - 1) * pageSize, safeBillPage * pageSize);
+
     const getStatusBadge = (status) => {
         switch (status) {
             case 'paid':
@@ -188,12 +195,12 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
                             type="text"
                             placeholder="Search biller name or account number..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                             className="h-9 flex-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-[#FF3B30] focus:ring-0"
                         />
                         <select
                             value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
                             className="h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0"
                         >
                             {categories.map((c, i) => (
@@ -202,7 +209,7 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
                         </select>
                         <select
                             value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
                             className="h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-xs text-zinc-900 dark:text-white focus:border-[#FF3B30] focus:ring-0"
                         >
                             {statuses.map((s, i) => (
@@ -229,7 +236,7 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs">
-                                {filteredRecords.map((bill) => (
+                                {paginatedBills.map((bill) => (
                                     <tr key={bill.id} className="hover:bg-zinc-50/60 dark:hover:bg-zinc-950/40 transition-colors">
                                         <td className="p-3.5 pl-6">
                                             <div className="font-extrabold text-zinc-900 dark:text-white text-xs">{bill.biller_name}</div>
@@ -274,6 +281,14 @@ export default function BillRecordsManager({ billRecords = [], showConfirm }) {
                         </table>
                     )}
                 </CardContent>
+
+                <TablePagination
+                    currentPage={safeBillPage}
+                    totalItems={filteredRecords.length}
+                    pageSize={pageSize}
+                    onPageChange={(p) => setCurrentPage(p)}
+                    onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                />
             </Card>
 
             {/* Modal Form for Add/Edit Bill */}
