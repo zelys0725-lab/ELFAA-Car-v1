@@ -2390,7 +2390,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                         GPS Phone
                                                     </a>
                                                 ) : null}
-                                                <button onClick={() => openEditVehicle(vehicle)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
+                                                <button onClick={() => openEditVehicle(vehicle)} className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
                                                 <button onClick={() => deleteVehicle(vehicle.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors animate-pulse-once">Delete</button>
                                             </td>
                                         </tr>
@@ -2418,7 +2418,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 </span>
                                             </td>
                                             <td className="py-3.5 px-4 text-right space-x-1">
-                                                <button onClick={() => openEditPromo(promo)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
+                                                <button onClick={() => openEditPromo(promo)} className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
                                                 <button onClick={() => deletePromo(promo.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors">Delete</button>
                                             </td>
                                         </tr>
@@ -2445,7 +2445,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 </span>
                                             </td>
                                             <td className="py-3.5 px-4 text-right space-x-1">
-                                                <button onClick={() => openEditAddon(addon)} className="px-2.5 py-1 bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
+                                                <button onClick={() => openEditAddon(addon)} className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white text-[10px] font-black uppercase rounded cursor-pointer transition-colors">Edit</button>
                                                 <button onClick={() => deleteAddon(addon.id)} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 cursor-pointer transition-colors">Delete</button>
                                             </td>
                                         </tr>

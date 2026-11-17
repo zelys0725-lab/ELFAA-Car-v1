@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ELFAA - 100% Free Presentation Hosting Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --bg: #090d16;
+      --surface: #131c2e;
+      --surface-border: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #10b981;
+      --code-bg: #030712;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      padding: 2rem 1rem;
+      line-height: 1.6;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .card-header h2 { font-size: 1.35rem; }
+    .method-tag {
+      background: #0284c7;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+    }
+    .step {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid #1e293b;
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+    .step-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .step-num {
+      background: #3b82f6;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .tip-box {
+      background: rgba(16, 185, 129, 0.1);
+      border-left: 4px solid var(--accent);
+      padding: 0.85rem 1rem;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      color: #a7f3d0;
+      margin-top: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">100% Free & No Credit Card</div>
+      <h1>ELFAA Free Presentation Hosting Guide</h1>
+      <p class="subtitle">Present your website live on any phone, tablet, or laptop without paying a single dollar.</p>
+    </header>
+
+    <!-- METHOD 1: CLOUDFLARE TUNNEL / NGROK -->
+    <div class="card" style="border-color: #10b981;">
+      <div class="card-header">
+        <span class="method-tag" style="background: #10b981; color: #022c22;">RECOMMENDED FOR DEMOS</span>
+        <h2>Method 1: Instant Free Public Link (Cloudflare Tunnel)</h2>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        This shares the website directly from your computer to the internet with a <strong>free public HTTPS link</strong>. Anyone in the room (or worldwide) can open it on their phones or laptops to test and grade your project!
+      </p>
+
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span> Build your frontend assets</div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Open PowerShell in your ELFAA folder and build React:</p>
+        <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>npm run build</code></pre>
+      </div>
+
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span> Start your Laravel server</div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">In PowerShell, run:</p>
+        <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>php artisan serve --port=8000</code></pre>
+        <p style="font-size: 0.85rem; color: #94a3b8;">(Keep this terminal window OPEN during your presentation)</p>
+      </div>
+
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span> Create the Free Public Link</div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Open a <strong>SECOND PowerShell window</strong> and run:</p>
+        <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>npx cloudflared tunnel --url http://127.0.0.1:8000</code></pre>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">
+          Cloudflare will generate a public link like:
+        </p>
+        <pre><code>https://random-name-here.trycloudflare.com</code></pre>
+        <div class="tip-box">
+          ✨ <strong>You're Live!</strong> Copy that URL and open it on your phone or send it to your evaluators/teachers. It has full HTTPS, working login, database, and React styling!
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 2: FREE CLOUD HOSTING (RENDER.COM) -->
+    <div class="card">
+      <div class="card-header">
+        <span class="method-tag">ALWAYS-ONLINE OPTION</span>
+        <h2>Method 2: Free Cloud Hosting on Render.com</h2>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        If you need the website to stay online 24/7 even when your laptop is turned off:
+      </p>
+
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span> Push ELFAA to GitHub</div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Make sure your project is pushed to a private or public GitHub repository.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span> Create a Free Account on Render</div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Go to <a href="https://render.com" target="_blank" style="color: #38bdf8;">render.com</a> and sign up using your GitHub account.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span> Deploy as Web Service</div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Click <strong>New +</strong> &rarr; <strong>Web Service</strong> &rarr; Connect your ELFAA GitHub repo.</p>
+        <ul style="margin-left: 1.25rem; margin-top: 0.5rem; font-size: 0.88rem; color: var(--text-muted);">
+          <li><strong>Environment:</strong> PHP</li>
+          <li><strong>Plan:</strong> Free ($0/mo)</li>
+          <li><strong>Build Command:</strong> <code>composer install --no-dev && npm install && npm run build</code></li>
+          <li><strong>Start Command:</strong> <code>php artisan serve --host 0.0.0.0 --port 10000</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SUMMARY COMPARISON -->
+    <div class="card">
+      <h3 style="margin-bottom: 1rem;">Which Free Method Should You Choose?</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--surface-border); text-align: left;">
+            <th style="padding: 0.5rem;">Feature</th>
+            <th style="padding: 0.5rem; color: #34d399;">Method 1: Cloudflare Tunnel</th>
+            <th style="padding: 0.5rem; color: #38bdf8;">Method 2: Render.com</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--surface-border);">
+            <td style="padding: 0.5rem;">Cost</td>
+            <td style="padding: 0.5rem;"><strong>100% Free</strong></td>
+            <td style="padding: 0.5rem;"><strong>100% Free</strong></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-border);">
+            <td style="padding: 0.5rem;">Setup Time</td>
+            <td style="padding: 0.5rem;"><strong>2 Minutes</strong></td>
+            <td style="padding: 0.5rem;">20-30 Minutes</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-border);">
+            <td style="padding: 0.5rem;">Laptop Required?</td>
+            <td style="padding: 0.5rem;">Yes (must stay open during demo)</td>
+            <td style="padding: 0.5rem;">No (runs in cloud)</td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem;">Best For</td>
+            <td style="padding: 0.5rem;"><strong>Thesis / School / Client Demo</strong></td>
+            <td style="padding: 0.5rem;">Leaving online for weeks</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    function copySnippet(button) {
+      const code = button.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copied!';
+        button.style.background = '#10b981';
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.style.background = '#334155';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

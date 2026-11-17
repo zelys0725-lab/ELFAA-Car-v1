@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostinger VPS Setup Guide - elfaacarrental.online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #6366f1;
+      --bg: #0b0f19;
+      --surface: #131b2e;
+      --surface-border: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #10b981;
+      --warning: #f59e0b;
+      --code-bg: #030712;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .pill {
+      display: inline-block;
+      background: rgba(79, 70, 229, 0.2);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 0.3rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; }
+    .info-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .info-item span { display: block; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
+    .info-item strong { font-size: 1rem; color: #38bdf8; font-family: 'JetBrains Mono', monospace; }
+    .step-box {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .step-badge {
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .step-header h2 { font-size: 1.25rem; }
+    p { color: var(--muted); margin-bottom: 0.6rem; font-size: 0.95rem; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 0.5rem 0 1rem 0;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      font-family: sans-serif;
+    }
+    .copy-btn:hover { background: #475569; color: white; }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: rgba(16, 185, 129, 0.08);
+      padding: 0.75rem 1rem;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.88rem;
+      color: #6ee7b7;
+      margin: 0.75rem 0;
+    }
+    .note.warn {
+      border-left-color: var(--warning);
+      background: rgba(245, 158, 11, 0.08);
+      color: #fde68a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="pill">Hostinger VPS Setup</div>
+      <h1>ELFAA Car Rental Deployment Guide</h1>
+      <p class="subtitle">Complete step-by-step instructions with phpMyAdmin, GitHub SSH, and SSL.</p>
+    </header>
+
+    <div class="info-card">
+      <div class="info-item">
+        <span>Domain Name</span>
+        <strong>elfaacarrental.online</strong>
+      </div>
+      <div class="info-item">
+        <span>Database Name</span>
+        <strong>carkono</strong>
+      </div>
+      <div class="info-item">
+        <span>Git Repository</span>
+        <strong style="font-size: 0.85rem;">ELFAA-Car-v1</strong>
+      </div>
+    </div>
+
+    <!-- STEP 1: DNS -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <h2>Point Domain DNS to Hostinger VPS</h2>
+      </div>
+      <p>Go to your Domain Registrar (where you bought <code>elfaacarrental.online</code>) &rarr; <strong>DNS Management</strong> &rarr; Add these 2 records:</p>
+      <pre><code>Type: A   | Name: @   | Value: [YOUR_HOSTINGER_VPS_IP]
+Type: A   | Name: www | Value: [YOUR_HOSTINGER_VPS_IP]</code></pre>
+      <div class="note">DNS usually takes 5 to 15 minutes to propagate worldwide.</div>
+    </div>
+
+    <!-- STEP 2: SSH LOGIN -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">2</div>
+        <h2>Connect to Your VPS via PowerShell</h2>
+      </div>
+      <p>Open Windows PowerShell on your computer and connect as root:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>ssh root@YOUR_HOSTINGER_VPS_IP</code></pre>
+      <p>Type your root password when prompted (characters won't show on screen, just type and press Enter).</p>
+    </div>
+
+    <!-- STEP 3: INSTALL STACK & PHPMYADMIN -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">3</div>
+        <h2>Install PHP 8.3, Nginx, MySQL & phpMyAdmin</h2>
+      </div>
+      <p>Run this complete command on the server to install all packages:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code># 1. Update server
+sudo apt update && sudo apt upgrade -y
+
+# 2. Add PHP repository & install PHP 8.3 with extensions
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt update
+sudo apt install -y nginx mysql-server git curl unzip zip \
+php8.3 php8.3-fpm php8.3-cli php8.3-mysql php8.3-curl php8.3-mbstring \
+php8.3-xml php8.3-zip php8.3-bcmath php8.3-intl php8.3-gd
+
+# 3. Install Composer
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+
+# 4. Install Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# 5. Install phpMyAdmin
+sudo apt install -y phpmyadmin</code></pre>
+      <div class="note warn">
+        <strong>During phpMyAdmin installation:</strong><br>
+        1. When it asks for web server (apache2 or lighttpd), <strong>press TAB to select OK</strong> and press Enter (we will connect it to Nginx manually).<br>
+        2. When asked "Configure database with dbconfig-common?", choose <strong>Yes</strong> and set a password.
+      </div>
+    </div>
+
+    <!-- STEP 4: CONFIGURE MYSQL & ACCESS PHPMYADMIN -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">4</div>
+        <h2>Create 'carkono' Database & Access phpMyAdmin</h2>
+      </div>
+      <p>Log in to MySQL terminal on the server:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>sudo mysql</code></pre>
+      <p>Run these SQL commands (replace <code>StrongPassword123!</code> with your own secure password):</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>CREATE DATABASE carkono CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'carkono_user'@'localhost' IDENTIFIED BY 'StrongPassword123!';
+GRANT ALL PRIVILEGES ON *.* TO 'carkono_user'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EXIT;</code></pre>
+
+      <p style="margin-top: 1rem;">Now link phpMyAdmin so you can access it visually in your browser:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin</code></pre>
+      <div class="note">
+        🎉 <strong>You can now open phpMyAdmin in your browser!</strong><br>
+        Go to: <code>http://YOUR_HOSTINGER_VPS_IP/phpmyadmin</code><br>
+        Log in with: Username: <code>carkono_user</code> | Password: <code>StrongPassword123!</code><br>
+        Click on <strong>carkono</strong> on the left side, then click <strong>Import</strong> tab at the top to upload your existing <code>.sql</code> database file!
+      </div>
+    </div>
+
+    <!-- STEP 5: GITHUB SSH KEY -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">5</div>
+        <h2>Connect GitHub via SSH</h2>
+      </div>
+      <p>Generate a new SSH key on your VPS for GitHub:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>ssh-keygen -t ed25519 -C "elfaa-vps"</code></pre>
+      <p>Press Enter 3 times (default location, no passphrase). Then display the public key:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>cat ~/.ssh/id_ed25519.pub</code></pre>
+      <p>Copy the output, then:</p>
+      <ul style="margin-left: 1.5rem; color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+        <li>Go to GitHub: <code>https://github.com/zelys0725-lab/ELFAA-Car-v1/settings/keys</code></li>
+        <li>Click <strong>Add deploy key</strong></li>
+        <li>Title: <code>Hostinger VPS</code></li>
+        <li>Paste the key and click <strong>Add key</strong>.</li>
+      </ul>
+      <p>Now clone the repository to <code>/var/www/elfaa</code>:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>cd /var/www
+git clone git@github.com:zelys0725-lab/ELFAA-Car-v1.git elfaa
+cd /var/www/elfaa</code></pre>
+    </div>
+
+    <!-- STEP 6: INSTALL ELFAA DEPENDENCIES & CONFIGURE .ENV -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">6</div>
+        <h2>Configure ELFAA .env & Build Assets</h2>
+      </div>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>cd /var/www/elfaa
+
+# Install composer and node packages
+composer install --no-dev --optimize-autoloader
+npm install
+npm run build
+
+# Create production .env
+cp .env.example .env
+nano .env</code></pre>
+      <p>Inside <code>.env</code>, update these database & URL lines:</p>
+      <pre><code>APP_NAME=ELFAA
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://elfaacarrental.online
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=carkono
+DB_USERNAME=carkono_user
+DB_PASSWORD=StrongPassword123!</code></pre>
+      <p>Press <code>CTRL+O</code> then <code>Enter</code> to save, then <code>CTRL+X</code> to exit.</p>
+      <p>Now generate the key and set file permissions:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>php artisan key:generate
+php artisan storage:link
+
+# Give Nginx permission to read & write storage/cache
+sudo chown -R www-data:www-data /var/www/elfaa/storage /var/www/elfaa/bootstrap/cache
+sudo chmod -R 775 /var/www/elfaa/storage /var/www/elfaa/bootstrap/cache</code></pre>
+    </div>
+
+    <!-- STEP 7: NGINX CONFIGURATION -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">7</div>
+        <h2>Configure Nginx for elfaacarrental.online</h2>
+      </div>
+      <p>Create the website configuration:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>sudo nano /etc/nginx/sites-available/elfaa</code></pre>
+      <p>Paste the following configuration:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>server {
+    listen 80;
+    server_name elfaacarrental.online www.elfaacarrental.online;
+    root /var/www/elfaa/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php index.html;
+    charset utf-8;
+
+    # phpMyAdmin support
+    location /phpmyadmin {
+        root /usr/share/;
+        index index.php index.html;
+        location ~ ^/phpmyadmin/(.+\.php)$ {
+            try_files $uri =404;
+            root /usr/share/;
+            fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+            fastcgi_index index.php;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}</code></pre>
+      <p>Enable the site and reload Nginx:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>sudo ln -s /etc/nginx/sites-available/elfaa /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx</code></pre>
+    </div>
+
+    <!-- STEP 8: FREE SSL -->
+    <div class="step-box">
+      <div class="step-header">
+        <div class="step-badge">8</div>
+        <h2>Activate Free SSL (HTTPS Green Lock)</h2>
+      </div>
+      <p>Run Certbot to secure your domain with free HTTPS:</p>
+      <pre><button class="copy-btn" onclick="copySnippet(this)">Copy</button><code>sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d elfaacarrental.online -d www.elfaacarrental.online</code></pre>
+      <p>Type your email and agree to terms. Certbot will automatically install SSL!</p>
+      <div class="note">
+        🚀 <strong>Congratulations!</strong> Your website is now live at <a href="https://elfaacarrental.online" target="_blank" style="color: #38bdf8;">https://elfaacarrental.online</a>!
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function copySnippet(button) {
+      const code = button.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copied!';
+        button.style.background = '#10b981';
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.style.background = '#334155';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

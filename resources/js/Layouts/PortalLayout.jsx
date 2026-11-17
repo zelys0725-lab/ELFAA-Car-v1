@@ -41,6 +41,7 @@ import {
 export default function PortalLayout({ role, header, children, sidebarTabs = [], activeTab = '', setActiveTab = null }) {
     const user = usePage().props.auth.user;
     const [showingMobileMenu, setShowingMobileMenu] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     // Track Inertia router page transitions
@@ -184,9 +185,9 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
             <CarLoader isVisible={isLoading} />
             {/* 1. LEFT SIDEBAR (Desktop/Tablet) */}
             {isAdminOrStaff && (
-                <aside className="hidden md:flex flex-col w-64 bg-zinc-100 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 flex-shrink-0 h-screen sticky top-0 transition-colors">
+                <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-zinc-100 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 flex-shrink-0 h-screen sticky top-0 transition-all duration-200`}>
                     {/* Header Brand */}
-                    <div className="h-16 px-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                    <div className="h-16 px-4 sm:px-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                         <div className="flex items-center space-x-2.5 overflow-hidden">
                             {settings?.site_logo_image ? (
                                 <img 
@@ -197,15 +198,24 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                             ) : (
                                 <ApplicationLogo className="w-7 h-7 fill-[#FF3B30] text-[#FF3B30] shrink-0" />
                             )}
-                            <span className="text-sm font-black tracking-widest text-zinc-900 dark:text-white uppercase truncate">
-                                {settings?.site_logo || 'ELFAA CARS'}
-                            </span>
+                            {!isSidebarCollapsed && (
+                                <span className="text-sm font-black tracking-widest text-zinc-900 dark:text-white uppercase truncate">
+                                    {settings?.site_logo || 'ELFAA CARS'}
+                                </span>
+                            )}
                         </div>
-                        <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer" />
+                        <button
+                            type="button"
+                            onClick={() => setIsSidebarCollapsed(prev => !prev)}
+                            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                            className="p-1 rounded text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                        >
+                            <ChevronsUpDown className="w-3.5 h-3.5" />
+                        </button>
                     </div>
 
                     {/* Navigation Body */}
-                    <div className="flex-1 overflow-y-auto px-4 py-6 space-y-7 scrollbar-thin">
+                    <div className="flex-1 overflow-y-auto px-3 py-6 space-y-7 scrollbar-thin">
                         <div className="space-y-4">
                             {/* Section tabs mapping */}
                             <div className="space-y-1">
@@ -215,7 +225,8 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab?.(tab.id)}
-                                            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                                            title={isSidebarCollapsed ? tab.label : undefined}
+                                            className={`w-full group flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'} py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
                                                 isActive
                                                     ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-extrabold focus:outline-none'
                                                     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-zinc-850/50'
@@ -223,9 +234,9 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                                         >
                                             <div className="flex items-center min-w-0">
                                                 {getSidebarIcon(tab.id)}
-                                                <span className="truncate">{tab.label}</span>
+                                                {!isSidebarCollapsed && <span className="truncate">{tab.label}</span>}
                                             </div>
-                                            {tab.badge && (
+                                            {!isSidebarCollapsed && tab.badge && (
                                                 <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase shrink-0 shadow-sm ${tab.badgeColor || 'bg-red-500 text-white'}`}>
                                                     {tab.badge}
                                                 </span>
@@ -236,21 +247,42 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                             </div>
                         </div>
                     </div>
-
-
                 </aside>
             )}
 
             {/* 2. BODY CONTENT PANEL */}
             <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
                 {/* Header Navbar */}
-                <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-6 transition-colors">
-                    <div className="flex items-center space-x-3">
-                        {/* Sidebar toggle graphic placeholder / columns icon */}
+                <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                        {/* Mobile hamburger menu toggle for App Drawer */}
                         {isAdminOrStaff && (
-                            <div className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer select-none">
+                            <button
+                                type="button"
+                                onClick={() => setShowingMobileMenu(true)}
+                                className="md:hidden p-1.5 -ml-1.5 rounded-lg text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                title="Open App Drawer"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+                        )}
+
+                        {/* Sidebar toggle graphic / icon for desktop */}
+                        {isAdminOrStaff && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                        setShowingMobileMenu(true);
+                                    } else {
+                                        setIsSidebarCollapsed(prev => !prev);
+                                    }
+                                }}
+                                title="Toggle Navigation Drawer"
+                                className="hidden md:flex p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer select-none"
+                            >
                                 <SlidersHorizontal className="w-4 h-4" />
-                            </div>
+                            </button>
                         )}
                         {!isAdminOrStaff && (
                             <Link href="/" className="flex items-center gap-2 mr-1 group">
@@ -359,17 +391,18 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                             </Dropdown>
                         </div>
 
-                        {/* Mobile sidebar toggle */}
+                        {/* Mobile sidebar toggle button on right */}
                         {isAdminOrStaff && (
                             <div className="flex md:hidden items-center">
                                 <button
                                     onClick={() => setShowingMobileMenu(!showingMobileMenu)}
-                                    className="p-1 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white focus:outline-none"
+                                    className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors focus:outline-none"
+                                    title="Navigation Menu"
                                 >
                                     {showingMobileMenu ? (
-                                        <X className="h-6 w-6" />
+                                        <X className="h-5 w-5" />
                                     ) : (
-                                        <Menu className="h-6 w-6" />
+                                        <Menu className="h-5 w-5" />
                                     )}
                                 </button>
                             </div>
@@ -377,45 +410,93 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                     </div>
                 </nav>
 
-                {/* Mobile Dropdown Menu */}
+                {/* Modern Slide-over App Drawer for Mobile & Tablet */}
                 {isAdminOrStaff && showingMobileMenu && (
-                    <div className="md:hidden bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 py-4 space-y-3 transition-colors">
-                        <div className="space-y-1">
-                            {sidebarTabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        setActiveTab?.(tab.id);
-                                        setShowingMobileMenu(false);
-                                    }}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
-                                        activeTab === tab.id
-                                            ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-extrabold'
-                                            : 'text-zinc-550 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-zinc-900 dark:hover:text-white'
-                                    }`}
-                                >
-                                    <div className="flex items-center min-w-0">
-                                        {getSidebarIcon(tab.id)}
-                                        <span className="truncate">{tab.label}</span>
-                                    </div>
-                                    {tab.badge && (
-                                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase ${tab.badgeColor || 'bg-red-500 text-white'}`}>
-                                            {tab.badge}
-                                        </span>
+                    <div className="fixed inset-0 z-50 md:hidden flex">
+                        {/* Drawer Backdrop */}
+                        <div 
+                            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity" 
+                            onClick={() => setShowingMobileMenu(false)} 
+                        />
+
+                        {/* Drawer Slide-In Panel */}
+                        <div className="relative z-10 w-72 max-w-[85vw] h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-left duration-200">
+                            {/* Drawer Header */}
+                            <div className="h-16 px-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-zinc-50/90 dark:bg-zinc-950/90">
+                                <div className="flex items-center space-x-2.5 overflow-hidden">
+                                    {settings?.site_logo_image ? (
+                                        <img 
+                                            src={settings.site_logo_image} 
+                                            className="h-7 w-auto max-w-[80px] object-contain rounded shrink-0" 
+                                            alt={settings?.site_logo || 'Logo'} 
+                                        />
+                                    ) : (
+                                        <ApplicationLogo className="w-6 h-6 fill-[#FF3B30] text-[#FF3B30] shrink-0" />
                                     )}
+                                    <span className="text-xs font-black tracking-widest text-zinc-900 dark:text-white uppercase truncate">
+                                        {settings?.site_logo || 'ELFAA CARS'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setShowingMobileMenu(false)}
+                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    title="Close Menu"
+                                >
+                                    <X className="w-5 h-5" />
                                 </button>
-                            ))}
-                        </div>
-                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3 flex items-center justify-between">
-                            <div className="text-xs text-zinc-500 dark:text-zinc-400">Theme Mode:</div>
-                            <button onClick={() => { toggleTheme(); setShowingMobileMenu(false); }} className="text-xs text-red-600 hover:text-red-500 font-bold uppercase transition-colors">
-                                Toggle light/dark
-                            </button>
-                        </div>
-                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
-                            <Link href={logoutRoute} method="post" as="button" className="text-xs font-bold text-red-650 hover:text-red-500 uppercase text-left w-full transition-colors">
-                                Sign Out
-                            </Link>
+                            </div>
+
+                            {/* Drawer Navigation Body */}
+                            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                                {sidebarTabs.map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            setActiveTab?.(tab.id);
+                                            setShowingMobileMenu(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                            activeTab === tab.id
+                                                ? 'bg-[#FF3B30] text-white font-black shadow-sm'
+                                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        <div className="flex items-center min-w-0">
+                                            {getSidebarIcon(tab.id)}
+                                            <span className="truncate ml-1">{tab.label}</span>
+                                        </div>
+                                        {tab.badge && (
+                                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                                activeTab === tab.id ? 'bg-white text-red-600' : (tab.badgeColor || 'bg-red-500 text-white')
+                                            }`}>
+                                                {tab.badge}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Drawer Footer Actions */}
+                            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/60 space-y-3 shrink-0">
+                                <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 font-bold">
+                                    <span>Theme Mode</span>
+                                    <button 
+                                        onClick={toggleTheme} 
+                                        className="px-2.5 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer flex items-center gap-1.5"
+                                    >
+                                        {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
+                                        <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+                                    </button>
+                                </div>
+                                <Link 
+                                    href={logoutRoute} 
+                                    method="post" 
+                                    as="button" 
+                                    className="w-full py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-black uppercase tracking-wider text-center transition-colors cursor-pointer block"
+                                >
+                                    Sign Out
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 )}
