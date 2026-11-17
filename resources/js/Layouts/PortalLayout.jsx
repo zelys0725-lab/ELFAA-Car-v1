@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
+import { usePreventHorizontalSwipe } from '@/hooks/usePreventHorizontalSwipe';
 import Dropdown from '@/Components/Dropdown';
 import CarLoader from '@/Components/CarLoader';
 import ApplicationLogo from '@/Components/ApplicationLogo';
@@ -43,6 +44,9 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
     const [showingMobileMenu, setShowingMobileMenu] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Prevent horizontal touchpad swipe from triggering browser Back/Forward navigation
+    usePreventHorizontalSwipe();
 
     // Track Inertia router page transitions
     useEffect(() => {

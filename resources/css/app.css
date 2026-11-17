@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Global Swipe-Gesture Navigation Guard ─────────────────────────────────
+ * Prevents horizontal touchpad/trackpad swipes from triggering the browser's
+ * back/forward navigation gesture. The JS hook in hooks/usePreventHorizontalSwipe.js
+ * provides a secondary layer for browsers that ignore this CSS property.
+ * This does NOT affect vertical scrolling, carousels, or overflow-x containers.
+ * ─────────────────────────────────────────────────────────────────────────── */
+html,
+body {
+    overscroll-behavior-x: none;
+}
+
 @media print {
     /* Hide non-printable navigation chrome & controls */
     aside, 
