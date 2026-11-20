@@ -255,9 +255,9 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
             )}
 
             {/* 2. BODY CONTENT PANEL */}
-            <div className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden bg-zinc-50 dark:bg-zinc-950 min-w-0">
+            <div className="flex-1 flex flex-col min-h-screen bg-zinc-50 dark:bg-zinc-950 min-w-0">
                 {/* Header Navbar */}
-                <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors overflow-x-hidden min-w-0">
+                <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors min-w-0">
                     <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1 overflow-hidden">
                         {/* Mobile hamburger menu toggle for App Drawer */}
                         {isAdminOrStaff && (
@@ -362,7 +362,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                         <div className="relative">
                             <Dropdown>
                                 <Dropdown.Trigger>
-                                    <button className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold rounded-xl text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-sm">
+                                    <button type="button" className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold rounded-xl text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-850 cursor-pointer transition-colors shadow-sm">
                                         <div className="h-6 w-6 rounded-full bg-red-500/10 dark:bg-red-500/20 text-[#FF3B30] flex items-center justify-center flex-shrink-0">
                                             <User className="w-3.5 h-3.5" />
                                         </div>
@@ -510,7 +510,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
 
                 {/* 3. Customer UI Footer */}
                 {!isAdminOrStaff && (
-                    <footer className="mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 py-8 px-6 transition-colors">
+                    <footer className="mt-auto w-full shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 py-8 px-6 transition-colors">
                         <div className="max-w-7xl mx-auto space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
                                 {/* Col 1: Brand & Identity */}
