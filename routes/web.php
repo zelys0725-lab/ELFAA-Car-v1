@@ -51,6 +51,22 @@ Route::get('/', function () {
     ]);
 });
 
+// ================= BOOKING REDIRECT SHORTCUT (EMAIL LINKS) =================
+Route::get('/my-bookings', function (\Illuminate\Http\Request $request) {
+    if (!Auth::check()) {
+        return redirect()->guest(route('login'));
+    }
+
+    $user = Auth::user();
+    $params = $request->query();
+
+    if ($user->isAdmin() || $user->isStaff()) {
+        return redirect()->route('admin.dashboard', array_merge(['tab' => 'bookings'], $params));
+    }
+
+    return redirect()->route('client.dashboard', array_merge(['tab' => 'dashboard'], $params));
+})->name('my-bookings');
+
 // ================= RENTER PORTAL (CLIENTS) =================
 Route::middleware(['auth', 'nocache', 'role:client'])->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\ClientPortalController::class, 'dashboard'])->name('dashboard');

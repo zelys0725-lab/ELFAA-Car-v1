@@ -3185,7 +3185,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                         SMS Notification Gateway
                                                     </CardTitle>
                                                     <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                                                        Integrate Semaphore, Twilio, or custom SMS API HTTP endpoints for instant customer SMS updates.
+                                                        Integrate UniSMS, Semaphore, Twilio, or custom SMS API HTTP endpoints for instant customer SMS updates.
                                                     </CardDescription>
                                                 </div>
                                                 <Button
@@ -3221,6 +3221,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                             onChange={e => settingsForm.setData('sms_provider', e.target.value)}
                                                             className="w-full text-xs font-bold h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
                                                         >
+                                                            <option value="unisms">UniSMS (unismsapi.com)</option>
                                                             <option value="semaphore">Semaphore Philippines (Recommended)</option>
                                                             <option value="twilio">Twilio SMS</option>
                                                             <option value="generic_http">Custom HTTP Gateway / REST API</option>
@@ -3230,7 +3231,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     <div>
                                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender ID / Header Name</label>
                                                         <Input
-                                                            placeholder="e.g. ELFAACAR"
+                                                            placeholder={settingsForm.data.sms_provider === 'unisms' ? 'e.g. UniSMS or your approved Sender ID' : 'e.g. ELFAACAR'}
                                                             value={settingsForm.data.sms_sender_id}
                                                             onChange={e => settingsForm.setData('sms_sender_id', e.target.value)}
                                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs uppercase"
@@ -3241,12 +3242,12 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
-                                                            {settingsForm.data.sms_provider === 'twilio' ? 'Twilio Auth Token / API Key' : 'API Key / Secret Token'}
+                                                            {settingsForm.data.sms_provider === 'twilio' ? 'Twilio Auth Token / API Key' : (settingsForm.data.sms_provider === 'unisms' ? 'UniSMS API Secret Key' : 'API Key / Secret Token')}
                                                         </label>
                                                         <div className="relative">
                                                             <Input
                                                                 type={showSmsApiKey ? 'text' : 'password'}
-                                                                placeholder="Paste your API key here..."
+                                                                placeholder={settingsForm.data.sms_provider === 'unisms' ? 'Paste your UniSMS API Secret Key here...' : 'Paste your API key here...'}
                                                                 value={settingsForm.data.sms_api_key}
                                                                 onChange={e => settingsForm.setData('sms_api_key', e.target.value)}
                                                                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs pr-10"
@@ -3277,9 +3278,11 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">API Endpoint URL (Optional / Custom)</label>
                                                         <Input
                                                             placeholder={
-                                                                settingsForm.data.sms_provider === 'semaphore'
-                                                                    ? 'Default: https://api.semaphore.co/api/v4/messages'
-                                                                    : 'https://your-custom-gateway.com/api/send-sms'
+                                                                settingsForm.data.sms_provider === 'unisms'
+                                                                    ? 'Default: https://unismsapi.com/api/sms'
+                                                                    : settingsForm.data.sms_provider === 'semaphore'
+                                                                        ? 'Default: https://api.semaphore.co/api/v4/messages'
+                                                                        : 'https://your-custom-gateway.com/api/send-sms'
                                                             }
                                                             value={settingsForm.data.sms_api_url}
                                                             onChange={e => settingsForm.setData('sms_api_url', e.target.value)}

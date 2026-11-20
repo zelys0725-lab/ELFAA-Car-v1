@@ -164,8 +164,8 @@
                 <p class="footer-text">Need assistance? Contact our 24/7 Support Team.</p>
                 <p class="footer-text">&copy; {{ date('Y') }} ELFAA Car Rental Services. All rights reserved.</p>
                 <div class="footer-links" style="margin-top: 10px;">
-                    <a href="{{ config('app.url') }}">Visit Website</a> &bull;
-                    <a href="{{ config('app.url') }}/my-bookings">My Bookings</a>
+                    <a href="{{ url('/') }}">Visit Website</a> &bull;
+                    <a href="{{ url('/my-bookings') }}">My Bookings</a>
                 </div>
             </div>
         </div>

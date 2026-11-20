@@ -94,7 +94,7 @@ class AuthenticatedSessionController extends Controller
 
         // Redirect based on role
         if ($user->isAdmin() || $user->isStaff()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->intended(route('admin.dashboard'));
         }
 
         if ($request->filled('redirect')) {
@@ -109,7 +109,7 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        return redirect()->route('client.dashboard', ['tab' => 'fleet']);
+        return redirect()->intended(route('client.dashboard', ['tab' => 'fleet']));
     }
 
     /**

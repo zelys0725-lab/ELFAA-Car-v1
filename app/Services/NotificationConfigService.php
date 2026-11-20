@@ -136,6 +136,57 @@ class NotificationConfigService
                 ];
             }
 
+            // UniSMS Gateway (unismsapi.com)
+            if ($provider === 'unisms') {
+                if (empty($apiKey)) {
+                    return ['success' => false, 'message' => 'UniSMS API Secret Key is missing.'];
+                }
+
+                // Format phone number to international E.164 standard (+63...)
+                $phone = trim($recipientPhone);
+                $cleanPhone = preg_replace('/[^0-9+]/', '', $phone);
+                if (str_starts_with($cleanPhone, '09')) {
+                    $cleanPhone = '+63' . substr($cleanPhone, 1);
+                } elseif (str_starts_with($cleanPhone, '9') && strlen($cleanPhone) === 10) {
+                    $cleanPhone = '+63' . $cleanPhone;
+                } elseif (str_starts_with($cleanPhone, '639')) {
+                    $cleanPhone = '+' . $cleanPhone;
+                }
+
+                $url = $apiUrl ?: 'https://unismsapi.com/api/sms';
+                $payload = [
+                    'recipient' => $cleanPhone,
+                    'content'   => $messageText,
+                ];
+
+                if (!empty($senderId)) {
+                    $payload['sender_id'] = $senderId;
+                }
+
+                $response = Http::withBasicAuth($apiKey, '')
+                    ->asJson()
+                    ->acceptJson()
+                    ->post($url, $payload);
+
+                if ($response->successful()) {
+                    return [
+                        'success'  => true,
+                        'message'  => 'SMS sent successfully via UniSMS!',
+                        'response' => $response->json() ?? $response->body(),
+                    ];
+                }
+
+                $errorDetail = $response->json('message') 
+                    ?? $response->json('error') 
+                    ?? $response->json('description') 
+                    ?? $response->body();
+
+                return [
+                    'success' => false,
+                    'message' => 'UniSMS Error (' . $response->status() . '): ' . $errorDetail,
+                ];
+            }
+
             if ($provider === 'twilio') {
                 if (empty($accountSid) || empty($apiKey)) {
                     return ['success' => false, 'message' => 'Twilio Account SID or Auth Token/API Key is missing.'];

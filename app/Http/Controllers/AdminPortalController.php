@@ -671,7 +671,7 @@ class AdminPortalController extends Controller
             'email_notifications_enabled' => 'nullable|in:0,1',
 
             // SMS Settings
-            'sms_provider' => 'nullable|string|in:semaphore,twilio,generic_http',
+            'sms_provider' => 'nullable|string|in:semaphore,unisms,twilio,generic_http',
             'sms_api_key' => 'nullable|string|max:500',
             'sms_account_sid' => 'nullable|string|max:255',
             'sms_sender_id' => 'nullable|string|max:50',

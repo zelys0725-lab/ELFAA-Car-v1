@@ -108,8 +108,14 @@
     </div>
 </div>
 
+@php
+    $bookingUrl = ($type === 'admin_booking_alert') 
+        ? url('/admin/dashboard?tab=bookings') 
+        : url('/my-bookings');
+@endphp
+
 <div class="btn-container">
-    <a href="{{ config('app.url') }}/my-bookings" class="btn" target="_blank">View Booking Details</a>
+    <a href="{{ $bookingUrl }}" class="btn" target="_blank">View Booking Details</a>
 </div>
 
 <p class="text" style="font-size: 13px; color: #71717a;">
