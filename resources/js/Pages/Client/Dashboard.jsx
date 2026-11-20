@@ -221,6 +221,57 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         }
     }, [selectedCar, daysCount, data.pickup_location, data.custom_pickup_address, data.dropoff_location, data.custom_dropoff_address, data.promo_code, promos]);
 
+    const getLocalDatetimeMin = () => {
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const compressImageIfNeeded = async (file) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) return file;
+        if (file.type === 'image/svg+xml' || file.size < 1.5 * 1024 * 1024) return file;
+
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const MAX_DIM = 2200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > MAX_DIM) {
+                        height *= MAX_DIM / width;
+                        width = MAX_DIM;
+                    } else if (height > MAX_DIM) {
+                        width *= MAX_DIM / height;
+                        height = MAX_DIM;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(width);
+                    canvas.height = Math.round(height);
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob || blob.size >= file.size) {
+                            resolve(file);
+                        } else {
+                            const newName = file.name.replace(/\.[^/.]+$/, '.jpg');
+                            const compressed = new File([blob], newName, { type: 'image/jpeg' });
+                            resolve(compressed);
+                        }
+                    }, 'image/jpeg', 0.88);
+                };
+                img.onerror = () => resolve(file);
+                img.src = e.target.result;
+            };
+            reader.onerror = () => resolve(file);
+            reader.readAsDataURL(file);
+        });
+    };
+
     const handleBookingSubmit = (e) => {
         e.preventDefault();
         clearErrors();
@@ -230,6 +281,30 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                 type: 'error', 
                 title: 'Terms Agreement Required', 
                 message: 'You must read and agree to the ELFAA Car Rental Agreement Terms & Conditions before renting.' 
+            });
+            return;
+        }
+
+        if (!data.start_datetime) {
+            setAlert({ type: 'error', title: 'Missing Date', message: 'Please select a pickup date and time.' });
+            return;
+        }
+
+        // Prevent booking past dates/times
+        if (new Date(data.start_datetime) < new Date(Date.now() - 30 * 60 * 1000)) {
+            setAlert({ 
+                type: 'error', 
+                title: 'Invalid Pickup Date', 
+                message: 'The pickup date and time cannot be in the past. Please choose today or a future date.' 
+            });
+            return;
+        }
+
+        if (!data.end_datetime || new Date(data.start_datetime) >= new Date(data.end_datetime)) {
+            setAlert({ 
+                type: 'error', 
+                title: 'Invalid Return Date', 
+                message: 'The return date and time must be after the pickup date and time.' 
             });
             return;
         }
@@ -264,18 +339,25 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         setUploadErrors(prev => ({ ...prev, [key]: '' }));
     };
 
-    const handleDirectUpload = (e, actualType) => {
+    const handleDirectUpload = async (e, actualType) => {
         e.preventDefault();
         const fileKey = actualType.startsWith('proof_of_billing') ? 'proof_of_billing' : actualType;
-        const targetFile = docFiles[fileKey];
+        const rawFile = docFiles[fileKey];
 
-        if (!targetFile) {
+        if (!rawFile) {
             setUploadErrors(prev => ({ ...prev, [fileKey]: 'Please choose a file to upload.' }));
             return;
         }
 
         setUploadingType(fileKey);
         setUploadErrors(prev => ({ ...prev, [fileKey]: '' }));
+
+        let targetFile = rawFile;
+        try {
+            targetFile = await compressImageIfNeeded(rawFile);
+        } catch (err) {
+            console.warn('Image pre-compression skipped:', err);
+        }
 
         const formData = new FormData();
         formData.append('type', actualType);
@@ -557,7 +639,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                         </div>
                                                     ) : (
                                                         <img 
-                                                            src={govId1.info.secure_url || `/documents/${govId1.info.id}/file`} 
+                                                            src={resolvePhotoUrl(govId1.info.secure_url || `/documents/${govId1.info.id}/file`)} 
                                                             alt={`${auth.user.name} - Driver's License`} 
                                                             className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                                                         />
@@ -582,7 +664,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 </div>
                                             )}
                                             {govId1.info?.file_path && (
-                                                <a href={govId1.info.secure_url || `/documents/${govId1.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                <a href={resolvePhotoUrl(govId1.info.secure_url || `/documents/${govId1.info.id}/file`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
                                                     <FileText className="w-3.5 h-3.5" /> View Current Document
                                                 </a>
                                             )}
@@ -591,11 +673,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         <form onSubmit={(e) => handleDirectUpload(e, 'gov_id_1')} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
                                             <div>
                                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                                                    Select License File (JPG, PNG, WebP, PDF max 10MB)
+                                                    Select License File (JPG, PNG, WebP, HEIC, PDF max 20MB)
                                                 </label>
                                                 <Input 
                                                     type="file" 
-                                                    accept="image/*,.pdf"
+                                                    accept="image/*,.pdf,.heic,.heif"
                                                     onChange={(e) => handleFileChange('gov_id_1', e.target.files[0])}
                                                     className="h-9 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 py-1"
                                                 />
@@ -643,7 +725,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                         </div>
                                                     ) : (
                                                         <img 
-                                                            src={govId2.info.secure_url || `/documents/${govId2.info.id}/file`} 
+                                                            src={resolvePhotoUrl(govId2.info.secure_url || `/documents/${govId2.info.id}/file`)} 
                                                             alt={`${auth.user.name} - Secondary ID`} 
                                                             className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                                                         />
@@ -668,7 +750,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 </div>
                                             )}
                                             {govId2.info?.file_path && (
-                                                <a href={govId2.info.secure_url || `/documents/${govId2.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                <a href={resolvePhotoUrl(govId2.info.secure_url || `/documents/${govId2.info.id}/file`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
                                                     <FileText className="w-3.5 h-3.5" /> View Current Document
                                                 </a>
                                             )}
@@ -677,11 +759,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                         <form onSubmit={(e) => handleDirectUpload(e, 'gov_id_2')} className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
                                             <div>
                                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                                                    Select Secondary ID File (JPG, PNG, WebP, PDF max 10MB)
+                                                    Select Secondary ID File (JPG, PNG, WebP, HEIC, PDF max 20MB)
                                                 </label>
                                                 <Input 
                                                     type="file" 
-                                                    accept="image/*,.pdf"
+                                                    accept="image/*,.pdf,.heic,.heif"
                                                     onChange={(e) => handleFileChange('gov_id_2', e.target.files[0])}
                                                     className="h-9 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 py-1"
                                                 />
@@ -729,7 +811,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                         </div>
                                                     ) : (
                                                         <img 
-                                                            src={billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`} 
+                                                            src={resolvePhotoUrl(billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`)} 
                                                             alt={`${auth.user.name} - Billing Proof`} 
                                                             className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                                                         />
@@ -754,7 +836,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                 </div>
                                             )}
                                             {billingProof.info?.file_path && (
-                                                <a href={billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
+                                                <a href={resolvePhotoUrl(billingProof.info.secure_url || `/documents/${billingProof.info.id}/file`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#FF3B30] hover:underline font-bold pt-1">
                                                     <FileText className="w-3.5 h-3.5" /> View Current Document
                                                 </a>
                                             )}
@@ -777,11 +859,11 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     <option value="proof_of_billing_other">Other Recurring Statement</option>
                                                 </select>
                                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                                                    Select Billing File (JPG, PNG, PDF max 5MB)
+                                                    Select Billing File (JPG, PNG, WebP, HEIC, PDF max 20MB)
                                                 </label>
                                                 <Input 
                                                     type="file" 
-                                                    accept="image/*,.pdf"
+                                                    accept="image/*,.pdf,.heic,.heif"
                                                     onChange={(e) => handleFileChange('proof_of_billing', e.target.files[0])}
                                                     className="h-9 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 py-1"
                                                 />
@@ -845,6 +927,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     <Input 
                                                         type="datetime-local" 
                                                         value={data.start_datetime}
+                                                        min={getLocalDatetimeMin()}
                                                         onChange={(e) => setData('start_datetime', e.target.value)}
                                                         required
                                                         className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30]"
@@ -856,6 +939,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
                                                     <Input 
                                                         type="datetime-local" 
                                                         value={data.end_datetime}
+                                                        min={data.start_datetime || getLocalDatetimeMin()}
                                                         onChange={(e) => setData('end_datetime', e.target.value)}
                                                         required
                                                         className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 focus:border-[#FF3B30]"

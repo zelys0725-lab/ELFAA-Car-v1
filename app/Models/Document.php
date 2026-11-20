@@ -72,7 +72,7 @@ class Document extends Model
      */
     public function getSecureUrlAttribute(): string
     {
-        return route('documents.file', $this->id);
+        return route('documents.file', $this->id, false);
     }
 
     public function isVerified(): bool

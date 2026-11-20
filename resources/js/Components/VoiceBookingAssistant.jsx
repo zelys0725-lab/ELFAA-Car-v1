@@ -988,6 +988,7 @@ export default function VoiceBookingAssistant({
                                                     <label className="block text-[9px] font-black uppercase text-zinc-500 mb-1">Pickup Date & Time</label>
                                                     <input
                                                         type="datetime-local"
+                                                        min={formatDatetimeLocal(new Date())}
                                                         value={selectedStartDate}
                                                         onChange={(e) => setSelectedStartDate(e.target.value)}
                                                         className="w-full h-8 px-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white"
@@ -997,6 +998,7 @@ export default function VoiceBookingAssistant({
                                                     <label className="block text-[9px] font-black uppercase text-zinc-500 mb-1">Return Date & Time</label>
                                                     <input
                                                         type="datetime-local"
+                                                        min={selectedStartDate || formatDatetimeLocal(new Date())}
                                                         value={selectedEndDate}
                                                         onChange={(e) => setSelectedEndDate(e.target.value)}
                                                         className="w-full h-8 px-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white"
@@ -1008,6 +1010,16 @@ export default function VoiceBookingAssistant({
                                                 type="button"
                                                 onClick={() => {
                                                     if (selectedStartDate && selectedEndDate) {
+                                                        if (new Date(selectedStartDate) < new Date(Date.now() - 30 * 60 * 1000)) {
+                                                            botSpeak("Pickup date cannot be in the past. Please choose a future pickup time.");
+                                                            pushBotMessage("⚠️ **Invalid Pickup Date:** Pickup date/time cannot be in the past. Please choose today or a future date.");
+                                                            return;
+                                                        }
+                                                        if (new Date(selectedStartDate) >= new Date(selectedEndDate)) {
+                                                            botSpeak("Return date must be after pickup date.");
+                                                            pushBotMessage("⚠️ **Invalid Range:** Return date/time must be after the pickup date.");
+                                                            return;
+                                                        }
                                                         const days = calculateRentalDays(selectedStartDate, selectedEndDate);
                                                         if (setBookingData) {
                                                             try {

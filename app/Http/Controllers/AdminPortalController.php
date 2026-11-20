@@ -416,7 +416,7 @@ class AdminPortalController extends Controller
             'meetup_location' => 'required|string|max:255',
             'description' => 'nullable|string',
             'features' => 'nullable|array',
-            'image_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,heic,heif,jfif|max:10240',
         ]);
 
         $imgUrl = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800'; // Default placeholder
@@ -468,7 +468,7 @@ class AdminPortalController extends Controller
             'description' => 'nullable|string',
             'features' => 'nullable|array',
             'status' => 'required|in:available,reserved,rented,maintenance,unavailable',
-            'image_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,heic,heif,jfif|max:10240',
         ]);
 
         $images = $vehicle->images ?: [];
@@ -530,7 +530,7 @@ class AdminPortalController extends Controller
             'discount_text' => 'required|string|max:100',
             'description' => 'required|string',
             'status' => 'required|in:active,expired',
-            'promo_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'promo_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,heic,heif,jfif|max:10240',
         ]);
 
         $imgUrl = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800';
@@ -566,7 +566,7 @@ class AdminPortalController extends Controller
             'discount_text' => 'required|string|max:100',
             'description' => 'required|string',
             'status' => 'required|in:active,expired',
-            'promo_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'promo_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,heic,heif,jfif|max:10240',
         ]);
 
         $imgUrl = $promo->image_url;

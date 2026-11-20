@@ -30,7 +30,15 @@ class DocumentVerificationController extends Controller
         $absolutePath = $this->verificationService->resolveDocumentAbsolutePath($document);
 
         if (!$absolutePath || !file_exists($absolutePath)) {
-            abort(404, 'Document file not found on secure storage.');
+            if ($request->query('download') === '1') {
+                abort(404, 'Document file not found on secure storage.');
+            }
+            // Return a clean inline SVG placeholder when file is absent on storage (e.g. freshly imported DB)
+            $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240"><rect width="400" height="240" rx="12" fill="#18181b"/><circle cx="200" cy="85" r="28" fill="#27272a" stroke="#3f3f46" stroke-width="2"/><path d="M190 85h20M200 75v20" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/><text x="200" y="145" text-anchor="middle" fill="#f43f5e" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="800">Document File Missing from Storage</text><text x="200" y="170" text-anchor="middle" fill="#a1a1aa" font-family="system-ui,-apple-system,sans-serif" font-size="11">Please re-upload a clear photo or PDF</text></svg>';
+            return response($svg, 200, [
+                'Content-Type' => 'image/svg+xml',
+                'Cache-Control' => 'no-cache, private',
+            ]);
         }
 
         $filename = $document->original_filename ?: basename($absolutePath);

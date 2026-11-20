@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
+import { resolvePhotoUrl } from '@/utils/photoHelper';
 import {
     X,
     Shield,
@@ -50,7 +51,7 @@ export default function DocumentVerificationModal({ document: initialDoc, onClos
     const auditLogs = doc.audit_logs || [];
     const ocrConfidence = doc.ocr_confidence ? parseFloat(doc.ocr_confidence) : 0;
 
-    const secureUrl = doc.secure_url || (doc.file_path ? `/documents/${doc.id}/file` : '#');
+    const secureUrl = resolvePhotoUrl(doc.secure_url || (doc.file_path ? `/documents/${doc.id}/file` : '#'));
     const isPdf = (doc.mime_type === 'application/pdf') || (doc.file_path && doc.file_path.toLowerCase().endsWith('.pdf'));
 
     // Zoom & Rotation controls

@@ -54,7 +54,7 @@ class ClientPortalController extends Controller
     {
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
-            'start_datetime' => 'required|date',
+            'start_datetime' => 'required|date|after_or_equal:today',
             'end_datetime' => 'required|date|after:start_datetime',
             'pickup_location' => 'required|string|max:255',
             'dropoff_location' => 'nullable|string|max:255',
@@ -63,6 +63,8 @@ class ClientPortalController extends Controller
             'custom_location_fee' => 'nullable|numeric|min:0',
             'terms_agreed' => 'required|accepted',
         ], [
+            'start_datetime.after_or_equal' => 'The pickup date and time cannot be in the past. Please select today or a future date.',
+            'end_datetime.after' => 'The return date and time must be after the pickup date and time.',
             'terms_agreed.accepted' => 'You must read and agree to the ELFAA Car Rental Agreement Terms & Conditions before renting.',
             'terms_agreed.required' => 'You must read and agree to the ELFAA Car Rental Agreement Terms & Conditions before renting.',
         ]);
@@ -70,6 +72,14 @@ class ClientPortalController extends Controller
         $vehicleId = $request->vehicle_id;
         $start = $request->start_datetime;
         $end = $request->end_datetime;
+
+        // Prevent past date/time booking (allow 30-min buffer for form submission time)
+        $startCarbon = Carbon::parse($start);
+        if ($startCarbon->lt(now()->subMinutes(30))) {
+            return back()->withErrors([
+                'start_datetime' => 'The pickup date/time cannot be in the past. Please choose a future pickup time.',
+            ]);
+        }
 
         $availabilityService = app(\App\Services\VehicleAvailabilityService::class);
         $vehicle = Vehicle::findOrFail($vehicleId);
@@ -209,7 +219,7 @@ class ClientPortalController extends Controller
 
         $request->validate([
             'payment_reference' => 'nullable|string|max:100',
-            'payment_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp,heic,heif,jfif,pdf|max:10240',
         ]);
 
         $file = $request->file('payment_proof');
@@ -236,7 +246,7 @@ class ClientPortalController extends Controller
     {
         $request->validate([
             'type' => 'required|in:gov_id_1,gov_id_2,proof_of_billing,proof_of_billing_electricity,proof_of_billing_water,proof_of_billing_internet,proof_of_billing_other',
-            'file' => 'required|file|mimes:jpeg,png,jpg,webp,pdf|max:10240', // 10MB limit
+            'file' => 'required|file|mimes:jpeg,png,jpg,webp,heic,heif,jfif,pdf|max:20480', // Up to 20MB for high-res mobile camera photos
         ]);
 
         $user = Auth::user();
