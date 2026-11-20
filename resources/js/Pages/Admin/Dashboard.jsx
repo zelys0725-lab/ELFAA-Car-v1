@@ -2695,67 +2695,90 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                 {isAdmin && activeTab === 'settings' && (
                     <div className="space-y-6 max-w-4xl mx-auto">
                         {/* Settings Navigation Sub-tabs */}
-                        <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                            <button
-                                type="button"
-                                onClick={() => setSettingsSubTab('branding')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'branding'
-                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
-                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                    }`}
-                            >
-                                <Globe className="w-4 h-4 text-[#FF3B30]" />
-                                Branding & Info
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setSettingsSubTab('smtp')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'smtp'
-                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
-                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                    }`}
-                            >
-                                <Mail className="w-4 h-4 text-blue-500" />
-                                SMTP Email
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setSettingsSubTab('sms')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'sms'
-                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
-                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                    }`}
-                            >
-                                <MessageSquare className="w-4 h-4 text-emerald-500" />
-                                SMS Gateway
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setSettingsSubTab('mfa')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'mfa'
-                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
-                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                    }`}
-                            >
-                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                Security & MFA
-                            </button>
-
-
-                            <button
-                                type="button"
-                                onClick={() => setSettingsSubTab('account')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'account'
-                                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
-                                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                                    }`}
-                            >
-                                <Lock className="w-4 h-4 text-amber-500" />
-                                My Account
-                            </button>
+                        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1.5">
+                            {/* Mobile: 2-col grid for top row, 3-col last row; Tablet+: single scrollable row */}
+                            <div className="grid grid-cols-2 sm:hidden gap-1.5">
+                                {[
+                                    { id: 'branding', label: 'Branding', icon: <Globe className="w-3.5 h-3.5 text-[#FF3B30]" /> },
+                                    { id: 'smtp', label: 'SMTP Email', icon: <Mail className="w-3.5 h-3.5 text-blue-500" /> },
+                                    { id: 'sms', label: 'SMS', icon: <MessageSquare className="w-3.5 h-3.5 text-emerald-500" /> },
+                                    { id: 'mfa', label: 'Security', icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> },
+                                    { id: 'account', label: 'My Account', icon: <Lock className="w-3.5 h-3.5 text-amber-500" /> },
+                                ].map((tab, idx, arr) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setSettingsSubTab(tab.id)}
+                                        className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                            idx === arr.length - 1 && arr.length % 2 !== 0 ? 'col-span-2' : ''
+                                        } ${settingsSubTab === tab.id
+                                            ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        {tab.icon}
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Tablet/Desktop: scrollable horizontal flex row */}
+                            <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                                <button
+                                    type="button"
+                                    onClick={() => setSettingsSubTab('branding')}
+                                    className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'branding'
+                                            ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    <Globe className="w-4 h-4 text-[#FF3B30] flex-shrink-0" />
+                                    <span>Branding & Info</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettingsSubTab('smtp')}
+                                    className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'smtp'
+                                            ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    <Mail className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                    <span>SMTP Email</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettingsSubTab('sms')}
+                                    className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'sms'
+                                            ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    <MessageSquare className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                    <span>SMS Gateway</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettingsSubTab('mfa')}
+                                    className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'mfa'
+                                            ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                    <span>Security & MFA</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettingsSubTab('account')}
+                                    className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${settingsSubTab === 'account'
+                                            ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200/60 dark:border-zinc-700'
+                                            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                    <span>My Account</span>
+                                </button>
+                            </div>
                         </div>
 
                         {settingsSubTab === 'account' ? (

@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Utility: Hide scrollbar while keeping scroll functionality ─────────────
+ * Used for horizontal tab strips and drawers that should scroll without
+ * showing the scrollbar chrome on any device.
+ * ─────────────────────────────────────────────────────────────────────────── */
+.scrollbar-none {
+    -ms-overflow-style: none;   /* IE / Edge */
+    scrollbar-width: none;       /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+    display: none;               /* Chrome / Safari / Opera */
+}
+
+.scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 2px;
+}
+
 /* ─── Global Swipe-Gesture Navigation Guard ─────────────────────────────────
  * Prevents horizontal touchpad/trackpad swipes from triggering the browser's
  * back/forward navigation gesture. The JS hook in hooks/usePreventHorizontalSwipe.js
