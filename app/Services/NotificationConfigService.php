@@ -157,11 +157,8 @@ class NotificationConfigService
                 $payload = [
                     'recipient' => $cleanPhone,
                     'content'   => $messageText,
+                    'sender_id' => !empty($senderId) ? $senderId : 'Unisoft',
                 ];
-
-                if (!empty($senderId)) {
-                    $payload['sender_id'] = $senderId;
-                }
 
                 $response = Http::withBasicAuth($apiKey, '')
                     ->asJson()
@@ -176,10 +173,21 @@ class NotificationConfigService
                     ];
                 }
 
-                $errorDetail = $response->json('message') 
-                    ?? $response->json('error') 
-                    ?? $response->json('description') 
-                    ?? $response->body();
+                $json = $response->json();
+                if (!empty($json['errors']['sender_id'])) {
+                    $errorDetail = 'Invalid Sender ID ("' . ($senderId ?? 'empty') . '"): ' . implode(', ', (array)$json['errors']['sender_id']) . '. Please check your UniSMS Dashboard for your account\'s assigned test Sender ID and enter it in the Sender ID field.';
+                } elseif (!empty($json['errors'])) {
+                    $errList = [];
+                    foreach ($json['errors'] as $field => $messages) {
+                        $errList[] = $field . ': ' . (is_array($messages) ? implode(', ', $messages) : $messages);
+                    }
+                    $errorDetail = implode(' | ', $errList);
+                } else {
+                    $errorDetail = $json['message'] 
+                        ?? $json['error'] 
+                        ?? $json['description'] 
+                        ?? $response->body();
+                }
 
                 return [
                     'success' => false,

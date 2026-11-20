@@ -3218,7 +3218,14 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">SMS Provider</label>
                                                         <select
                                                             value={settingsForm.data.sms_provider}
-                                                            onChange={e => settingsForm.setData('sms_provider', e.target.value)}
+                                                            onChange={e => {
+                                                                const newProvider = e.target.value;
+                                                                if (newProvider === 'unisms' && (!settingsForm.data.sms_sender_id || settingsForm.data.sms_sender_id === 'ELFAACAR')) {
+                                                                    settingsForm.setData(prev => ({ ...prev, sms_provider: newProvider, sms_sender_id: 'Unisoft' }));
+                                                                } else {
+                                                                    settingsForm.setData('sms_provider', newProvider);
+                                                                }
+                                                            }}
                                                             className="w-full text-xs font-bold h-10 px-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white"
                                                         >
                                                             <option value="unisms">UniSMS (unismsapi.com)</option>
@@ -3231,11 +3238,16 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                                                     <div>
                                                         <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Sender ID / Header Name</label>
                                                         <Input
-                                                            placeholder={settingsForm.data.sms_provider === 'unisms' ? 'e.g. UniSMS or your approved Sender ID' : 'e.g. ELFAACAR'}
+                                                            placeholder={settingsForm.data.sms_provider === 'unisms' ? 'Unisoft' : 'e.g. ELFAACAR'}
                                                             value={settingsForm.data.sms_sender_id}
                                                             onChange={e => settingsForm.setData('sms_sender_id', e.target.value)}
                                                             className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white h-10 font-mono text-xs uppercase"
                                                         />
+                                                        {settingsForm.data.sms_provider === 'unisms' && (
+                                                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
+                                                                Check your <span className="text-[#FF3B30] font-semibold">UniSMS Dashboard</span> for your account's assigned test Sender ID (or approved Sender ID).
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -3955,6 +3967,17 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
                         </p>
 
                         <form onSubmit={handleSendTestSms} className="space-y-4">
+                            <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-[11px] space-y-1">
+                                <div className="flex justify-between">
+                                    <span className="text-zinc-500">Provider:</span>
+                                    <span className="font-bold uppercase text-zinc-900 dark:text-white">{settingsForm.data.sms_provider}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-zinc-500">Sender ID:</span>
+                                    <span className="font-mono font-bold text-[#FF3B30]">{settingsForm.data.sms_sender_id || '(empty)'}</span>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">Recipient Mobile Number</label>
                                 <Input
