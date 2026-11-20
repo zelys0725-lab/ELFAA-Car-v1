@@ -1448,7 +1448,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
                         {/* Fleet Availability Modal */}
                         {availabilityFleetVehicle && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAvailabilityFleetVehicle(null)} />
                                 <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                                     <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -1533,7 +1533,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
             {/* LEAVE REVIEW DIALOG */}
             {ratingBooking && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRatingBooking(null)} />
                     <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl text-left transition-colors animate-in fade-in zoom-in-95 duration-200">
                         <h2 className="font-extrabold text-lg">Leave a Review</h2>

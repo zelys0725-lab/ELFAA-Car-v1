@@ -185,7 +185,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-850 dark:text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-red-500/30 selection:text-white transition-colors duration-200">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-850 dark:text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-red-500/30 selection:text-white transition-colors duration-200 overflow-x-hidden w-full">
             <CarLoader isVisible={isLoading} />
             {/* 1. LEFT SIDEBAR (Desktop/Tablet) */}
             {isAdminOrStaff && (
@@ -255,10 +255,10 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
             )}
 
             {/* 2. BODY CONTENT PANEL */}
-            <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
+            <div className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden bg-zinc-50 dark:bg-zinc-950 min-w-0">
                 {/* Header Navbar */}
-                <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors">
-                    <div className="flex items-center space-x-2 sm:space-x-3">
+                <nav className="h-16 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors overflow-x-hidden min-w-0">
+                    <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1 overflow-hidden">
                         {/* Mobile hamburger menu toggle for App Drawer */}
                         {isAdminOrStaff && (
                             <button
@@ -312,7 +312,7 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                         </h1>
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 flex-shrink-0">
                         {/* Auto-Lock Security Pill (5-Minute Inactivity) */}
                         <button
                             type="button"
@@ -339,13 +339,13 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
 
                         {/* Top navigation for client/customer */}
                         {!isAdminOrStaff && (
-                            <div className="flex items-center gap-4 overflow-x-auto max-w-[320px] xs:max-w-[420px] sm:max-w-none whitespace-nowrap scrollbar-none py-1 mr-2">
-                                <div className="flex items-center gap-3 pr-4">
+                            <div className="flex items-center overflow-x-auto whitespace-nowrap scrollbar-none py-1 mr-1 max-w-[min(55vw,420px)]">
+                                <div className="flex items-center gap-2 sm:gap-3 pr-2">
                                     {sidebarTabs.map(tab => (
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab?.(tab.id)}
-                                            className={`text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                            className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
                                                 activeTab === tab.id
                                                     ? 'text-[#FF3B30] font-black'
                                                     : 'text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
@@ -395,19 +395,15 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                             </Dropdown>
                         </div>
 
-                        {/* Mobile sidebar toggle button on right */}
-                        {isAdminOrStaff && (
+                        {/* Mobile drawer close button (only when drawer is open) */}
+                        {isAdminOrStaff && showingMobileMenu && (
                             <div className="flex md:hidden items-center">
                                 <button
-                                    onClick={() => setShowingMobileMenu(!showingMobileMenu)}
+                                    onClick={() => setShowingMobileMenu(false)}
                                     className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors focus:outline-none"
-                                    title="Navigation Menu"
+                                    title="Close Menu"
                                 >
-                                    {showingMobileMenu ? (
-                                        <X className="h-5 w-5" />
-                                    ) : (
-                                        <Menu className="h-5 w-5" />
-                                    )}
+                                    <X className="h-5 w-5" />
                                 </button>
                             </div>
                         )}
@@ -506,8 +502,8 @@ export default function PortalLayout({ role, header, children, sidebarTabs = [],
                 )}
 
                 {/* Main Content Area */}
-                <main className="flex-1 p-6 md:p-8 bg-zinc-50 dark:bg-zinc-950 transition-colors">
-                    <div className="max-w-7xl mx-auto">
+                <main className="flex-1 p-4 sm:p-6 md:p-8 bg-zinc-50 dark:bg-zinc-950 transition-colors overflow-x-hidden min-w-0">
+                    <div className="max-w-7xl mx-auto w-full">
                         {children}
                     </div>
                 </main>

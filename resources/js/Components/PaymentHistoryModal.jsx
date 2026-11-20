@@ -64,7 +64,7 @@ export default function PaymentHistoryModal({ booking, isOpen, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
             <div className="z-10 w-full max-w-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh]">

@@ -13,6 +13,17 @@ body {
     overscroll-behavior-x: none;
 }
 
+/* ─── Modal Conflict Prevention ─────────────────────────────────────────────
+ * When any full-screen modal or dialog is open, smoothly hide the floating
+ * AI chatbot launcher so it never obstructs modal action buttons (like "Continue").
+ * ─────────────────────────────────────────────────────────────────────────── */
+body:has([role="dialog"]) .elfaa-chatbot-launcher,
+body:has([aria-modal="true"]) .elfaa-chatbot-launcher {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
 @media print {
     /* Hide non-printable navigation chrome & controls */
     aside, 

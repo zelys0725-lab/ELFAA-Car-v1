@@ -3347,7 +3347,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* Rejecting ID Details reason Modal Dialog */}
             {modalType === 'reject_doc' && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalType(null)} />
                     <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200">
                         <h2 className="font-extrabold text-lg">Reject Document Verification</h2>
@@ -3367,7 +3367,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* VEHICLE ADD/EDIT DIALOG */}
             {(modalType === 'add_vehicle' || modalType === 'edit_vehicle') && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalType(null)} />
                     <div className="z-10 w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl max-h-[85vh] overflow-y-auto transition-colors animate-in fade-in zoom-in-95 duration-200">
                         <h2 className="font-extrabold text-lg">{modalType === 'add_vehicle' ? 'Register Fleet Unit' : 'Edit Vehicle Details'}</h2>
@@ -3553,7 +3553,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* PROMO ADD/EDIT DIALOG */}
             {(modalType === 'add_promo' || modalType === 'edit_promo') && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalType(null)} />
                     <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200">
                         <h2 className="font-extrabold text-lg">{modalType === 'add_promo' ? 'Register Discount Promo' : 'Edit Promo Details'}</h2>
@@ -3613,7 +3613,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* ADD-ON ADD/EDIT DIALOG */}
             {(modalType === 'add_addon' || modalType === 'edit_addon') && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setModalType(null)} />
                     <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200">
                         <h2 className="font-extrabold text-lg">{modalType === 'add_addon' ? 'Register Extra Good' : 'Edit Add-On Details'}</h2>
@@ -3717,7 +3717,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* Pickup / Return Photo Lightbox & Inspection Details Modal */}
             {previewPhoto && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setPreviewPhoto(null)} />
                     <div className="z-10 w-full max-w-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                         {/* Header */}
@@ -3860,7 +3860,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* Test Email Modal Dialog */}
             {testEmailOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTestEmailOpen(false)} />
                     <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200 text-left">
                         <div className="flex items-center gap-2 mb-3">
@@ -3917,7 +3917,7 @@ export default function Dashboard({ auth, stats, bookings = [], archivedBookings
 
             {/* Test SMS Modal Dialog */}
             {testSmsOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTestSmsOpen(false)} />
                     <div className="z-10 w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl text-zinc-900 dark:text-white shadow-2xl transition-colors animate-in fade-in zoom-in-95 duration-200 text-left">
                         <div className="flex items-center gap-2 mb-3">
