@@ -99,6 +99,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
     // Independent upload document forms state
     const [docFiles, setDocFiles] = useState({});
+    const [docPreviews, setDocPreviews] = useState({}); // local blob previews before upload
     const [uploadErrors, setUploadErrors] = useState({});
     const [uploadingType, setUploadingType] = useState(null);
     const [billingTypeChoice, setBillingTypeChoice] = useState('proof_of_billing');
@@ -337,6 +338,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
     const handleFileChange = (key, file) => {
         setDocFiles(prev => ({ ...prev, [key]: file }));
         setUploadErrors(prev => ({ ...prev, [key]: '' }));
+        // Show instant local preview
+        if (file && file.type.startsWith('image/')) {
+            const url = URL.createObjectURL(file);
+            setDocPreviews(prev => ({ ...prev, [key]: url }));
+        } else {
+            setDocPreviews(prev => ({ ...prev, [key]: null }));
+        }
     };
 
     const handleDirectUpload = async (e, actualType) => {
@@ -366,6 +374,7 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
         router.post(route('client.documents.store'), formData, {
             onSuccess: () => {
                 setAlert({ type: 'success', title: 'Uploaded!', message: 'Your document has been uploaded and is pending review.' });
+                setDocPreviews(prev => ({ ...prev, [fileKey]: null }));
             },
             onFinish: () => {
                 setUploadingType(null);
@@ -631,7 +640,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
                                             {/* Dedicated ID Image Preview Surface */}
                                             <div className="w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center justify-center my-2 shadow-inner group">
-                                                {govId1.info?.file_path ? (
+                                                {docPreviews['gov_id_1'] ? (
+                                                    <img
+                                                        src={docPreviews['gov_id_1']}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                ) : govId1.info?.file_path ? (
                                                     (govId1.info.mime_type === 'application/pdf' || govId1.info.file_path.toLowerCase().endsWith('.pdf')) ? (
                                                         <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-1">
                                                             <FileText className="w-8 h-8 text-[#FF3B30]" />
@@ -717,7 +732,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
                                             {/* Dedicated ID Image Preview Surface */}
                                             <div className="w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center justify-center my-2 shadow-inner group">
-                                                {govId2.info?.file_path ? (
+                                                {docPreviews['gov_id_2'] ? (
+                                                    <img
+                                                        src={docPreviews['gov_id_2']}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                ) : govId2.info?.file_path ? (
                                                     (govId2.info.mime_type === 'application/pdf' || govId2.info.file_path.toLowerCase().endsWith('.pdf')) ? (
                                                         <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-1">
                                                             <FileText className="w-8 h-8 text-[#FF3B30]" />
@@ -803,7 +824,13 @@ export default function Dashboard({ auth, bookings = [], vehicles = [], document
 
                                             {/* Dedicated Billing Document Preview Surface */}
                                             <div className="w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center justify-center my-2 shadow-inner group">
-                                                {billingProof.info?.file_path ? (
+                                                {docPreviews['proof_of_billing'] ? (
+                                                    <img
+                                                        src={docPreviews['proof_of_billing']}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                ) : billingProof.info?.file_path ? (
                                                     (billingProof.info.mime_type === 'application/pdf' || billingProof.info.file_path.toLowerCase().endsWith('.pdf')) ? (
                                                         <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-1">
                                                             <FileText className="w-8 h-8 text-[#FF3B30]" />
